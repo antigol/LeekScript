@@ -92,7 +92,7 @@ void Array::analyse(SemanticAnalyser* analyser, const Type&) {
 	}
 }
 
-void Array::elements_will_take(SemanticAnalyser* analyser, const unsigned pos, const Type& type, int level) {
+void Array::elements_will_take(SemanticAnalyser* analyser, const vector<Type>& args_type, int level) {
 
 //	cout << "Array::elements_will_take " << type << " at " << pos << endl;
 
@@ -100,9 +100,9 @@ void Array::elements_will_take(SemanticAnalyser* analyser, const unsigned pos, c
 
 		Array* arr = dynamic_cast<Array*>(expressions[i]);
 		if (arr != nullptr && level > 0) {
-			arr->elements_will_take(analyser, pos, type, level - 1);
+			arr->elements_will_take(analyser, args_type, level - 1);
 		} else {
-			expressions[i]->will_take(analyser, pos, type);
+			expressions[i]->will_take(analyser, args_type);
 		}
 	}
 

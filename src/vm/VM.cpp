@@ -80,6 +80,11 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 	SemanticAnalyser sem;
 	sem.analyse(program, &context, modules);
 
+	/*
+	 * Debug
+	 */
+	cout << "Program: "; program->print(cout, true);
+
 	if (sem.errors.size()) {
 
 		if (mode == ExecMode::COMMAND_JSON) {
@@ -95,10 +100,6 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 		return ctx;
 	}
 
-	/*
-	 * Debug
-	 */
-//	cout << "Program: "; program->print(cout, true);
 
 	// Compilation
 	internals.clear();
