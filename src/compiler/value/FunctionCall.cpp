@@ -305,7 +305,7 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	}
 
 	// The function is a variable
-	if (vv and vv->var->value != nullptr) {
+	if (vv and vv->var and vv->var->value) {
 		a = 0;
 		for (Value* arg : arguments) {
 			vv->var->will_take(analyser, a++, arg->type);
