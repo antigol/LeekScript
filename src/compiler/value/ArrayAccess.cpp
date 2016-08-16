@@ -169,8 +169,8 @@ jit_value_t ArrayAccess::compile(Compiler& c) const {
 
 		if (array->type == Type::INTERVAL) {
 
-			jit_type_t args_types[2] = {ls_jit_pointer, ls_jit_integer};
-			jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, ls_jit_integer, args_types, 2, 0);
+			jit_type_t args_types[2] = {JIT_POINTER, JIT_INTEGER};
+			jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, JIT_INTEGER, args_types, 2, 0);
 
 			jit_value_t k = key->compile(c);
 
