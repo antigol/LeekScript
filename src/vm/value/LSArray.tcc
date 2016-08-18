@@ -536,17 +536,17 @@ inline LSValue* LSArray<LSValue*>::ls_sort() {
 	std::sort(this->begin(), this->end(), [](LSValue* a, LSValue* b) -> bool {
 		return b->operator < (a);
 	});
-	return this->move();
+	return this;
 }
 template <>
 inline LSValue* LSArray<int>::ls_sort() {
 	std::sort(this->begin(), this->end());
-	return this->move();
+	return this;
 }
 template <>
 inline LSValue* LSArray<double>::ls_sort() {
 	std::sort(this->begin(), this->end());
-	return this->move();
+	return this;
 }
 
 template <class T>
