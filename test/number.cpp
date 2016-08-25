@@ -32,6 +32,7 @@ void Test::test_numbers() {
 	success("-12 ** 2", "-144");
 	success("(-12) ** 2", "144");
 	success("-12 + 2", "-10");
+	success("let a = [2, 'a'] [-a[0], +a[0], ~a[0]] == [-2, 2, ~2]", "true");
 
 	// Hexadecimal representation
 	success("0x0", "0");

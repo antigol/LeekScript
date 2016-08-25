@@ -20,6 +20,7 @@ public:
 	LSArray();
 	LSArray(std::initializer_list<T>);
 	LSArray(const std::vector<T>&);
+	LSArray(const LSArray<T>&);
 	LSArray(Json& data);
 
 	virtual ~LSArray();
@@ -27,9 +28,9 @@ public:
 	/*
 	 * Array functions
 	 */
-	void push_clone(T value);
-	void push_move(T value);
-	void push_no_clone(T value);
+	void push_clone(T value); // clone increment and push
+	void push_move(T value); // clone (if not temporaray) increment and push
+	void push_inc(T value); // increment (if not native) and push
 
 	LSArray<T>* ls_clear();
 	T ls_remove(int index);
@@ -52,7 +53,9 @@ public:
 	void ls_iter(const void* fun);
 	bool ls_contains(T val);
 	LSValue* ls_push(T val);
-	LSArray<T>* ls_push_all(LSArray<T>* array);
+	LSArray<T>* ls_push_all_ptr(LSArray<LSValue*>* array);
+	LSArray<T>* ls_push_all_int(LSArray<int>* array);
+	LSArray<T>* ls_push_all_flo(LSArray<double>* array);
 	LSArray<T>* ls_shuffle();
 	LSArray<T>* ls_reverse();
 	LSArray<T>* ls_filter(const void* fun);
@@ -73,57 +76,43 @@ public:
 	 */
 	bool isTrue() const override;
 
-	LSValue* operator ! () const override;
-	LSValue* operator ~ () const override;
+	LSValue* ls_not() override;
+	LSValue* ls_tilde() override;
 
-	LSValue* operator + (const LSValue*) const override;
-	LSValue* operator + (const LSNull*) const override;
-	LSValue* operator + (const LSBoolean*) const override;
-	LSValue* operator + (const LSNumber*) const override;
-	LSValue* operator + (const LSString*) const override;
-	LSValue* operator + (const LSArray<LSValue*>*) const override;
-	LSValue* operator + (const LSArray<int>*) const override;
-	LSValue* operator + (const LSArray<double>*) const override;
-	LSValue* operator + (const LSObject*) const override;
-	LSValue* operator + (const LSFunction*) const override;
-	LSValue* operator + (const LSClass*) const override;
+	LSVALUE_OPERATORS
 
-	LSValue* operator += (LSValue*) override;
-	LSValue* operator += (const LSNull*) override;
-	LSValue* operator += (const LSBoolean*) override;
-	LSValue* operator += (const LSNumber*) override;
-	LSValue* operator += (const LSString*) override;
-	LSValue* operator += (const LSArray<LSValue*>*) override;
-	LSValue* operator += (const LSObject*) override;
-	LSValue* operator += (const LSFunction*) override;
-	LSValue* operator += (const LSClass*) override;
+	LSValue* ls_add(LSNull*) override;
+	LSValue* ls_add(LSBoolean*) override;
+	LSValue* ls_add(LSNumber*) override;
+	LSValue* ls_add(LSString*) override;
+	LSValue* ls_add(LSArray<LSValue*>*) override;
+	LSValue* ls_add(LSArray<int>*) override;
+	LSValue* ls_add(LSArray<double>*) override;
+	LSValue* ls_add(LSObject*) override;
+	LSValue* ls_add(LSFunction*) override;
+	LSValue* ls_add(LSClass*) override;
 
-	LSValue* operator - (const LSValue*) const override;
-	LSValue* operator -= (LSValue*) override;
-	LSValue* operator * (const LSValue*) const override;
-	LSValue* operator *= (LSValue*) override;
-	LSValue* operator / (const LSValue*) const override;
-	LSValue* operator /= (LSValue*) override;
-	LSValue* poww(const LSValue*) const override;
-	LSValue* pow_eq(LSValue*) override;
-	LSValue* operator % (const LSValue*) const override;
-	LSValue* operator %= (LSValue*) override;
+	LSValue* ls_add_eq(LSNull*) override;
+	LSValue* ls_add_eq(LSBoolean*) override;
+	LSValue* ls_add_eq(LSNumber*) override;
+	LSValue* ls_add_eq(LSString*) override;
+	LSValue* ls_add_eq(LSArray<LSValue*>*) override;
+	LSValue* ls_add_eq(LSArray<int>*) override;
+	LSValue* ls_add_eq(LSArray<double>*) override;
+	LSValue* ls_add_eq(LSSet<LSValue*>*) override;
+	LSValue* ls_add_eq(LSSet<int>*) override;
+	LSValue* ls_add_eq(LSSet<double>*) override;
+	LSValue* ls_add_eq(LSObject*) override;
+	LSValue* ls_add_eq(LSFunction*) override;
+	LSValue* ls_add_eq(LSClass*) override;
 
+	bool eq(const LSArray<LSValue*>*) const override;
+	bool eq(const LSArray<int>*) const override;
+	bool eq(const LSArray<double>*) const override;
 
-	bool operator == (const LSValue*) const override;
-	bool operator == (const LSArray<LSValue*>*) const override;
-
-	bool operator < (const LSValue*) const override;
-	bool operator < (const LSNull*) const override;
-	bool operator < (const LSBoolean*) const override;
-	bool operator < (const LSNumber*) const override;
-	bool operator < (const LSString*) const override;
-	bool operator < (const LSArray<LSValue*>*) const override;
-	bool operator < (const LSArray<int>*) const override;
-	bool operator < (const LSArray<double>*) const override;
-	bool operator < (const LSFunction*) const override;
-	bool operator < (const LSObject*) const override;
-	bool operator < (const LSClass*) const override;
+	bool lt(const LSArray<LSValue*>*) const override;
+	bool lt(const LSArray<int>*) const override;
+	bool lt(const LSArray<double>*) const override;
 
 	bool in(LSValue*) const override;
 
@@ -147,7 +136,7 @@ public:
 
 	virtual const BaseRawType* getRawType() const override;
 
-	int typeID() const override;
+	int typeID() const override { return 5; }
 };
 
 }

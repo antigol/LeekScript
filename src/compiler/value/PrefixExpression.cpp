@@ -42,7 +42,8 @@ void PrefixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 
 	if (operatorr->type == TokenType::PLUS_PLUS
 		or operatorr->type == TokenType::MINUS_MINUS
-		or operatorr->type == TokenType::MINUS) {
+		or operatorr->type == TokenType::MINUS
+		or operatorr->type == TokenType::TILDE) {
 
 		type = expression->type;
 
@@ -83,19 +84,19 @@ void PrefixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 }
 
 LSValue* jit_not(LSValue* x) {
-	return x->operator ! ();
+	return x->ls_not();
 }
 LSValue* jit_minus(LSValue* x) {
-	return x->operator - ();
+	return x->ls_minus();
 }
 LSValue* jit_pre_inc(LSValue* x) {
-	return x->operator ++ ();
+	return x->ls_preinc();
 }
 LSValue* jit_pre_dec(LSValue* x) {
-	return x->operator -- ();
+	return x->ls_predec();
 }
 LSValue* jit_pre_tilde(LSValue* v) {
-	return v->operator ~ ();
+	return v->ls_tilde();
 }
 
 jit_value_t PrefixExpression::compile(Compiler& c) const {
@@ -169,8 +170,17 @@ jit_value_t PrefixExpression::compile(Compiler& c) const {
 			break;
 		}
 		case TokenType::TILDE: {
-			args.push_back(expression->compile(c));
-			func = (void*) jit_pre_tilde;
+			if (expression->type.nature == Nature::VALUE) {
+				jit_value_t x = expression->compile(c);
+				jit_value_t r = jit_insn_not(c.F, x);
+				if (type.nature == Nature::POINTER) {
+					return VM::value_to_pointer(c.F, r, type);
+				}
+				return r;
+			} else {
+				args.push_back(expression->compile(c));
+				func = (void*) jit_pre_tilde;
+			}
 			break;
 		}
 		case TokenType::NEW: {
@@ -248,10 +258,6 @@ jit_value_t PrefixExpression::compile(Compiler& c) const {
 		}
 	}
 	jit_value_t result = jit_insn_call_native(c.F, "", func, sig, args.data(), 1, JIT_CALL_NOTHROW);
-
-	if (expression->type.must_manage_memory()) {
-		VM::delete_temporary(c.F, args[0]);
-	}
 
 	return result;
 }

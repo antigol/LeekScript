@@ -13,7 +13,21 @@ void Test::test_arrays() {
 	success("[1, 2, 3] + [4, 5, 6]", "[1, 2, 3, 4, 5, 6]");
 	success("[] + 1", "[1]");
 	success("[] + 1 + 2 + 3", "[1, 2, 3]");
+	success("[1] + 2", "[1, 2]");
+	success("[1] + 0.5", "[1, 0.5]");
+	success("[1] + 0.5 + 'a' + null", "[1, 0.5, 'a', null]");
+	success("[1] + null", "[1, null]");
+	success("[1] + true", "[1, true]");
 	success("[1] + [2] + [3]", "[1, 2, 3]");
+	success("[1] + [2.5] + ['a']", "[1, 2.5, 'a']");
+	success("['a'] + [2.5] + [1]", "['a', 2.5, 1]");
+	success("[1] + ['a']", "[1, 'a']");
+	success("['a'] + [1]", "['a', 1]");
+	success("let a = ['a'] a += 'b' a", "['a', 'b']");
+	success("let a = [1] a += 'a' a", "[1, 'a']");
+	success("let a = [1.5] a += ['a', 'b'] a", "[1.5, 'a', 'b']");
+	success("let a = [1.5] a += false a", "[1.5, false]");
+	success("let a = [1] a += <'z', 'a'> a", "[1, 'a', 'z']");
 	success("[1, 2, 3][1]", "2");
 	success("let a = [1, 2, 3] a[0]", "1");
 	success("let a = [1, 2, 3] a[0] = 5 a[0]", "5");
@@ -21,6 +35,7 @@ void Test::test_arrays() {
 	success("let v = 12 let a = [v, 2, 3] a[0] += 5 a[0]", "17");
 	success("let a = [23, 23, true, '', [], 123]; |a|", "6");
 	success("let a = [1, 2, 3]; ~a", "[3, 2, 1]");
+	success("let a = [] !a", "true");
 	success("let a = [1, 2, 3] a[1] = 12 a", "[1, 12, 3]");
 	success("[1.2, 321.42, 23.15]", "[1.2, 321.42, 23.15]");
 	success("[1, 2, 3, 4, 5][1:3]", "[2, 3]");
@@ -58,6 +73,13 @@ void Test::test_arrays() {
 	success("[1, 2, 3, 4, 5] ~~ x -> x.max(3)", "[3, 3, 3, 4, 5]");
 	success("[1, 2, 3, 4, 5, 6, 7, 8, 9, 10] ~~ x -> x.max(3).min(8)", "[3, 3, 3, 4, 5, 6, 7, 8, 8, 8]");
 	success("[1] < [1, 2]", "true");
+	success("[1, 1] < [1, 2]", "true");
+	success("[1, 1] == [1, 2]", "false");
+	success("[1, 2] == [1, 2]", "true");
+	success("[1, '1'] == [1, '2']", "false");
+	success("[1, '2'] == [1, '2']", "true");
+	success("[1, 1] == [1, 2.5]", "false");
+	success("[1, 2.5] == [1, 2.5]", "true");
 
 //	let f=x->x[0]; [f([1]), f([0..3])]
 
@@ -183,8 +205,10 @@ void Test::test_arrays() {
 	success("let a = [1, 2, 3] Array.push(a, 4)", "[1, 2, 3, 4]");
 	success("[].push([])", "[[]]");
 	success("[0].pushAll([1, 2, 3])", "[0, 1, 2, 3]");
+	success("[0].pushAll([3.5])", "[0, 3]");
+	success("[0.5].pushAll(['a'])", "[0.5]");
 	success("let a = [1, 2] a.push(3) a", "[1, 2, 3]");
-//	success("let a = [1, 2] a.push(3.5) a", "[1, 2, 3.5]");
+//	success("let a = [1, 2] a.push(3.5) a", "[1, 2, 3]");
 	success("let a = [1.5, -2.9] a.push(3.5) a", "[1.5, -2.9, 3.5]");
 
 	success("Array.pushAll([], [true, 'yo'])", "[true, 'yo']");

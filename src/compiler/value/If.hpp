@@ -12,7 +12,6 @@ public:
 	Value* condition;
 	Block* then;
 	Block* elze;
-	bool inversed;
 
 	If();
 	virtual ~If();

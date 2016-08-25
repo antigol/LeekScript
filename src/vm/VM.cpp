@@ -164,8 +164,11 @@ jit_type_t VM::get_jit_type(const Type& type) {
 	if (type.nature == Nature::POINTER) {
 		return LS_POINTER;
 	}
-	if (type.raw_type == RawType::INTEGER || type.raw_type == RawType::BOOLEAN) {
+	if (type.raw_type == RawType::INTEGER) {
 		return LS_INTEGER;
+	}
+	if (type.raw_type == RawType::BOOLEAN) {
+		return LS_BOOLEAN;
 	}
 	if (type.raw_type == RawType::LONG or type.raw_type == RawType::FUNCTION) {
 		return LS_LONG;

@@ -34,4 +34,7 @@ void Test::test_map() {
 
 	success("['a':'b'] == [1:1]", "false");
 	success("let x = ['a' : 'b'] let y = [1 : 1] x.clear() == y.clear()", "true");
+
+	success("['a':1 'b':2] < ['a':1 'b':3]", "true");
+	success("[1:1 2:0] < [1:1 2:true]", "false");
 }

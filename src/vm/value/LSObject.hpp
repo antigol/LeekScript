@@ -34,24 +34,10 @@ public:
 	 */
 	bool isTrue() const override;
 
-	LSValue* operator + (const LSValue*) const override;
-	LSValue* operator += (LSValue*) override;
-	LSValue* operator - (const LSValue*) const override;
-	LSValue* operator -= (LSValue*) override;
-	LSValue* operator * (const LSValue*) const override;
-	LSValue* operator *= (LSValue*) override;
-	LSValue* operator / (const LSValue*) const override;
-	LSValue* operator /= (LSValue*) override;
-	LSValue* poww(const LSValue*) const override;
-	LSValue* pow_eq(LSValue*) override;
-	LSValue* operator % (const LSValue*) const override;
-	LSValue* operator %= (LSValue*) override;
+	LSVALUE_OPERATORS
 
-	bool operator == (const LSValue*) const override;
-	bool operator == (const LSObject*) const override;
-
-	bool operator < (const LSValue*) const override;
-	bool operator < (const LSObject*) const override;
+	bool eq(const LSObject*) const override;
+	bool lt(const LSObject*) const override;
 
 	bool in(LSValue*) const override;
 
@@ -70,7 +56,7 @@ public:
 
 	LSValue* getClass() const override;
 
-	int typeID() const override;
+	int typeID() const override { return 9; }
 
 	virtual const BaseRawType* getRawType() const override;
 };

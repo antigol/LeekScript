@@ -24,4 +24,6 @@ void Test::test_booleans() {
 	success("12 xor 5", "false");
 	success("12 xor 0", "true");
 	success("false xor 99", "true");
+	success("false + 99", "99");
+	success("true + 99", "100");
 }

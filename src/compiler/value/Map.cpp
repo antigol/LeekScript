@@ -117,19 +117,19 @@ LSMap<int,double>* LSMap_create_int_float() {
 
 void LSMap_insert_ptr_ptr(LSMap<LSValue*,LSValue*>* map, LSValue* key, LSValue* value) {
 	auto it = map->lower_bound(key);
-	if (it == map->end() || it->first->operator !=(key)) {
+	if (it == map->end() || *it->first != *key) {
 		map->emplace_hint(it, key->move_inc(), value->move_inc());
 	}
 }
 void LSMap_insert_ptr_int(LSMap<LSValue*,int>* map, LSValue* key, int value) {
 	auto it = map->lower_bound(key);
-	if (it == map->end() || it->first->operator !=(key)) {
+	if (it == map->end() || *it->first != *key) {
 		map->emplace_hint(it, key->move_inc(), value);
 	}
 }
 void LSMap_insert_ptr_float(LSMap<LSValue*,double>* map, LSValue* key, double value) {
 	auto it = map->lower_bound(key);
-	if (it == map->end() || it->first->operator !=(key)) {
+	if (it == map->end() || *it->first != *key) {
 		map->emplace_hint(it, key->move_inc(), value);
 	}
 }

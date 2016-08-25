@@ -24,33 +24,10 @@ public:
 
 	bool isTrue() const override;
 
-	LSValue* operator + (const LSValue*) const override;
-	LSValue* operator += (LSValue*) override;
-	LSValue* operator - (const LSValue*) const override;
-	LSValue* operator -= (LSValue*) override;
-	LSValue* operator * (const LSValue*) const override;
-	LSValue* operator *= (LSValue*) override;
-	LSValue* operator / (const LSValue*) const override;
-	LSValue* operator /= (LSValue*) override;
-	LSValue* poww(const LSValue*) const override;
-	LSValue* pow_eq(LSValue*) override;
-	LSValue* operator % (const LSValue*) const override;
-	LSValue* operator %= (LSValue*) override;
+	LSVALUE_OPERATORS
 
-	bool operator == (const LSValue*) const override;
-	bool operator == (const LSNull*) const override;
-
-	bool operator < (const LSValue*) const override;
-	bool operator < (const LSNull*) const override;
-	bool operator < (const LSBoolean*) const override;
-	bool operator < (const LSNumber*) const override;
-	bool operator < (const LSString*) const override;
-	bool operator < (const LSArray<LSValue*>*) const override;
-	bool operator < (const LSArray<int>*) const override;
-	bool operator < (const LSArray<double>*) const override;
-	bool operator < (const LSFunction*) const override;
-	bool operator < (const LSObject*) const override;
-	bool operator < (const LSClass*) const override;
+	bool eq(const LSNull*) const override;
+	bool lt(const LSNull*) const override;
 
 	LSValue* at (const LSValue* value) const override;
 	LSValue** atL (const LSValue* value) override;
@@ -63,7 +40,7 @@ public:
 
 	LSValue* getClass() const override;
 
-	int typeID() const override;
+	int typeID() const override { return 1; }
 
 	virtual const BaseRawType* getRawType() const override;
 };

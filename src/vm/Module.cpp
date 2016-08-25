@@ -21,7 +21,7 @@ Module::~Module() {}
 void Module::include(SemanticAnalyser* analyser, Program* program) {
 
 	program->system_vars.insert({name, clazz});
-	SemanticVar* var = analyser->add_var(new Token(name), Type::CLASS, nullptr, nullptr);
+	analyser->add_var(new Token(name), Type::CLASS, nullptr, nullptr);
 }
 
 void Module::field(std::string name, Type type) {

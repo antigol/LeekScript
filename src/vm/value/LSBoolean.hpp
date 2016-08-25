@@ -21,7 +21,9 @@ public:
 	static LSValue* boolean_class;
 	static LSBoolean* false_val;
 	static LSBoolean* true_val;
-	static LSBoolean* get(bool);
+	static LSBoolean* get(bool value) {
+		return value ? true_val : false_val;
+	}
 
 	LSBoolean(Json& data);
 
@@ -29,39 +31,16 @@ public:
 
 	bool isTrue() const override;
 
-	LSValue* operator ! () const override;
-	LSValue* operator ~ () const override;
+	LSValue* ls_not() override;
+	LSValue* ls_tilde() override;
 
-	LSValue* operator + (const LSValue*) const override;
-	LSValue* operator + (const LSNumber*) const override;
-	LSValue* operator += (LSValue*) override;
-	LSValue* operator - (const LSValue*) const override;
-	LSValue* operator - (const LSNumber*) const override;
-	LSValue* operator -= (LSValue*) override;
-	LSValue* operator * (const LSValue*) const override;
-	LSValue* operator *= (LSValue*) override;
-	LSValue* operator / (const LSValue*) const override;
-	LSValue* operator /= (LSValue*) override;
-	LSValue* poww(const LSValue*) const override;
-	LSValue* pow_eq(LSValue*) override;
-	LSValue* operator % (const LSValue*) const override;
-	LSValue* operator %= (LSValue*) override;
+	LSVALUE_OPERATORS
 
+	LSValue* ls_add(LSNumber*) override;
+	LSValue* ls_sub(LSNumber*) override;
 
-	bool operator == (const LSValue*) const override;
-	bool operator == (const LSBoolean*) const override;
-
-	bool operator < (const LSValue*) const override;
-	bool operator < (const LSNull*) const override;
-	bool operator < (const LSBoolean*) const override;
-	bool operator < (const LSNumber*) const override;
-	bool operator < (const LSString*) const override;
-	bool operator < (const LSArray<LSValue*>*) const override;
-	bool operator < (const LSArray<int>*) const override;
-	bool operator < (const LSArray<double>*) const override;
-	bool operator < (const LSFunction*) const override;
-	bool operator < (const LSObject*) const override;
-	bool operator < (const LSClass*) const override;
+	bool eq(const LSBoolean*) const override;
+	bool lt(const LSBoolean*) const override;
 
 	LSValue* at (const LSValue* value) const override;
 	LSValue** atL (const LSValue* value) override;
@@ -76,7 +55,7 @@ public:
 
 	LSValue* getClass() const override;
 
-	int typeID() const override;
+	int typeID() const override { return 2; }
 
 	virtual const BaseRawType* getRawType() const override;
 };

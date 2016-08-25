@@ -72,7 +72,7 @@ void Test::test_operators() {
 
 	success("true < null", "false");
 	success("true < true", "false");
-	//success("true < 1", "true");
+	success("true < 1", "true");
 	success("true < 'a'", "true");
 	success("true < []", "true");
 	success("true < {}", "true");
@@ -114,7 +114,7 @@ void Test::test_operators() {
 
 	success("false >= null", "true");
 	success("false >= false", "true");
-	success("false >= 1", "false");
+	success("true >= 1", "false");
 	success("false >= 'a'", "false");
 	success("false >= []", "false");
 	success("false >= {}", "false");

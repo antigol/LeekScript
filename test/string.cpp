@@ -36,6 +36,11 @@ void Test::test_strings() {
 	success("'salut' * (1 + 2)", "'salutsalutsalut'");
 	success("('salut' * 1) + 2", "'salut2'");
 	success("('hello.world.how.are.you' / '.').size()", "5");
+	success("'test' == 'etst'", "false");
+	success("'test' == 'test'", "true");
+	success("'aaaa' < 'aaba'", "true");
+	success("'aaab' < 'aaaa'", "false");
+	success("'test' < 'test'", "false");
 
 	// Unicode
 	success("'韭'", "'韭'");
@@ -90,7 +95,8 @@ void Test::test_strings() {
 	success("String.code('ABC', 2)", "67");
 	success("(x -> x)(65).char()", "'A'");
 	success("[128040][0].char()", "'🐨'");
-	success("'hello'.map(x -> if x == ' ' then ' ' else x.code() - 'a'.code() + 1 + ' ' end)", "'8 5 12 12 15 '");
+	success("'hello'.map(x -> { let b = x == ' ' if b then ' ' else x.code() - 'a'.code() + 1 + ' ' end })", "'8 5 12 12 15 '");
+//	success("'hello'.map(x -> { if x == ' ' then ' ' else x.code() - 'a'.code() + 1 + ' ' end })", "'8 5 12 12 15 '");
 
 	success("String.number('1234567')", "1234567");
 	success("String.number('1469215478186644')", "1469215478186644");

@@ -21,7 +21,7 @@ public:
 	LSInterval();
 	virtual ~LSInterval();
 
-	virtual bool in(LSValue* key) const override;
+	virtual bool in(LSValue*) const override;
 	int atv(const int key) const;
 	virtual LSValue* at(const LSValue* key) const override;
 	virtual LSValue** atL(const LSValue* key) override;

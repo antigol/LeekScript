@@ -12,7 +12,6 @@ If::If() {
 	elze = nullptr;
 	condition = nullptr;
 	then = nullptr;
-	inversed = false;
 	type = Type::UNKNOWN;
 }
 
@@ -70,17 +69,6 @@ void If::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		then->analyse(analyser, Type::POINTER);
 	}
 
-//	if (Expression* cond_ex = dynamic_cast<Expression*>(condition)) {
-//		if (cond_ex->op->type == TokenType::DOUBLE_EQUAL) {
-//			if (Number* v2n = dynamic_cast<Number*>(cond_ex->v2)) {
-//				if (v2n->value == 0) {
-//					inversed = true;
-//					condition = cond_ex->v1;
-//				}
-//			}
-//		}
-//	}
-
 	if (req_type.nature == Nature::POINTER) {
 		type.nature = req_type.nature;
 	}
@@ -105,17 +93,9 @@ jit_value_t If::compile(Compiler& c) const {
 			VM::delete_temporary(c.F, cond);
 		}
 
-		if (inversed) {
-			jit_insn_branch_if(c.F, cond_bool, &label_else);
-		} else {
-			jit_insn_branch_if_not(c.F, cond_bool, &label_else);
-		}
+		jit_insn_branch_if_not(c.F, cond_bool, &label_else);
 	} else {
-		if (inversed) {
-			jit_insn_branch_if(c.F, cond, &label_else);
-		} else {
-			jit_insn_branch_if_not(c.F, cond, &label_else);
-		}
+		jit_insn_branch_if_not(c.F, cond, &label_else);
 	}
 
 	jit_value_t then_v = then->compile(c);

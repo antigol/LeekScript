@@ -18,7 +18,7 @@ LSValue* string_contains(LSString* haystack, LSString* needle);
 LSValue* string_endsWith(LSString* string, LSString* ending);
 int string_indexOf(LSString* haystack, LSString* needle);
 LSValue* string_length(LSString* string);
-LSValue* string_map(const LSString* string, void* fun);
+LSValue* string_map(LSString* string, void* fun);
 LSValue* string_replace(LSString* string, LSString* from, LSString* to);
 LSValue* string_reverse(LSString* string);
 LSValue* string_size(LSString* string);
@@ -136,11 +136,11 @@ LSValue* string_length(LSString* string) {
 	return r;
 }
 
-LSValue* string_map(const LSString* s, void* function) {
+LSValue* string_map(LSString* s, void* function) {
 
 	char buff[5];
-	std::string new_string = string("");
-	auto fun = (void* (*)(void*)) function;
+	LSValue* r = new LSString();
+	auto fun = (LSValue* (*)(void*)) function;
 
 	const char* string_chars = s->c_str();
 	int i = 0;
@@ -150,16 +150,13 @@ LSValue* string_map(const LSString* s, void* function) {
 		u_int32_t c = u8_nextchar(string_chars, &i);
 		u8_toutf8(buff, 5, &c, 1);
 		LSString* ch = new LSString(buff);
-		ch->refs = 1; // Why ?
-		LSString* res = (LSString*) fun(ch);
-		new_string += *res;
-		LSValue::delete_temporary(res);
+		cout << *ch << endl;
+		ch->refs = 1;
+		r->ls_add_eq(fun(ch));
 		LSValue::delete_ref(ch);
 	}
-	if (s->refs == 0) {
-		delete s;
-	}
-	return new LSString(new_string);
+	if (s->refs == 0) delete s;
+	return r;
 }
 
 LSValue* string_replace(LSString* string, LSString* from, LSString* to) {
@@ -182,11 +179,7 @@ LSValue* string_replace(LSString* string, LSString* from, LSString* to) {
 }
 
 LSValue* string_reverse(LSString* string) {
-	LSValue* r = string->operator ~();
-	if (string->refs == 0) {
-		delete string;
-	}
-	return r;
+	return string->ls_tilde();
 }
 
 LSValue* string_size(LSString* string) {
@@ -201,7 +194,7 @@ LSValue* string_split(LSString* string, LSString* delimiter) {
 	LSArray<LSValue*>* parts = new LSArray<LSValue*>();
 	if (*delimiter == "") {
 		for (char c : *string) {
-			parts->push_no_clone(new LSString(c));
+			parts->push_inc(new LSString(c));
 		}
 		if (string->refs == 0) {
 			delete string;
@@ -214,10 +207,10 @@ LSValue* string_split(LSString* string, LSString* delimiter) {
 		size_t last = 0;
 		size_t pos = 0;
 		while ((pos = string->find(*delimiter, last)) != std::wstring::npos) {
-			parts->push_no_clone(new LSString(string->substr(last, pos - last)));
+			parts->push_inc(new LSString(string->substr(last, pos - last)));
 			last = pos + delimiter->size();
 		}
-		parts->push_no_clone(new LSString(string->substr(last)));
+		parts->push_inc(new LSString(string->substr(last)));
 		if (string->refs == 0) {
 			delete string;
 		}
@@ -265,7 +258,7 @@ LSValue* string_substring(LSString* string, LSNumber* start, LSNumber* length) {
 LSValue* string_toArray(const LSString* string) {
 	LSArray<LSValue*>* parts = new LSArray<LSValue*>();
 	for (char c : *string) {
-		parts->push_no_clone(new LSString(c));
+		parts->push_inc(new LSString(c));
 	}
 	if (string->refs == 0) {
 		delete string;
@@ -293,25 +286,19 @@ LSValue* string_toUpper(LSString* s) {
 
 int string_begin_code(const LSString* v) {
 	int r = LSString::u8_char_at((char*) v->c_str(), 0);
-	if (v->refs == 0) {
-		delete v;
-	}
+	if (v->refs == 0) delete v;
 	return r;
 }
 
 int string_code(const LSString* v, int pos) {
 	int r = LSString::u8_char_at((char*) v->c_str(), pos);
-	if (v->refs == 0) {
-		delete v;
-	}
+	if (v->refs == 0) delete v;
 	return r;
 }
 
 long string_number(const LSString* s) {
 	long r = stol(*s);
-	if (s->refs == 0) {
-		delete s;
-	}
+	if (s->refs == 0) delete s;
 	return r;
 }
 

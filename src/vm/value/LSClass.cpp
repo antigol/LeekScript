@@ -111,81 +111,11 @@ bool LSClass::isTrue() const {
 	return false;
 }
 
-LSValue* LSClass::operator + (const LSValue* v) const {
-	return v->operator + (this);
-}
-LSValue* LSClass::operator += (LSValue* value) {
-	return value->operator += (this);
-}
-LSValue* LSClass::operator - (const LSValue* value) const {
-	return value->operator - (this);
-}
-LSValue* LSClass::operator -= (LSValue* value) {
-	return value->operator -= (this);
-}
-LSValue* LSClass::operator * (const LSValue* value) const {
-	return value->operator * (this);
-}
-LSValue* LSClass::operator *= (LSValue* value) {
-	return value->operator *= (this);
-}
-LSValue* LSClass::operator / (const LSValue* value) const {
-	return value->operator / (this);
-}
-LSValue* LSClass::operator /= (LSValue* value) {
-	return value->operator /= (this);
-}
-LSValue* LSClass::poww(const LSValue* value) const {
-	return value->poww(this);
-}
-LSValue* LSClass::pow_eq(LSValue* value) {
-	return value->pow_eq(this);
-}
-LSValue* LSClass::operator % (const LSValue* value) const {
-	return value->operator % (this);
-}
-LSValue* LSClass::operator %= (LSValue* value) {
-	return value->operator %= (this);
-}
-
-bool LSClass::operator == (const LSValue* v) const {
-	return v->operator == (this);
-}
-bool LSClass::operator == (const LSClass*) const {
+bool LSClass::eq(const LSClass*) const {
 	return false;
 }
 
-bool LSClass::operator < (const LSValue* v) const {
-	return v->operator < (this);
-}
-bool LSClass::operator < (const LSNull*) const {
-	return false;
-}
-bool LSClass::operator < (const LSBoolean*) const {
-	return false;
-}
-bool LSClass::operator < (const LSNumber*) const {
-	return false;
-}
-bool LSClass::operator < (const LSString*) const {
-	return false;
-}
-bool LSClass::operator < (const LSArray<LSValue*>*) const {
-	return false;
-}
-bool LSClass::operator < (const LSArray<int>*) const {
-	return false;
-}
-bool LSClass::operator < (const LSArray<double>*) const {
-	return false;
-}
-bool LSClass::operator < (const LSObject*) const {
-	return false;
-}
-bool LSClass::operator < (const LSFunction*) const {
-	return false;
-}
-bool LSClass::operator < (const LSClass*) const {
+bool LSClass::lt(const LSClass*) const {
 	return false;
 }
 
@@ -200,15 +130,18 @@ LSValue** LSClass::atL(const LSValue*) {
 }
 
 LSValue* LSClass::attr(const LSValue* key) const {
-	if (*((LSString*) key) == "class") {
-		return getClass();
+	const LSString* str = dynamic_cast<const LSString*>(key);
+	if (str) {
+		if (str->compare("class") == 0) {
+			return getClass();
+		}
+		if (str->compare("name") == 0) {
+			return new LSString(name);
+		}
+		try {
+			return static_fields.at(*str).value;
+		} catch (exception&) {}
 	}
-	if (key->operator == (new LSString("name"))) {
-		return new LSString(name);
-	}
-	try {
-		return static_fields.at(*((LSString*) key)).value;
-	} catch (exception& e) {}
 	return LSNull::get();
 }
 
@@ -231,10 +164,6 @@ string LSClass::json() const {
 
 LSValue* LSClass::getClass() const {
 	return LSClass::class_class;
-}
-
-int LSClass::typeID() const {
-	return 10;
 }
 
 const BaseRawType* LSClass::getRawType() const {

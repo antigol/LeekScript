@@ -77,7 +77,7 @@ double Program::compile(VM& vm, const std::string& ctx, const ExecMode mode) {
 	 * Debug
 	 */
 	#if DEBUG > 0
-		cout << "Program: "; program->print(cout, true);
+		cout << "Program: "; print(cout, true);
 	#endif
 
 	if (sem.errors.size()) {

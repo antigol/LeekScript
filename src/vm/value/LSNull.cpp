@@ -30,85 +30,13 @@ bool LSNull::isTrue() const {
 	return false;
 }
 
-LSValue* LSNull::operator + (const LSValue* v) const {
-	return v->operator + (this);
-}
-LSValue* LSNull::operator += (LSValue* value) {
-	return value->operator += (this);
-}
-LSValue* LSNull::operator - (const LSValue* value) const {
-	return value->operator - (this);
-}
-LSValue* LSNull::operator -= (LSValue* value) {
-	return value->operator -= (this);
-}
-LSValue* LSNull::operator * (const LSValue* value) const {
-	return value->operator * (this);
-}
-LSValue* LSNull::operator *= (LSValue* value) {
-	return value->operator *= (this);
-}
-LSValue* LSNull::operator / (const LSValue* value) const {
-	return value->operator / (this);
-}
-LSValue* LSNull::operator /= (LSValue* value) {
-	return value->operator /= (this);
-}
-LSValue* LSNull::poww(const LSValue* value) const {
-	return value->poww(this);
-}
-LSValue* LSNull::pow_eq(LSValue* value) {
-	return value->pow_eq(this);
-}
-LSValue* LSNull::operator % (const LSValue* value) const {
-	return value->operator % (this);
-}
-LSValue* LSNull::operator %= (LSValue* value) {
-	return value->operator %= (this);
-}
-
-bool LSNull::operator == (const LSValue* v) const {
-	return v->operator == (this);
-}
-bool LSNull::operator == (const LSNull*) const {
+bool LSNull::eq(const LSNull*) const {
 	return true;
 }
 
-bool LSNull::operator < (const LSValue* v) const {
-	return v->operator < (this);
-}
-bool LSNull::operator < (const LSNull*) const {
+bool LSNull::lt(const LSNull*) const {
 	return false;
 }
-bool LSNull::operator < (const LSBoolean*) const {
-	return true;
-}
-bool LSNull::operator < (const LSNumber*) const {
-	return true;
-}
-bool LSNull::operator < (const LSString*) const {
-	return true;
-}
-bool LSNull::operator < (const LSArray<LSValue*>*) const {
-	return true;
-}
-bool LSNull::operator < (const LSArray<int>*) const {
-	return true;
-}
-bool LSNull::operator < (const LSArray<double>*) const {
-	return true;
-}
-bool LSNull::operator < (const LSFunction*) const {
-	return true;
-}
-bool LSNull::operator < (const LSObject*) const {
-	return true;
-}
-bool LSNull::operator < (const LSClass*) const {
-	return true;
-}
-
-
 
 LSValue* LSNull::at(const LSValue*) const {
 	return LSNull::get();
@@ -137,10 +65,6 @@ string LSNull::json() const {
 
 LSValue* LSNull::getClass() const {
 	return LSNull::null_class;
-}
-
-int LSNull::typeID() const {
-	return 1;
 }
 
 const BaseRawType* LSNull::getRawType() const {

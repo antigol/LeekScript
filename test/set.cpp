@@ -16,4 +16,5 @@ void Test::test_set() {
 	success("let s = <1, 2> s.contains(1)", "true");
 	success("let s = <1, 2> 3 in s", "false");
 	success("let s = <1, 2> 1 in s", "true");
+	success("let s = <1, 2> s += 'a' s", "<1, 2>");
 }

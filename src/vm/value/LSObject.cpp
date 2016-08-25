@@ -52,7 +52,7 @@ void LSObject::addField(string name, LSValue* var) {
 LSArray<LSValue*>* LSObject::ls_get_keys() const {
 	LSArray<LSValue*>* keys = new LSArray<LSValue*>();
 	for (auto i = values.begin(); i != values.end(); i++) {
-		keys->push_no_clone(new LSString(i->first));
+		keys->push_inc(new LSString(i->first));
 	}
 	if (refs == 0) delete this;
 	return keys;
@@ -75,55 +75,38 @@ bool LSObject::isTrue() const {
 	return values.size() > 0;
 }
 
-LSValue* LSObject::operator + (const LSValue* v) const {
-	return v->operator + (this);
-}
-LSValue* LSObject::operator += (LSValue* value) {
-	return value->operator += (this);
-}
-LSValue* LSObject::operator - (const LSValue* value) const {
-	return value->operator - (this);
-}
-LSValue* LSObject::operator -= (LSValue* value) {
-	return value->operator -= (this);
-}
-LSValue* LSObject::operator * (const LSValue* value) const {
-	return value->operator * (this);
-}
-LSValue* LSObject::operator *= (LSValue* value) {
-	return value->operator *= (this);
-}
-LSValue* LSObject::operator / (const LSValue* value) const {
-	return value->operator / (this);
-}
-LSValue* LSObject::operator /= (LSValue* value) {
-	return value->operator / (this);
-}
-LSValue* LSObject::poww(const LSValue* value) const {
-	return value->poww(this);
-}
-LSValue* LSObject::pow_eq(LSValue* value) {
-	return value->pow_eq(this);
-}
-LSValue* LSObject::operator % (const LSValue* value) const {
-	return value->operator % (this);
-}
-LSValue* LSObject::operator %= (LSValue* value) {
-	return value->operator %= (this);
+bool LSObject::eq(const LSObject* obj) const {
+	if ((!clazz && obj->clazz) || (clazz && !obj->clazz)) return false;
+	if (clazz && *clazz != *obj->clazz) return false;
+	if (values.size() != obj->values.size()) return false;
+	auto i = values.begin();
+	auto j = obj->values.begin();
+	for (; i != values.end(); ++i, ++j) {
+		if (i->first != j->first) return false;
+		if (*i->second != *j->second) return false;
+	}
+	return true;
 }
 
-bool LSObject::operator == (const LSValue* value) const {
-	return value->operator == (this);
-}
-bool LSObject::operator == (const LSObject*) const {
-	return false;
-}
-
-bool LSObject::operator < (const LSValue* value) const {
-	return value->operator < (this);
-}
-bool LSObject::operator < (const LSObject* v) const {
-	return values.size() < v->values.size();
+bool LSObject::lt(const LSObject* obj) const {
+	if (!clazz && obj->clazz) return true;
+	if (clazz && !obj->clazz) return false;
+	if (clazz && *clazz != *obj->clazz) return *clazz < *obj->clazz;
+	auto i = values.begin();
+	auto j = obj->values.begin();
+	while (i != values.end()) {
+		if (j == obj->values.end()) return false;
+		// i < j => true
+		// j < i => false
+		int x = i->first.compare(j->first);
+		if (x < 0) return true;
+		if (x > 0) return false;
+		if (*i->second != *j->second) {
+			return *i->second < *j->second;
+		}
+		++i; ++j;
+	}
+	return (j != obj->values.end());
 }
 
 
@@ -135,9 +118,9 @@ LSValue** LSObject::atL (const LSValue*) {
 	return nullptr;
 }
 
-bool LSObject::in(LSValue* v) const {
+bool LSObject::in(LSValue* value) const {
 	for (auto i = values.begin(); i != values.end(); i++) {
-		if (i->second->operator == (v)) {
+		if (*i->second == *value) {
 			return true;
 		}
 	}
@@ -214,10 +197,6 @@ std::string LSObject::json() const {
 LSValue* LSObject::getClass() const {
 	if (clazz != nullptr) return clazz;
 	return LSObject::object_class;
-}
-
-int LSObject::typeID() const {
-	return 9;
 }
 
 const BaseRawType* LSObject::getRawType() const {

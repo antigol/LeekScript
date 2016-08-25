@@ -33,25 +33,14 @@ public:
 	 */
 	virtual bool isTrue() const override;
 
-	virtual LSValue* operator + (const LSValue*) const override;
-	virtual LSValue* operator += (LSValue*) override;
-	virtual LSValue* operator - (const LSValue*) const override;
-	virtual LSValue* operator -= (LSValue*) override;
-	virtual LSValue* operator * (const LSValue*) const override;
-	virtual LSValue* operator *= (LSValue*) override;
-	virtual LSValue* operator / (const LSValue*) const override;
-	virtual LSValue* operator /= (LSValue*) override;
-	virtual LSValue* poww(const LSValue*) const override;
-	virtual LSValue* pow_eq(LSValue*) override;
-	virtual LSValue* operator % (const LSValue*) const override;
-	virtual LSValue* operator %= (LSValue*) override;
-	virtual bool operator == (const LSValue*) const override;
-	virtual bool operator == (const LSSet<LSValue*>*) const override;
-	virtual bool operator == (const LSSet<int>*) const override;
-	virtual bool operator == (const LSSet<double>*) const override;
+	LSVALUE_OPERATORS
 
-	virtual bool operator < (const LSValue*) const override;
-//	virtual bool operator < (const LSSet<LSValue*>*) const override;
+	virtual bool eq(const LSSet<LSValue*>*) const override;
+	virtual bool eq(const LSSet<int>*) const override;
+	virtual bool eq(const LSSet<double>*) const override;
+	virtual bool lt(const LSSet<LSValue*>*) const override;
+	virtual bool lt(const LSSet<int>*) const;
+	virtual bool lt(const LSSet<double>*) const;
 
 	bool in(LSValue*) const override;
 	virtual LSValue* at(const LSValue* key) const override;
@@ -60,7 +49,7 @@ public:
 	virtual std::string json() const override;
 	virtual LSValue* clone() const override;
 	virtual LSValue* getClass() const override;
-	virtual int typeID() const override;
+	virtual int typeID() const override { return 7; }
 	virtual const BaseRawType* getRawType() const override;
 };
 

@@ -15,7 +15,7 @@ public:
 	Value* v2;
 	Operator* op;
 
-	bool ignorev2;
+	bool store_result_in_v1;
 	bool no_op;
 	int operations;
 

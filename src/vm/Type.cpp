@@ -190,10 +190,11 @@ bool Type::will_take_element(const Type& element_type) {
 
 Type Type::mix(const Type& x) const {
 
-	Type type(*this);
-	if (x.raw_type == RawType::FLOAT) type.raw_type = RawType::FLOAT;
-	if (x.nature == Nature::POINTER) type.nature = Nature::POINTER;
-	return type;
+	if (*this == x) return *this;
+	if (nature == Nature::POINTER || x.nature == Nature::POINTER) return Type::POINTER;
+	if (raw_type == RawType::FLOAT || x.raw_type == RawType::FLOAT) return Type::FLOAT;
+	if (raw_type == RawType::INTEGER || x.raw_type == RawType::INTEGER) return Type::INTEGER;
+	return x;
 }
 
 void Type::toJson(ostream& os) const {

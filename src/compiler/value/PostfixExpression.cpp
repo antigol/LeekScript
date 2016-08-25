@@ -40,8 +40,12 @@ void PostfixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type
 	}
 }
 
-extern LSValue* jit_inc(LSValue*);
-extern LSValue* jit_dec(LSValue*);
+LSValue* jit_inc(LSValue* x) {
+	return x->ls_inc();
+}
+LSValue* jit_dec(LSValue* x) {
+	return x->ls_dec();
+}
 
 jit_value_t PostfixExpression::compile(Compiler& c) const {
 

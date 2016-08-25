@@ -215,9 +215,15 @@ ArraySTD::ArraySTD() : Module("Array") {
 	});
 
 	method("pushAll", {
-		{Type::PTR_ARRAY, Type::PTR_ARRAY, {Type::PTR_ARRAY}, (void*) &LSArray<LSValue*>::ls_push_all},
-		{Type::FLOAT_ARRAY, Type::FLOAT_ARRAY, {Type::FLOAT_ARRAY}, (void*) &LSArray<double>::ls_push_all},
-		{Type::INT_ARRAY, Type::INT_ARRAY, {Type::INT_ARRAY}, (void*) &LSArray<int>::ls_push_all}
+		{Type::PTR_ARRAY, Type::PTR_ARRAY, {Type::PTR_ARRAY}, (void*) &LSArray<LSValue*>::ls_push_all_ptr},
+		{Type::PTR_ARRAY, Type::PTR_ARRAY, {Type::FLOAT_ARRAY}, (void*) &LSArray<LSValue*>::ls_push_all_flo},
+		{Type::PTR_ARRAY, Type::PTR_ARRAY, {Type::INT_ARRAY}, (void*) &LSArray<LSValue*>::ls_push_all_int},
+		{Type::FLOAT_ARRAY, Type::FLOAT_ARRAY, {Type::PTR_ARRAY}, (void*) &LSArray<double>::ls_push_all_ptr},
+		{Type::FLOAT_ARRAY, Type::FLOAT_ARRAY, {Type::FLOAT_ARRAY}, (void*) &LSArray<double>::ls_push_all_flo},
+		{Type::FLOAT_ARRAY, Type::FLOAT_ARRAY, {Type::INT_ARRAY}, (void*) &LSArray<double>::ls_push_all_int},
+		{Type::INT_ARRAY, Type::INT_ARRAY, {Type::PTR_ARRAY}, (void*) &LSArray<int>::ls_push_all_ptr},
+		{Type::INT_ARRAY, Type::INT_ARRAY, {Type::FLOAT_ARRAY}, (void*) &LSArray<int>::ls_push_all_flo},
+		{Type::INT_ARRAY, Type::INT_ARRAY, {Type::INT_ARRAY}, (void*) &LSArray<int>::ls_push_all_int},
 	});
 
 	method("join", {
@@ -390,9 +396,15 @@ ArraySTD::ArraySTD() : Module("Array") {
 	});
 
 	static_method("pushAll", {
-		{Type::PTR_ARRAY, {Type::PTR_ARRAY, Type::PTR_ARRAY}, (void*)&LSArray<LSValue*>::ls_push_all},
-		{Type::FLOAT_ARRAY, {Type::FLOAT_ARRAY, Type::FLOAT_ARRAY}, (void*)&LSArray<LSValue*>::ls_push_all},
-		{Type::INT_ARRAY, {Type::INT_ARRAY, Type::INT_ARRAY}, (void*)&LSArray<LSValue*>::ls_push_all},
+		{Type::PTR_ARRAY, {Type::PTR_ARRAY, Type::PTR_ARRAY}, (void*)&LSArray<LSValue*>::ls_push_all_ptr},
+		{Type::PTR_ARRAY, {Type::PTR_ARRAY, Type::FLOAT_ARRAY}, (void*)&LSArray<LSValue*>::ls_push_all_flo},
+		{Type::PTR_ARRAY, {Type::PTR_ARRAY, Type::INT_ARRAY}, (void*)&LSArray<LSValue*>::ls_push_all_int},
+		{Type::FLOAT_ARRAY, {Type::FLOAT_ARRAY, Type::PTR_ARRAY}, (void*)&LSArray<double>::ls_push_all_ptr},
+		{Type::FLOAT_ARRAY, {Type::FLOAT_ARRAY, Type::FLOAT_ARRAY}, (void*)&LSArray<double>::ls_push_all_flo},
+		{Type::FLOAT_ARRAY, {Type::FLOAT_ARRAY, Type::INT_ARRAY}, (void*)&LSArray<double>::ls_push_all_int},
+		{Type::INT_ARRAY, {Type::INT_ARRAY, Type::PTR_ARRAY}, (void*)&LSArray<int>::ls_push_all_ptr},
+		{Type::INT_ARRAY, {Type::INT_ARRAY, Type::FLOAT_ARRAY}, (void*)&LSArray<int>::ls_push_all_flo},
+		{Type::INT_ARRAY, {Type::INT_ARRAY, Type::INT_ARRAY}, (void*)&LSArray<int>::ls_push_all_int},
 	});
 
 	static_method("join", {

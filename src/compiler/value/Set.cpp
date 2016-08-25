@@ -59,7 +59,7 @@ LSSet<double>* Set_create_float() { return new LSSet<double>();   }
 
 void Set_insert_ptr(LSSet<LSValue*>* set, LSValue* value) {
 	auto it = set->lower_bound(value);
-	if (it == set->end() || (*it)->operator !=(value)) {
+	if (it == set->end() || (**it != *value)) {
 		set->insert(it, value->move_inc());
 	}
 	LSValue::delete_temporary(value);
