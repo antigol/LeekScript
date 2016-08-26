@@ -70,6 +70,7 @@ void ObjectAccess::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		if (mod_field.fun != nullptr) {
 			access_function = mod_field.fun;
 		}
+		field_type = mod_field.type;
 	}
 
 	// Search class attributes
@@ -136,7 +137,7 @@ jit_value_t ObjectAccess::compile(Compiler& c) const {
 		auto fun = (jit_value_t (*)(jit_function_t)) access_function;
 		jit_value_t res = fun(c.F);
 
-		if (type.nature == Nature::POINTER) {
+		if (field_type.nature != Nature::POINTER and type.nature == Nature::POINTER) {
 			return VM::value_to_pointer(c.F, res, type);
 		}
 		return res;

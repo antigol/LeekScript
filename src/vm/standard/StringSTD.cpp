@@ -150,7 +150,6 @@ LSValue* string_map(LSString* s, void* function) {
 		u_int32_t c = u8_nextchar(string_chars, &i);
 		u8_toutf8(buff, 5, &c, 1);
 		LSString* ch = new LSString(buff);
-		cout << *ch << endl;
 		ch->refs = 1;
 		r->ls_add_eq(fun(ch));
 		LSValue::delete_ref(ch);

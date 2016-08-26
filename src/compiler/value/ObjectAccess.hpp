@@ -21,6 +21,7 @@ public:
 	void* attr_addr;
 	void* access_function = nullptr;
 	LSString* field_string = nullptr;
+	Type field_type;
 
 	ObjectAccess();
 	virtual ~ObjectAccess();

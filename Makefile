@@ -8,7 +8,8 @@ SRC := $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.cpp))
 OBJ := $(patsubst %.cpp,build/%.o,$(SRC))
 OBJ_LIB := $(patsubst %.cpp,build/shared/%.o,$(SRC))
 
-FLAGS := -std=c++14 -O0 -g3 -Wall -Wextra
+#FLAGS := -std=c++14 -O3 -g3 -Wall -Wextra
+FLAGS := -std=c++14 -O0 -Wall -Wextra
 LIBS := -ljit
 
 .PHONY: test
