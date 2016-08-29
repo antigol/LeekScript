@@ -12,7 +12,7 @@
  * 1 : print types + #leaks
  * 2 : print leak details
  */
-#define DEBUG 0
+#define DEBUG 1
 
 #define LS_INTEGER jit_type_int
 #define LS_LONG jit_type_long

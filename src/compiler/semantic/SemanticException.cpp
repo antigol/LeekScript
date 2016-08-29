@@ -62,6 +62,8 @@ std::string SemanticException::type_to_string(Type type) {
 		case Type::ARRAY_ACCESS_RANGE_KEY_MUST_BE_NUMBER: return "ARRAY_ACCESS_RANGE_KEY_MUST_BE_NUMBER";
 		case Type::INVALID_MAP_KEY: return "INVALID_MAP_KEY";
 		case Type::VALUE_MUST_BE_A_LVALUE: return "VALUE_MUST_BE_A_LVALUE";
+		case Type::UNKNOWN_TYPE: return "UNKNOWN_TYPE";
+		case Type::TYPE_MISMATCH: return "TYPE_MISMATCH";
 
 		default:
 			return "UNKNOWN_ERROR";

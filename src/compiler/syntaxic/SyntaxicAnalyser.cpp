@@ -37,6 +37,7 @@
 #include "../../vm/Program.hpp"
 #include "SyntaxicalError.hpp"
 #include "../lexical/Token.hpp"
+#include "../TypeName.hpp"
 
 using namespace std;
 
@@ -258,25 +259,14 @@ VariableDeclaration* SyntaxicAnalyser::eatVariableDeclaration() {
 		eat(TokenType::LET);
 	}
 
-	vd->variables.push_back(eatIdent());
+	vd->variable = eatIdent();
 
-	while (t->type == TokenType::COMMA) {
-		eat(TokenType::COMMA);
-		vd->variables.push_back(eatIdent());
-	}
+	eat(TokenType::COLON);
 
-	if (t->type == TokenType::EQUAL) {
+	vd->typeName = eatTypeName();
 
-		eat(TokenType::EQUAL);
-
-		vd->expressions.push_back(eatExpression());
-
-		while (t->type == TokenType::COMMA && vd->expressions.size() < vd->variables.size()) {
-			eat();
-			vd->expressions.push_back(eatExpression());
-		}
-	}
-
+	eat(TokenType::EQUAL);
+	vd->expression = eatExpression();
 	return vd;
 }
 
@@ -335,8 +325,9 @@ VariableDeclaration* SyntaxicAnalyser::eatFunctionDeclaration() {
 	VariableDeclaration* vd = new VariableDeclaration();
 	vd->global = true;
 
-	vd->variables.push_back(eatIdent());
-	vd->expressions.push_back(eatFunction());
+	vd->variable = eatIdent();
+	vd->expression = eatFunction();
+	vd->typeName = nullptr;
 
 	return vd;
 }
@@ -1130,6 +1121,21 @@ Continue*SyntaxicAnalyser::eatContinue() {
 	}
 
 	return c;
+}
+
+TypeName* SyntaxicAnalyser::eatTypeName() {
+	TypeName* tn = new TypeName;
+	tn->name = eatIdent();
+	if (t->type == TokenType::LOWER) {
+		eat();
+		tn->elements.push_back(eatTypeName());
+		while (t->type == TokenType::COMMA) {
+			eat();
+			tn->elements.push_back(eatTypeName());
+		}
+		eat(TokenType::GREATER);
+	}
+	return tn;
 }
 
 ClassDeclaration* SyntaxicAnalyser::eatClassDeclaration() {

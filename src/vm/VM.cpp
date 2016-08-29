@@ -48,6 +48,10 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 
 	// Compile
 	double compile_time = program->compile(*this, ctx, mode);
+	if (compile_time < 0.0) {
+		delete program;
+		return "";
+	}
 
 	// Execute
 	VM::operations = 0;

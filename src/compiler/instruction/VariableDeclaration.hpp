@@ -8,6 +8,7 @@
 #include "../../compiler/value/Expression.hpp"
 #include "../lexical/Ident.hpp"
 #include "../../vm/VM.hpp"
+#include "../TypeName.hpp"
 
 namespace ls {
 
@@ -17,9 +18,9 @@ class VariableDeclaration : public Instruction {
 public:
 
 	bool global;
-	std::vector<Token*> variables;
-	std::vector<Value*> expressions;
-	std::map<std::string, SemanticVar*> vars;
+	Token* variable;
+	TypeName* typeName;
+	Value* expression;
 
 	VariableDeclaration();
 	virtual ~VariableDeclaration();

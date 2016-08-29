@@ -26,6 +26,7 @@ class Set;
 class Function;
 class Break;
 class Continue;
+class TypeName;
 
 class SyntaxicAnalyser {
 
@@ -63,6 +64,7 @@ public:
 	Instruction* eatWhile();
 	Break* eatBreak();
 	Continue* eatContinue();
+	TypeName* eatTypeName();
 	ClassDeclaration* eatClassDeclaration();
 	VariableDeclaration* eatVariableDeclaration();
 	Function* eatFunction();
