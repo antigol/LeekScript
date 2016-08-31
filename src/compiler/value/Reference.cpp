@@ -9,7 +9,7 @@ using namespace std;
 namespace ls {
 
 Reference::Reference() {
-	type = Type::VALUE;
+	type = Type::VAR;
 	variable = nullptr;
 	var = nullptr;
 }
@@ -17,7 +17,7 @@ Reference::Reference() {
 Reference::Reference(Token *variable)
 	: Value(), variable(variable), var(nullptr)
 {
-	type = Type::VALUE;
+	type = Type::VAR;
 }
 
 Reference::~Reference() {}
@@ -74,10 +74,10 @@ jit_value_t Reference::compile(Compiler& c) const {
 	return v;
 	*/
 
-	if (type.nature == Nature::POINTER) {
-		return LS_CREATE_POINTER(c.F, LSNull::get());
+	if (type.nature == Nature::LSVALUE) {
+		return LS_CREATE_POINTER(c.F, new LSVar());
 	} else {
-		return LS_CREATE_INTEGER(c.F, 0);
+		return LS_CREATE_I32(c.F, 0);
 	}
 }
 

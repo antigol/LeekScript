@@ -36,7 +36,7 @@ void For::print(ostream& os, int indent, bool debug) const {
 
 void For::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
-	if (req_type.raw_type == RawType::ARRAY && req_type.nature == Nature::POINTER) {
+	if (req_type.raw_type == RawType::VEC && req_type.nature == Nature::LSVALUE) {
 		type = req_type;
 	} else {
 		type = Type::VOID;
@@ -62,7 +62,11 @@ void For::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		body->analyse(analyser, Type::VOID);
 	} else {
 		body->analyse(analyser, type.getElementType());
-		type.setElementType(body->type);
+		if (type.getElementType() == Type::UNDEFINED) {
+			type.setElementType(0, body->type);
+		} else if (type.getElementType() != body->type) {
+			analyser->add_error({ SemanticException::TYPE_MISMATCH });
+		}
 	}
 	analyser->leave_loop();
 
@@ -84,8 +88,8 @@ jit_value_t For::compile(Compiler& c) const {
 	c.enter_block(); // { for init ; cond ; inc { body } }<-- this block
 
 	jit_value_t output_v = nullptr;
-	if (type.raw_type == RawType::ARRAY && type.nature == Nature::POINTER) {
-		output_v = VM::create_array(c.F, type.getElementType());
+	if (type.raw_type == RawType::VEC && type.nature == Nature::LSVALUE) {
+		output_v = VM::create_vec(c.F, type.getElementType());
 		VM::inc_refs(c.F, output_v);
 		c.add_var("{output}", output_v, type, false); // Why create variable ? in case of `break 2` the output must be deleted
 	}
@@ -107,7 +111,7 @@ jit_value_t For::compile(Compiler& c) const {
 	// Cond
 	jit_insn_label(c.F, &label_cond);
 	jit_value_t condition_v = condition->compile(c);
-	if (condition->type.nature == Nature::POINTER) {
+	if (condition->type.nature == Nature::LSVALUE) {
 		jit_value_t bool_v = VM::is_true(c.F, condition_v);
 
 		if (condition->type.must_manage_memory()) {
@@ -124,7 +128,7 @@ jit_value_t For::compile(Compiler& c) const {
 	jit_value_t body_v = body->compile(c);
 	if (output_v && body_v) {
 		// transfer the ownership of the temporary variable `body_v`
-		VM::push_move_array(c.F, type.getElementType(), output_v, body_v);
+		VM::push_move_vec(c.F, type.getElementType(), output_v, body_v);
 	}
 	c.leave_loop();
 	jit_insn_label(c.F, &label_inc);

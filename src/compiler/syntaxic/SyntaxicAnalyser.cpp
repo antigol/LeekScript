@@ -21,7 +21,7 @@
 #include "../value/Array.hpp"
 #include "../value/Map.hpp"
 #include "../value/Set.hpp"
-#include "../value/ArrayAccess.hpp"
+#include "../value/IndexAccess.hpp"
 #include "../value/Boolean.hpp"
 #include "../value/FunctionCall.hpp"
 #include "../value/Nulll.hpp"
@@ -434,10 +434,10 @@ Value* SyntaxicAnalyser::eatSimpleExpression(bool pipe_opened, bool set_opened) 
 
 			case TokenType::OPEN_BRACKET: {
 
-				ArrayAccess* aa = new ArrayAccess();
+				IndexAccess* aa = new IndexAccess();
 				eat(TokenType::OPEN_BRACKET);
 
-				aa->array = e;
+				aa->container = e;
 				aa->key = eatExpression();
 
 				if (t->type == TokenType::COLON) {
@@ -1133,7 +1133,14 @@ TypeName* SyntaxicAnalyser::eatTypeName() {
 			eat();
 			tn->elements.push_back(eatTypeName());
 		}
-		eat(TokenType::GREATER);
+
+		if (t->type == TokenType::BIT_SHIFT_RIGHT) {
+			t->type = TokenType::GREATER;
+			t->content = ">";
+			t->size = 1;
+		} else {
+			eat(TokenType::GREATER);
+		}
 	}
 	return tn;
 }

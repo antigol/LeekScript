@@ -14,6 +14,8 @@ class TypeName
 public:
 	Token* name;
 	std::vector<TypeName*> elements;
+	std::vector<TypeName*> arguments;
+	TypeName* returnType;
 
 	TypeName();
 	~TypeName();

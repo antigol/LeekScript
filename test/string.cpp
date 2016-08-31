@@ -30,9 +30,9 @@ void Test::test_strings() {
 	sem_err("'bonjour'['hello']", ls::SemanticException::Type::ARRAY_ACCESS_KEY_MUST_BE_NUMBER, "<key 1>");
 	success("~('salut' + ' ca va ?')", "'? av ac tulas'");
 	success("'bonjour'[2:5]", "'njou'");
-	sem_err("'bonjour'['a':5]", ls::SemanticException::Type::ARRAY_ACCESS_RANGE_KEY_MUST_BE_NUMBER, "<key 1>");
-	sem_err("'bonjour'[2:'b']", ls::SemanticException::Type::ARRAY_ACCESS_RANGE_KEY_MUST_BE_NUMBER, "<key 2>");
-	sem_err("'bonjour'['a':'b']", ls::SemanticException::Type::ARRAY_ACCESS_RANGE_KEY_MUST_BE_NUMBER, "<key 1>");
+	sem_err("'bonjour'['a':5]", ls::SemanticException::Type::INDEX_TYPE, "<key 1>");
+	sem_err("'bonjour'[2:'b']", ls::SemanticException::Type::INDEX_TYPE, "<key 2>");
+	sem_err("'bonjour'['a':'b']", ls::SemanticException::Type::INDEX_TYPE, "<key 1>");
 	success("'salut' * (1 + 2)", "'salutsalutsalut'");
 	success("('salut' * 1) + 2", "'salut2'");
 	success("('hello.world.how.are.you' / '.').size()", "5");

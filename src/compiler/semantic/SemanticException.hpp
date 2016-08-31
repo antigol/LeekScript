@@ -20,8 +20,8 @@ public:
 		BREAK_MUST_BE_IN_LOOP,
 		CONTINUE_MUST_BE_IN_LOOP,
 		ARRAY_ACCESS_KEY_MUST_BE_NUMBER,
-		ARRAY_ACCESS_RANGE_KEY_MUST_BE_NUMBER,
-		INVALID_MAP_KEY,
+		INDEX_TYPE,
+		CANNOT_INDEX_THIS,
 		VALUE_MUST_BE_A_LVALUE,
 		UNKNOWN_TYPE,
 		TYPE_MISMATCH
@@ -36,8 +36,7 @@ public:
 	unsigned line;
 	std::string content;
 
-	SemanticException(Type type, unsigned line);
-	SemanticException(Type type, unsigned line, const std::string& content);
+	SemanticException(Type type, unsigned line = 0, const std::string& content = "");
 	virtual ~SemanticException();
 
 	std::string message() const;

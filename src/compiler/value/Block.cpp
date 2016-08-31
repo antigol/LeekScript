@@ -1,16 +1,14 @@
 #include "Block.hpp"
 
-#include "../../vm/value/LSNull.hpp"
-#include "../../vm/value/LSNumber.hpp"
 #include "../instruction/Return.hpp"
 #include "../../vm/VM.hpp"
+#include "../../vm/LSValue.hpp"
 
 using namespace std;
 
 namespace ls {
 
 Block::Block() {
-	type = Type::NULLL;
 }
 
 Block::~Block() {
@@ -44,7 +42,7 @@ void Block::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	type = Type::VOID;
 
 	for (unsigned i = 0; i < instructions.size(); ++i) {
-		if (i < instructions.size() - 1 || req_type.nature == Nature::VOID) {
+		if (i < instructions.size() - 1 || req_type == Type::VOID) {
 			instructions[i]->analyse(analyser, Type::VOID);
 		} else {
 			instructions[i]->analyse(analyser, req_type);
@@ -59,11 +57,9 @@ void Block::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	analyser->leave_block();
 
-	if (type.nature == Nature::VOID) { // empty block or last instruction type is VOID
-		if (req_type.nature != Nature::UNKNOWN) {
-			type.nature = req_type.nature;
-		} else {
-			type = Type::NULLL;
+	if (type == Type::VOID) { // empty block or last instruction type is VOID
+		if (req_type != Type::VOID) {
+			type = Type::VAR; // we can only offer a null
 		}
 	}
 }
@@ -104,11 +100,8 @@ jit_value_t Block::compile(Compiler& c) const {
 	}
 	c.leave_block(c.F);
 
-	if (type.nature == Nature::POINTER) {
-		return VM::get_null(c.F);
-	}
-	if (type.nature == Nature::VALUE) {
-		return jit_value_create_nint_constant(c.F, VM::get_jit_type(type), 0);
+	if (type == Type::VAR) {
+		return VM::create_null(c.F);
 	}
 	return nullptr;
 }

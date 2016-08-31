@@ -1,7 +1,7 @@
 #include "Array.hpp"
 #include "../../vm/VM.hpp"
-#include "../../vm/value/LSArray.hpp"
-#include "../../vm/value/LSInterval.hpp"
+#include "../../vm/value/LSVec.hpp"
+#include "../semantic/SemanticAnalyser.hpp"
 #include <math.h>
 
 using namespace std;
@@ -9,7 +9,6 @@ using namespace std;
 namespace ls {
 
 Array::Array() {
-	type = Type::PTR_ARRAY;
 }
 
 Array::~Array() {
@@ -37,64 +36,41 @@ unsigned Array::line() const {
 	return 0;
 }
 
-void Array::analyse(SemanticAnalyser* analyser, const Type&) {
+void Array::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	constant = true;
+	type = Type::VEC;
 
-	if (interval) {
+	Type element_type = req_type.getElementType();
 
-		type = Type::INTERVAL;
+	for (size_t i = 0; i < expressions.size(); ++i) {
+		Value* ex = expressions[i];
+		ex->analyse(analyser, req_type.getElementType());
 
-	} else {
-
-		if (expressions.size() > 0) {
-
-			Type element_type = Type::UNKNOWN;
-			Type supported_type = Type::UNKNOWN;
-
-			for (size_t i = 0; i < expressions.size(); ++i) {
-
-				Value* ex = expressions[i];
-				ex->analyse(analyser, Type::UNKNOWN);
-
-				if (ex->constant == false) {
-					constant = false;
-				}
-				element_type = Type::get_compatible_type(element_type, ex->type);
-			}
-
-			// Native elements types supported : integer, double
-			if (element_type == Type::INTEGER || element_type == Type::FLOAT) {
-				supported_type = element_type;
-			}
-			// For function, we store them as pointers
-			else if (element_type.raw_type == RawType::FUNCTION) {
-				element_type.nature = Nature::POINTER;
-				supported_type = element_type;
-			} else {
-				supported_type = Type::POINTER;
-				// If there are some functions, they types will be lost, so tell them to return pointers
-				supported_type.setReturnType(Type::POINTER);
-			}
-
-			// Re-analyze expressions with the supported type
-			for (size_t i = 0; i < expressions.size(); ++i) {
-				expressions[i]->analyse(analyser, supported_type);
-			}
-
-			// Second computation of the array type
-			element_type = Type::UNKNOWN;
-			for (unsigned i = 0; i < expressions.size(); ++i) {
-				Value* ex = expressions[i];
-				element_type = Type::get_compatible_type(element_type, ex->type);
-			}
-			type.setElementType(element_type);
+		if (ex->constant == false) {
+			constant = false;
+		}
+		element_type = Type::get_compatible_type(element_type, ex->type);
+		if (element_type == Type::VOID) {
+			analyser->add_error({ SemanticException::TYPE_MISMATCH });
+			break;
 		}
 	}
+
+	// Re-analyze expressions with the supported type
+	for (size_t i = 0; i < expressions.size(); ++i) {
+		Value* ex = expressions[i];
+		ex->analyse(analyser, element_type);
+		if (ex->type != element_type) {
+			analyser->add_error({ SemanticException::TYPE_MISMATCH });
+		}
+	}
+
+	type.setElementType(0, element_type);
 }
 
 void Array::elements_will_take(SemanticAnalyser* analyser, const std::vector<Type>& arg_types, int level) {
-
+/*
 //	cout << "Array::elements_will_take " << type << " at " << pos << endl;
 
 	for (size_t i = 0; i < expressions.size(); ++i) {
@@ -120,37 +96,17 @@ void Array::elements_will_take(SemanticAnalyser* analyser, const std::vector<Typ
 	this->type.setElementType(element_type);
 
 //	cout << "Array::elements_will_take type after " << this->type << endl;
-}
-
-LSInterval* LSArray_create_interval(int a, int b) {
-	LSInterval* interval = new LSInterval();
-	interval->a = a;
-	interval->b = b;
-	return interval;
+*/
 }
 
 jit_value_t Array::compile(Compiler& c) const {
 
-	if (interval) {
-
-		jit_value_t a = expressions[0]->compile(c);
-		jit_value_t b = expressions[1]->compile(c);
-
-		jit_type_t args[2] = {LS_INTEGER, LS_INTEGER};
-		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args, 2, 0);
-		jit_value_t args_v[] = {a, b};
-
-		jit_value_t interval = jit_insn_call_native(c.F, "new", (void*) LSArray_create_interval, sig, args_v, 2, JIT_CALL_NOTHROW);
-
-		return interval;
-	}
-
-	jit_value_t array = VM::create_array(c.F, type.getElementType(), expressions.size());
+	jit_value_t array = VM::create_vec(c.F, type.getElementType(), expressions.size());
 
 	for (Value* val : expressions) {
 
 		jit_value_t v = val->compile(c);
-		VM::push_move_array(c.F, type.getElementType(), array, v);
+		VM::push_move_vec(c.F, type.getElementType(), array, v);
 	}
 
 	// size of the array + 1 operations

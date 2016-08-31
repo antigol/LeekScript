@@ -14,16 +14,16 @@
  */
 #define DEBUG 1
 
-#define LS_INTEGER jit_type_int
-#define LS_LONG jit_type_long
-#define LS_REAL jit_type_float64
-#define LS_BOOLEAN LS_INTEGER
+#define LS_I32 jit_type_int
+#define LS_I64 jit_type_long
+#define LS_F64 jit_type_float64
+#define LS_BOOLEAN LS_I32
 #define LS_POINTER jit_type_void_ptr
 
-#define LS_CREATE_INTEGER(F, X) jit_value_create_nint_constant((F), LS_INTEGER, (X))
-#define LS_CREATE_BOOLEAN(F, X) LS_CREATE_INTEGER(F, X)
-#define LS_CREATE_LONG(F, X) jit_value_create_long_constant((F), LS_LONG, (X))
-#define LS_CREATE_REAL(F, X) jit_value_create_float64_constant((F), LS_REAL, (X))
+#define LS_CREATE_I32(F, X) jit_value_create_nint_constant((F), LS_I32, (X))
+#define LS_CREATE_BOOLEAN(F, X) LS_CREATE_I32(F, X)
+#define LS_CREATE_I64(F, X) jit_value_create_long_constant((F), LS_I64, (X))
+#define LS_CREATE_F64(F, X) jit_value_create_float64_constant((F), LS_F64, (X))
 #define LS_CREATE_POINTER(F, X) jit_value_create_constant((F), new jit_constant_t { LS_POINTER, {(X)} })
 
 namespace ls {
@@ -73,10 +73,10 @@ public:
 	static void inc_ops(jit_function_t F, int add);
 	static void get_operations(jit_function_t F);
 	static void print_int(jit_function_t F, jit_value_t val);
-	static jit_value_t get_null(jit_function_t F);
-	static jit_value_t create_object(jit_function_t F);
-	static jit_value_t create_array(jit_function_t F, const Type& element_type, int cap = 0);
-	static void push_move_array(jit_function_t F, const Type& element_type, jit_value_t array, jit_value_t value);
+	static jit_value_t create_null(jit_function_t F);
+	static jit_value_t create_bool(jit_function_t F, bool value);
+	static jit_value_t create_vec(jit_function_t F, const Type& element_type, int cap = 0);
+	static void push_move_vec(jit_function_t F, const Type& element_type, jit_value_t array, jit_value_t value);
 	static jit_value_t move_obj(jit_function_t F, jit_value_t ptr);
 	static jit_value_t move_inc_obj(jit_function_t F, jit_value_t ptr);
 	static jit_value_t clone_obj(jit_function_t F, jit_value_t ptr);

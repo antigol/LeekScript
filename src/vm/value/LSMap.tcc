@@ -1,9 +1,6 @@
 #ifndef LS_MAP_TCC
 #define LS_MAP_TCC
 
-#include "LSNumber.hpp"
-#include "LSNull.hpp"
-
 #include <exception>
 
 namespace ls {
@@ -17,9 +14,6 @@ template <typename K>
 inline bool lsmap_less<K>::operator()(K lhs, K rhs) const {
 	return lhs < rhs;
 }
-
-template <typename K, typename T>
-LSValue* LSMap<K,T>::map_class(new LSClass("Map"));
 
 template <typename K, typename T>
 inline LSMap<K, T>::LSMap() {}
@@ -311,7 +305,7 @@ inline bool LSMap<K,T>::isTrue() const {
 }
 
 
-
+/*
 template <>
 inline bool LSMap<LSValue*,LSValue*>::eq(const LSMap<LSValue*,LSValue*>* value) const {
 	if (this->size() != value->size()) return false;
@@ -1275,32 +1269,34 @@ inline bool LSMap<K,T>::lt(const LSMap<int,double>* map) const {
 
 	return j != map->end();
 }
+*/
 
+/*
 template <>
 inline LSValue* LSMap<LSValue*,LSValue*>::at(const LSValue* key) const {
 
 	try {
 		return (LSValue*) ((std::map<LSValue*,LSValue*>*) this)->at((LSValue*) key)->clone();
 	} catch (std::exception&) {
-		return LSNull::get();
+		return new LSVar();
 	}
 }
 template <>
 inline LSValue* LSMap<LSValue*,int>::at(const LSValue* key) const {
 
 	try {
-		return LSNumber::get(((std::map<LSValue*,int>*) this)->at((LSValue*) key));
+		return new LSVar(((std::map<LSValue*,int>*) this)->at((LSValue*) key));
 	} catch (std::exception&) {
-		return LSNull::get();
+		return new LSVar();
 	}
 }
 template <>
 inline LSValue* LSMap<LSValue*,double>::at(const LSValue* key) const {
 
 	try {
-		return LSNumber::get(((std::map<LSValue*,double>*) this)->at((LSValue*) key));
+		return new LSVar(((std::map<LSValue*,double>*) this)->at((LSValue*) key));
 	} catch (std::exception&) {
-		return LSNull::get();
+		return new LSVar();
 	}
 }
 template <>
@@ -1309,32 +1305,32 @@ inline LSValue* LSMap<int,LSValue*>::at(const LSValue* key) const {
 		try {
 			return (LSValue*) ((std::map<int,LSValue*>*) this)->at((int) n->value)->clone();
 		} catch (std::exception&) {
-			return LSNull::get();
+			return new LSVar();
 		}
 	}
-	return LSNull::get();
+	return new LSVar();
 }
 template <>
 inline LSValue* LSMap<int,int>::at(const LSValue* key) const {
 	if (const LSNumber* n = dynamic_cast<const LSNumber*>(key)) {
 		try {
-			return LSNumber::get(((std::map<int,int>*) this)->at((int) n->value));
+			return new LSVar(((std::map<int,int>*) this)->at((int) n->value));
 		} catch (std::exception&) {
-			return LSNull::get();
+			return new LSVar();
 		}
 	}
-	return LSNull::get();
+	return new LSVar();
 }
 template <>
 inline LSValue* LSMap<int,double>::at(const LSValue* key) const {
 	if (const LSNumber* n = dynamic_cast<const LSNumber*>(key)) {
 		try {
-			return LSNumber::get(((std::map<int,double>*) this)->at((int) n->value));
+			return new LSVar(((std::map<int,double>*) this)->at((int) n->value));
 		} catch (std::exception&) {
-			return LSNull::get();
+			return new LSVar();
 		}
 	}
-	return LSNull::get();
+	return new LSVar();
 }
 
 
@@ -1361,7 +1357,7 @@ inline LSValue** LSMap<int,LSValue*>::atL(const LSValue* key) {
 	}
 	return nullptr;
 }
-
+*/
 
 template <>
 inline std::ostream& LSMap<LSValue*,LSValue*>::print(std::ostream& os) const {
@@ -1539,12 +1535,7 @@ inline LSValue* LSMap<int,double>::clone() const {
 }
 
 template <typename K, typename T>
-inline LSValue* LSMap<K,T>::getClass() const {
-	return LSMap<K,T>::map_class;
-}
-
-template <typename K, typename T>
-inline const BaseRawType* LSMap<K,T>::getRawType() const {
+inline RawType LSMap<K,T>::getRawType() const {
 	return RawType::MAP;
 }
 

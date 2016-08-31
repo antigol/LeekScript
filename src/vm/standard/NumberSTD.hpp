@@ -5,7 +5,6 @@
 #include "../../compiler/semantic/SemanticAnalyser.hpp"
 #include "../../vm/Program.hpp"
 #include "../Module.hpp"
-#include "../../vm/value/LSString.hpp"
 #include <math.h>
 
 namespace ls {

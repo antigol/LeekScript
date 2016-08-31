@@ -44,7 +44,7 @@ void VariableValue::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		type = Type::POINTER;
 	}
 
-	if (req_type.nature == Nature::POINTER) {
+	if (req_type.nature == Nature::LSVALUE) {
 		type.nature = req_type.nature;
 	}
 //	cout << "VV " << name << " : " << type << endl;
@@ -103,7 +103,7 @@ jit_value_t VariableValue::compile(Compiler& c) const {
 		v = jit_value_get_param(c.F, var->index);
 	}
 
-	if (var->type.nature != Nature::POINTER and type.nature == Nature::POINTER) {
+	if (var->type.nature != Nature::LSVALUE and type.nature == Nature::LSVALUE) {
 		return VM::value_to_pointer(c.F, v, var->type);
 	}
 	return v;

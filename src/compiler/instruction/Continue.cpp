@@ -1,6 +1,5 @@
 #include "../../compiler/instruction/Continue.hpp"
 
-#include "../../vm/value/LSNull.hpp"
 #include "../semantic/SemanticAnalyser.hpp"
 #include "../semantic/SemanticException.hpp"
 

@@ -1,8 +1,5 @@
 #include "../../compiler/instruction/ClassDeclaration.hpp"
 
-#include "../../vm/value/LSNull.hpp"
-#include "../../vm/value/LSClass.hpp"
-
 using namespace std;
 
 namespace ls {

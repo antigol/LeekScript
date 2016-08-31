@@ -1,6 +1,5 @@
-#include "../../compiler/value/String.hpp"
-
-#include "../../vm/value/LSString.hpp"
+#include "String.hpp"
+#include "../../vm/value/LSVar.hpp"
 
 using namespace std;
 
@@ -9,13 +8,9 @@ namespace ls {
 String::String(string& value, Token* token) {
 	this->value = value;
 	this->token = token;
-	type = Type::STRING;
-	constant = true;
-	ls_string = new LSString(value);
 }
 
 String::~String() {
-	delete ls_string;
 }
 
 void String::print(ostream& os, int, bool debug) const {
@@ -30,16 +25,17 @@ unsigned String::line() const {
 }
 
 void String::analyse(SemanticAnalyser*, const Type&) {
-	// Nothing to do, always a pointer
+	type = Type::VAR;
+	constant = true;
 }
 
-LSValue* String_create(LSString* s) {
-	return s->clone();
+LSValue* String_create(string* s) {
+	return new LSVar(*s);
 }
 
 jit_value_t String::compile(Compiler& c) const {
 
-	jit_value_t base = LS_CREATE_POINTER(c.F, ls_string);
+	jit_value_t base = LS_CREATE_POINTER(c.F, &value);
 
 	jit_type_t args_types[1] = {LS_POINTER};
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_types, 1, 0);

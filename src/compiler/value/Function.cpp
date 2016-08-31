@@ -1,7 +1,5 @@
-#include "../../compiler/value/Function.hpp"
-
+#include "Function.hpp"
 #include "../semantic/SemanticAnalyser.hpp"
-#include "../../vm/value/LSFunction.hpp"
 
 using namespace std;
 
@@ -207,7 +205,7 @@ jit_value_t Function::compile(Compiler& c) const {
 	// Create a function : 1 op
 	VM::inc_ops(c.F, 1);
 
-	if (type.nature == Nature::POINTER) {
+	if (type.nature == Nature::LSVALUE) {
 //		cout << "create function pointer " << endl;
 		return LS_CREATE_POINTER(c.F, new LSFunction(f));
 	} else {

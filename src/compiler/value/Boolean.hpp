@@ -1,7 +1,7 @@
 #ifndef BOOLEAN_HPP
 #define BOOLEAN_HPP
 
-#include "../../compiler/value/Value.hpp"
+#include "Value.hpp"
 
 
 namespace ls {

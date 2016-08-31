@@ -7,221 +7,97 @@
 namespace ls {
 
 enum class Nature {
-	UNKNOWN, VALUE, POINTER, VOID
-};
-
-class BaseRawType {
-public:
-	virtual ~BaseRawType() {}
-	virtual const std::string getName() const { return "?"; }
-	virtual const std::string getClass() const { return "?"; }
-	virtual const std::string getJsonName() const { return "?"; }
-};
-
-class VoidRawType : public BaseRawType {
-public:
-	virtual const std::string getName() const { return "void"; }
-	virtual const std::string getJsonName() const { return "void"; }
-};
-
-class NullRawType : public BaseRawType {
-public:
-	virtual const std::string getName() const { return "null"; }
-	virtual const std::string getClass() const { return "Null"; }
-	virtual const std::string getJsonName() const { return "null"; }
-};
-
-class BooleanRawType : public BaseRawType {
-public:
-	virtual const std::string getName() const { return "bool"; }
-	virtual const std::string getClass() const { return "Boolean"; }
-	virtual const std::string getJsonName() const { return "boolean"; }
-};
-
-class NumberRawType : public BaseRawType {
-public:
-	virtual const std::string getName() const { return "number"; }
-	virtual const std::string getClass() const { return "Number"; }
-	virtual const std::string getJsonName() const { return "number"; }
-};
-
-class IntegerRawType : public NumberRawType {
-public:
-	virtual const std::string getName() const { return "int"; }
-	virtual const std::string getClass() const { return "Number"; }
-	virtual const std::string getJsonName() const { return "number"; }
-};
-
-class LongRawType : public NumberRawType {
-public:
-	virtual const std::string getName() const { return "long"; }
-	virtual const std::string getClass() const { return "Number"; }
-	virtual const std::string getJsonName() const { return "number"; }
-};
-
-class FloatRawType : public NumberRawType {
-public:
-	virtual const std::string getName() const { return "real"; }
-	virtual const std::string getClass() const { return "Number"; }
-	virtual const std::string getJsonName() const { return "number"; }
-};
-
-class StringRawType : public BaseRawType {
-public:
-	virtual const std::string getName() const { return "string"; }
-	virtual const std::string getClass() const { return "String"; }
-	virtual const std::string getJsonName() const { return "string"; }
-};
-
-class ArrayRawType : public BaseRawType {
-public:
-	virtual const std::string getName() const { return "array"; }
-	virtual const std::string getClass() const { return "Array"; }
-	virtual const std::string getJsonName() const { return "array"; }
-};
-
-class MapRawType : public BaseRawType {
-public:
-	virtual const std::string getName() const { return "map"; }
-	virtual const std::string getClass() const { return "Map"; }
-	virtual const std::string getJsonName() const { return "map"; }
-};
-
-class SetRawType : public BaseRawType {
-public:
-	virtual const std::string getName() const { return "set"; }
-	virtual const std::string getClass() const { return "Set"; }
-	virtual const std::string getJsonName() const { return "set"; }
-};
-
-class IntervalRawType : public BaseRawType {
-public:
-	virtual const std::string getName() const { return "interval"; }
-	virtual const std::string getClass() const { return "Array"; }
-	virtual const std::string getJsonName() const { return "array"; }
-};
-
-class ObjectRawType : public BaseRawType {
-public:
-	virtual const std::string getName() const { return "object"; }
-	virtual const std::string getClass() const { return "Object"; }
-	virtual const std::string getJsonName() const { return "object"; }
-};
-
-class FunctionRawType : public BaseRawType {
-public:
-	virtual const std::string getName() const { return "function"; }
-	virtual const std::string getClass() const { return "Function"; }
-	virtual const std::string getJsonName() const { return "function"; }
-};
-
-class ClassRawType : public BaseRawType {
-public:
-	virtual const std::string getName() const { return "class"; }
-	virtual const std::string getClass() const { return "Class"; }
-	virtual const std::string getJsonName() const { return "class"; }
+	UNKNOWN, VALUE, LSVALUE, VOID
 };
 
 class RawType {
+private:
+	std::string _name;
+	std::string _classname;
+	std::string _jsonname;
+
+	RawType(const std::string& name, const std::string& classname, const std::string& jsonname);
+
 public:
-	static const BaseRawType* const UNKNOWN;
-	static const VoidRawType* const VOID;
-	static const NullRawType* const NULLL;
-	static const BooleanRawType* const BOOLEAN;
-	static const NumberRawType* const NUMBER;
-	static const IntegerRawType* const INTEGER;
-	static const LongRawType* const LONG;
-	static const FloatRawType* const FLOAT;
-	static const StringRawType* const STRING;
-	static const ArrayRawType* const ARRAY;
-	static const MapRawType* const MAP;
-	static const SetRawType* const SET;
-	static const IntervalRawType* const INTERVAL;
-	static const ObjectRawType* const OBJECT;
-	static const FunctionRawType* const FUNCTION;
-	static const ClassRawType* const CLASS;
+	const std::string getName()     const { return _name; }
+	const std::string getClass()    const { return _classname; }
+	const std::string getJsonName() const { return _jsonname; }
+
+	static const RawType UNDEFINED;
+	static const RawType UNKNOWN;
+	static const RawType VOID;
+	static const RawType VAR;
+	static const RawType BOOLEAN;
+	static const RawType I32;
+	static const RawType I64;
+	static const RawType F32;
+	static const RawType F64;
+	static const RawType VEC;
+	static const RawType MAP;
+	static const RawType SET;
+	static const RawType FUNCTION;
+	static const RawType TUPLE;
+
+	bool operator ==(const RawType& type) const;
+	inline bool operator !=(const RawType& type) const { return !(*this == type); }
 };
 
 class Type {
 public:
 
-	const BaseRawType* raw_type;
+	RawType raw_type;
 	Nature nature;
-	bool native; // A C++ object, memory management is done outside the language
 	std::string clazz;
 	std::vector<Type> element_types;
 	std::vector<Type> return_types;
 	std::vector<Type> arguments_types;
 
 	Type();
-	Type(const BaseRawType* raw_type, Nature nature, bool native = false);
-	Type(const BaseRawType* raw_type, Nature nature, const Type& elements_type, bool native = false);
-	Type(const BaseRawType* raw_type, Nature nature, const std::vector<Type>& element_types, bool native = false);
+	Type(const RawType& raw_type, Nature nature);
+	Type(const RawType& raw_type, Nature nature, const std::vector<Type>& element_types);
 
 	bool must_manage_memory() const;
 
 	Type getReturnType() const;
-	void setReturnType(Type type);
+	void setReturnType(const Type& type);
 
-	void addArgumentType(Type type);
-	void setArgumentType(size_t index, Type type);
+	void addArgumentType(const Type& type);
+	void setArgumentType(size_t index, const Type& type);
 	const Type& getArgumentType(size_t index) const;
 	const std::vector<Type>& getArgumentTypes() const;
 
 	const Type& getElementType(size_t i = 0) const;
-	void setElementType(Type);
+	void setElementType(size_t index, const Type&);
 
 	bool will_take(const std::vector<Type>& args_type);
 	bool will_take_element(const Type& arg_type);
 	Type mix(const Type& x) const;
+	bool can_be_convert_in(const Type& type) const;
 
 	void toJson(std::ostream&) const;
-
-	bool isNumber() const;
 
 	bool operator ==(const Type& type) const;
 	inline bool operator !=(const Type& type) const { return !(*this == type); }
 
-	bool compatible(const Type& type) const;
 
 	/*
 	 * Static part
 	 */
-	static const Type VOID;
-	static const Type VALUE;
-	static const Type POINTER;
-
+	static const Type UNDEFINED;
 	static const Type UNKNOWN;
-	static const Type NULLL;
+	static const Type VOID;
+
+	static const Type VAR;
 	static const Type BOOLEAN;
-	static const Type BOOLEAN_P;
-	static const Type NUMBER;
-	static const Type INTEGER;
-	static const Type INTEGER_P;
-	static const Type LONG;
-	static const Type FLOAT;
-	static const Type FLOAT_P;
-	static const Type STRING;
-	static const Type OBJECT;
-	static const Type ARRAY;
-	static const Type PTR_ARRAY;
-	static const Type INT_ARRAY;
-	static const Type FLOAT_ARRAY;
-	static const Type STRING_ARRAY;
+	static const Type I32;
+	static const Type I64;
+	static const Type F32;
+	static const Type F64;
+	static const Type VEC;
 	static const Type MAP;
-	static const Type PTR_PTR_MAP;
-	static const Type PTR_INT_MAP;
-	static const Type PTR_FLOAT_MAP;
-	static const Type INT_PTR_MAP;
-	static const Type INT_INT_MAP;
-	static const Type INT_FLOAT_MAP;
-	static const Type PTR_SET;
-	static const Type INT_SET;
-	static const Type FLOAT_SET;
-	static const Type INTERVAL;
+	static const Type SET;
 	static const Type FUNCTION;
-	static const Type FUNCTION_P;
-	static const Type CLASS;
+	static const Type TUPLE;
 
 	static bool list_compatible(const std::vector<Type>& expected, const std::vector<Type>& actual);
 	static bool list_more_specific(const std::vector<Type>& old, const std::vector<Type>& neww);

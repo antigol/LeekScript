@@ -41,7 +41,7 @@ void Set::analyse(SemanticAnalyser* analyser, const Type&) {
 			element_type = Type::POINTER;
 		}
 	} else if (element_type.nature == Nature::UNKNOWN) {
-		element_type.nature = Nature::POINTER;
+		element_type.nature = Nature::LSVALUE;
 	}
 
 	constant = true;
@@ -50,7 +50,7 @@ void Set::analyse(SemanticAnalyser* analyser, const Type&) {
 		constant = constant && ex->constant;
 	}
 
-	type = Type(RawType::SET, Nature::POINTER, element_type);
+	type = Type(RawType::SET, Nature::LSVALUE, element_type);
 }
 
 LSSet<LSValue*>* Set_create_ptr() { return new LSSet<LSValue*>(); }

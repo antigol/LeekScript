@@ -49,7 +49,7 @@ void SemanticVar::will_take_element(SemanticAnalyser* analyser, const Type& type
 void SemanticVar::must_be_pointer(SemanticAnalyser* analyser) {
 	if (value != nullptr) {
 		value->must_be_pointer(analyser);
-		this->type.nature = Nature::POINTER;
+		this->type.nature = Nature::LSVALUE;
 	}
 }
 
@@ -68,29 +68,29 @@ void SemanticAnalyser::analyse(Program* program, Context* context, std::vector<M
 
 	// Add context variables
 	for (auto var : context->vars) {
-		add_var(new Token(var.first), Type(var.second->getRawType(), Nature::POINTER), nullptr, nullptr);
+		add_var(new Token(var.first), Type(var.second->getRawType(), Nature::LSVALUE), nullptr, nullptr);
 	}
 
-	Type op_type = Type(RawType::FUNCTION, Nature::POINTER);
-	op_type.setArgumentType(0, Type::POINTER);
-	op_type.setArgumentType(1, Type::POINTER);
-	op_type.setReturnType(Type::POINTER);
-	program->system_vars.insert(pair<string, LSValue*>("+", new LSFunction((void*) &jit_add, 1, true)));
+	Type op_type = Type::FUNCTION;
+	op_type.setArgumentType(0, Type::VAR);
+	op_type.setArgumentType(1, Type::VAR);
+	op_type.setReturnType(Type::VAR);
+	program->system_vars.emplace("+", (void*) &jit_add);
 	add_var(new Token("+"), op_type, nullptr, nullptr);
-	program->system_vars.insert(pair<string, LSValue*>("-", new LSFunction((void*) &jit_sub, 1, true)));
-	add_var(new Token("-"), op_type, nullptr, nullptr);
-	program->system_vars.insert(pair<string, LSValue*>("*", new LSFunction((void*) &jit_mul, 1, true)));
-	add_var(new Token("*"), op_type, nullptr, nullptr);
-	program->system_vars.insert(pair<string, LSValue*>("×", new LSFunction((void*) &jit_mul, 1, true)));
-	add_var(new Token("×"), op_type, nullptr, nullptr);
-	program->system_vars.insert(pair<string, LSValue*>("/", new LSFunction((void*) &jit_div, 1, true)));
-	add_var(new Token("/"), op_type, nullptr, nullptr);
-	program->system_vars.insert(pair<string, LSValue*>("÷", new LSFunction((void*) &jit_div, 1, true)));
-	add_var(new Token("÷"), op_type, nullptr, nullptr);
-	program->system_vars.insert(pair<string, LSValue*>("**", new LSFunction((void*) &jit_pow, 1, true)));
-	add_var(new Token("**"), op_type, nullptr, nullptr);
-	program->system_vars.insert(pair<string, LSValue*>("%", new LSFunction((void*) &jit_mod, 1, true)));
-	add_var(new Token("%"), op_type, nullptr, nullptr);
+//	program->system_vars.insert(pair<string, LSValue*>("-", new LSFunction((void*) &jit_sub, 1, true)));
+//	add_var(new Token("-"), op_type, nullptr, nullptr);
+//	program->system_vars.insert(pair<string, LSValue*>("*", new LSFunction((void*) &jit_mul, 1, true)));
+//	add_var(new Token("*"), op_type, nullptr, nullptr);
+//	program->system_vars.insert(pair<string, LSValue*>("×", new LSFunction((void*) &jit_mul, 1, true)));
+//	add_var(new Token("×"), op_type, nullptr, nullptr);
+//	program->system_vars.insert(pair<string, LSValue*>("/", new LSFunction((void*) &jit_div, 1, true)));
+//	add_var(new Token("/"), op_type, nullptr, nullptr);
+//	program->system_vars.insert(pair<string, LSValue*>("÷", new LSFunction((void*) &jit_div, 1, true)));
+//	add_var(new Token("÷"), op_type, nullptr, nullptr);
+//	program->system_vars.insert(pair<string, LSValue*>("**", new LSFunction((void*) &jit_pow, 1, true)));
+//	add_var(new Token("**"), op_type, nullptr, nullptr);
+//	program->system_vars.insert(pair<string, LSValue*>("%", new LSFunction((void*) &jit_mod, 1, true)));
+//	add_var(new Token("%"), op_type, nullptr, nullptr);
 
 	NullSTD().include(this, program);
 	BooleanSTD().include(this, program);

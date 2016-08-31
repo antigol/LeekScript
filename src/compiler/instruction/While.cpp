@@ -2,7 +2,6 @@
 
 #include "../../compiler/value/Number.hpp"
 #include "../../vm/LSValue.hpp"
-#include "../../vm/value/LSNull.hpp"
 #include "../semantic/SemanticAnalyser.hpp"
 
 using namespace std;
@@ -29,6 +28,12 @@ void While::print(ostream& os, int indent, bool debug) const {
 void While::analyse(SemanticAnalyser* analyser, const Type&) {
 
 	condition->analyse(analyser, Type::UNKNOWN);
+	if (condition->type.nature != Nature::LSVALUE
+			&& condition->type.raw_type != RawType::BOOLEAN
+			&& condition->type.raw_type != RawType::I32
+			&& condition->type.raw_type != RawType::I64) {
+		analyser->add_error({ SemanticException::TYPE_MISMATCH });
+	}
 	analyser->enter_loop();
 	body->analyse(analyser, Type::VOID);
 	analyser->leave_loop();
@@ -44,7 +49,7 @@ jit_value_t While::compile(Compiler& c) const {
 
 	// condition
 	jit_value_t cond = condition->compile(c);
-	if (condition->type.nature == Nature::POINTER) {
+	if (condition->type.nature == Nature::LSVALUE) {
 		jit_value_t cond_bool = VM::is_true(c.F, cond);
 
 		if (condition->type.must_manage_memory()) {

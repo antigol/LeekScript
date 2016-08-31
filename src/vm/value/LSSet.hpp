@@ -14,8 +14,6 @@ struct lsset_less {
 template <typename T>
 class LSSet : public LSValue, public std::set<T, lsset_less<T>> {
 public:
-	static LSValue* set_class;
-
 	LSSet();
 	LSSet(const LSSet<T>& other);
 	virtual ~LSSet();
@@ -42,15 +40,12 @@ public:
 	virtual bool lt(const LSSet<int>*) const;
 	virtual bool lt(const LSSet<double>*) const;
 
-	bool in(LSValue*) const override;
-	virtual LSValue* at(const LSValue* key) const override;
-	virtual LSValue** atL(const LSValue* key) override;
+	bool in(LSValue*) const;
 	virtual std::ostream& print(std::ostream&) const override;
 	virtual std::string json() const override;
 	virtual LSValue* clone() const override;
-	virtual LSValue* getClass() const override;
 	virtual int typeID() const override { return 7; }
-	virtual const BaseRawType* getRawType() const override;
+	virtual RawType getRawType() const override;
 };
 
 }

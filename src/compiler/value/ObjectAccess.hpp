@@ -5,7 +5,6 @@
 
 #include "../../compiler/value/LeftValue.hpp"
 #include "../../compiler/value/Value.hpp"
-#include "../../vm/value/LSString.hpp"
 #include "../lexical/Token.hpp"
 
 namespace ls {
@@ -20,7 +19,6 @@ public:
 	bool class_attr = false;
 	void* attr_addr;
 	void* access_function = nullptr;
-	LSString* field_string = nullptr;
 	Type field_type;
 
 	ObjectAccess();

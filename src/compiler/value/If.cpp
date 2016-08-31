@@ -69,7 +69,7 @@ void If::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		then->analyse(analyser, Type::POINTER);
 	}
 
-	if (req_type.nature == Nature::POINTER) {
+	if (req_type.nature == Nature::LSVALUE) {
 		type.nature = req_type.nature;
 	}
 }
@@ -86,7 +86,7 @@ jit_value_t If::compile(Compiler& c) const {
 
 	jit_value_t cond = condition->compile(c);
 
-	if (condition->type.nature == Nature::POINTER) {
+	if (condition->type.nature == Nature::LSVALUE) {
 
 		jit_value_t cond_bool = VM::is_true(c.F, cond);
 		if (condition->type.must_manage_memory()) {
@@ -113,7 +113,7 @@ jit_value_t If::compile(Compiler& c) const {
 		}
 	} else {
 		if (type != Type::VOID) {
-			jit_insn_store(c.F, res, VM::get_null(c.F));
+			jit_insn_store(c.F, res, VM::create_null(c.F));
 		}
 	}
 

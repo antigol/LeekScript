@@ -4,10 +4,6 @@
 
 #include "../../compiler/semantic/SemanticAnalyser.hpp"
 #include "VariableValue.hpp"
-#include "../../vm/value/LSNull.hpp"
-#include "../../vm/value/LSString.hpp"
-#include "../../vm/value/LSFunction.hpp"
-#include "../../vm/value/LSClass.hpp"
 #include "../../vm/Program.hpp"
 #include "../../vm/Module.hpp"
 
@@ -137,7 +133,7 @@ jit_value_t ObjectAccess::compile(Compiler& c) const {
 		auto fun = (jit_value_t (*)(jit_function_t)) access_function;
 		jit_value_t res = fun(c.F);
 
-		if (field_type.nature != Nature::POINTER and type.nature == Nature::POINTER) {
+		if (field_type.nature != Nature::LSVALUE and type.nature == Nature::LSVALUE) {
 			return VM::value_to_pointer(c.F, res, type);
 		}
 		return res;

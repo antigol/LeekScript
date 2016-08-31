@@ -26,7 +26,7 @@ LSNumber* number_abs(LSNumber* x) {
 		x->value = r;
 		return x;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 LSNumber* number_acos(LSNumber* x) {
@@ -35,7 +35,7 @@ LSNumber* number_acos(LSNumber* x) {
 		x->value = r;
 		return x;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 LSNumber* number_asin(LSNumber* x) {
@@ -44,7 +44,7 @@ LSNumber* number_asin(LSNumber* x) {
 		x->value = r;
 		return x;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 LSNumber* number_atan(LSNumber* x) {
@@ -53,7 +53,7 @@ LSNumber* number_atan(LSNumber* x) {
 		x->value = r;
 		return x;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 LSNumber* number_atan2(LSNumber* x, LSNumber* y) {
@@ -63,7 +63,7 @@ LSNumber* number_atan2(LSNumber* x, LSNumber* y) {
 		y->value = r;
 		return y;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 LSNumber* number_cbrt(LSNumber* x) {
@@ -72,7 +72,7 @@ LSNumber* number_cbrt(LSNumber* x) {
 		x->value = r;
 		return x;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 LSNumber* number_ceil(LSNumber* x) {
@@ -81,7 +81,7 @@ LSNumber* number_ceil(LSNumber* x) {
 		x->value = r;
 		return x;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 LSNumber* number_cos(LSNumber* x) {
@@ -90,7 +90,7 @@ LSNumber* number_cos(LSNumber* x) {
 		x->value = r;
 		return x;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 LSNumber* number_exp(LSNumber* x) {
@@ -99,7 +99,7 @@ LSNumber* number_exp(LSNumber* x) {
 		x->value = r;
 		return x;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 LSNumber* number_floor(LSNumber* x) {
@@ -108,7 +108,7 @@ LSNumber* number_floor(LSNumber* x) {
 		x->value = r;
 		return x;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 LSNumber* number_hypot(LSNumber* x, LSNumber* y) {
@@ -118,7 +118,7 @@ LSNumber* number_hypot(LSNumber* x, LSNumber* y) {
 		y->value = r;
 		return y;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 LSNumber* number_log(LSNumber* x) {
@@ -127,7 +127,7 @@ LSNumber* number_log(LSNumber* x) {
 		x->value = r;
 		return x;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 LSNumber* number_log10(LSNumber* x) {
@@ -136,7 +136,7 @@ LSNumber* number_log10(LSNumber* x) {
 		x->value = r;
 		return x;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 LSNumber* number_max(LSNumber* x, LSNumber* y) {
@@ -166,7 +166,7 @@ LSNumber* number_pow(LSNumber* x, LSNumber* y) {
 		y->value = r;
 		return y;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 double number_rand() {
@@ -180,7 +180,7 @@ LSNumber* number_randFloat(LSNumber* min, LSNumber* max) {
 		max->value = r;
 		return max;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 int number_randInt(int min, int max) {
@@ -193,7 +193,7 @@ LSNumber* number_round(LSNumber* x) {
 		x->value = r;
 		return x;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 LSNumber* number_signum(LSNumber* x) {
@@ -204,7 +204,7 @@ LSNumber* number_signum(LSNumber* x) {
 		x->value = r;
 		return x;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 LSNumber* number_sin(LSNumber* x) {
@@ -213,7 +213,7 @@ LSNumber* number_sin(LSNumber* x) {
 		x->value = r;
 		return x;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 LSNumber* number_sqrt(LSNumber* x) {
@@ -222,7 +222,7 @@ LSNumber* number_sqrt(LSNumber* x) {
 		x->value = r;
 		return x;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 LSNumber* number_tan(LSNumber* x) {
@@ -231,7 +231,7 @@ LSNumber* number_tan(LSNumber* x) {
 		x->value = r;
 		return x;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 LSNumber* number_toDegrees(LSNumber* x) {
@@ -240,7 +240,7 @@ LSNumber* number_toDegrees(LSNumber* x) {
 		x->value = r;
 		return x;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 LSNumber* number_toRadians(LSNumber* x) {
@@ -249,7 +249,7 @@ LSNumber* number_toRadians(LSNumber* x) {
 		x->value = r;
 		return x;
 	}
-	return LSNumber::get(r);
+	return new LSVar(r);
 }
 
 bool number_isInteger(LSNumber* x) {

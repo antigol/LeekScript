@@ -1,8 +1,7 @@
-#include "../../compiler/value/Number.hpp"
-
+#include "Number.hpp"
 #include "../../vm/VM.hpp"
-#include <limits.h>
-#include "../../vm/value/LSNumber.hpp"
+#include <climits>
+#include <cassert>
 
 using namespace std;
 
@@ -11,7 +10,6 @@ namespace ls {
 Number::Number(double value, Token* token) {
 	this->value = value;
 	this->token = token;
-	constant = true;
 }
 
 Number::~Number() {
@@ -30,32 +28,41 @@ unsigned Number::line() const {
 
 void Number::analyse(SemanticAnalyser*, const Type& req_type) {
 
-	if (value != (int) value or req_type.raw_type == RawType::FLOAT) {
-		type = Type::FLOAT;
-	} else {
-		type = Type::INTEGER;
-	}
+	constant = true;
 
-	if (req_type.nature != Nature::UNKNOWN) {
-		type.nature = req_type.nature;
+	if (req_type == Type::VAR) {
+		type = Type::VAR;
+	} else if (req_type == Type::F32 || req_type == Type::F64 || req_type == Type::I32 || req_type == Type::I64) {
+		type = req_type;
+	} else {
+		if (value != (int) value) {
+			type = Type::F64;
+		} else {
+			type = Type::I32;
+		}
 	}
 }
 
 jit_value_t Number::compile(Compiler& c) const {
 
-	if (type.nature == Nature::POINTER) {
-
-		jit_value_t val = LS_CREATE_REAL(c.F, value);
-		return VM::value_to_pointer(c.F, val, Type::FLOAT);
-
-	} else {
-
-		if (type.raw_type == RawType::FLOAT) {
-			return LS_CREATE_REAL(c.F, value);
-		} else {
-			return LS_CREATE_INTEGER(c.F, value);
-		}
+	if (type == Type::VAR) {
+		jit_value_t val = LS_CREATE_F64(c.F, value);
+		return VM::value_to_pointer(c.F, val, Type::F64);
 	}
+	if (type == Type::F64) {
+		return LS_CREATE_F64(c.F, value);
+	}
+	if (type == Type::I32) {
+		return LS_CREATE_I32(c.F, value);
+	}
+	if (type == Type::I64) {
+		return LS_CREATE_I64(c.F, value);
+	}
+	assert(0);
+	return nullptr;
 }
 
 }
+
+
+// TODO : convertion done here (useful for i64)

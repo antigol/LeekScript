@@ -1,7 +1,6 @@
 #include "../../compiler/instruction/VariableDeclaration.hpp"
 
 #include "../../vm/LSValue.hpp"
-#include "../../vm/value/LSNull.hpp"
 #include "../semantic/SemanticAnalyser.hpp"
 #include "../semantic/SemanticException.hpp"
 #include "../value/Reference.hpp"
@@ -39,6 +38,8 @@ void VariableDeclaration::analyse(SemanticAnalyser* analyser, const Type&) {
 		expression->analyse(analyser, Type::UNKNOWN);
 		type = expression->type;
 	}
+
+	analyser->add_var(variable, type, expression, this);
 }
 
 jit_value_t VariableDeclaration::compile(Compiler& c) const {

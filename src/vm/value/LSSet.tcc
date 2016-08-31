@@ -2,9 +2,7 @@
 #define LS_SET_TCC
 
 #include "LSSet.hpp"
-#include "LSClass.hpp"
-#include "LSNumber.hpp"
-#include "LSNull.hpp"
+#include "LSVar.hpp"
 
 namespace ls {
 
@@ -17,9 +15,6 @@ template <typename T>
 inline bool lsset_less<T>::operator()(T lhs, T rhs) const {
 	return lhs < rhs;
 }
-
-template <typename T>
-LSValue* LSSet<T>::set_class(new LSClass("Set"));
 
 template <>
 inline LSSet<LSValue*>::LSSet() {}
@@ -120,6 +115,7 @@ bool LSSet<T>::isTrue() const {
 	return !this->empty();
 }
 
+/*
 template <>
 inline bool LSSet<LSValue*>::eq(const LSSet<LSValue*>* other) const {
 	if (size() != other->size()) return false;
@@ -259,6 +255,7 @@ template <typename T>
 inline bool LSSet<T>::lt(const LSSet<double>* v) const {
 	return std::lexicographical_compare(this->begin(), this->end(), v->begin(), v->end());
 }
+*/
 
 template <>
 inline bool LSSet<LSValue*>::in(LSValue* value) const {
@@ -266,20 +263,11 @@ inline bool LSSet<LSValue*>::in(LSValue* value) const {
 }
 template <typename T>
 inline bool LSSet<T>::in(LSValue* value) const {
-	if (LSNumber* number = dynamic_cast<LSNumber*>(value)) {
-		return this->count(number->value);
+	if (LSVar* var = dynamic_cast<LSVar*>(value)) {
+		if (var->type == LSVar::REAL)
+			return this->count(var->data.real);
 	}
 	return false;
-}
-
-template <typename T>
-LSValue* LSSet<T>::at(const LSValue* ) const {
-	return LSNull::get();
-}
-
-template <typename T>
-LSValue** LSSet<T>::atL(const LSValue* ) {
-	return nullptr;
 }
 
 template <>
@@ -330,12 +318,7 @@ inline LSValue* LSSet<T>::clone() const {
 }
 
 template <typename T>
-LSValue*LSSet<T>::getClass() const {
-	return LSSet<T>::set_class;
-}
-
-template <typename T>
-const BaseRawType*LSSet<T>::getRawType() const {
+RawType LSSet<T>::getRawType() const {
 	return RawType::SET;
 }
 

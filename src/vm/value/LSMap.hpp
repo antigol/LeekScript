@@ -48,14 +48,13 @@ public:
 	virtual bool lt(const LSMap<int,int>*) const override;
 	virtual bool lt(const LSMap<int,double>*) const override;
 
-	virtual LSValue* at(const LSValue* key) const override;
-	virtual LSValue** atL(const LSValue* key) override;
+	//virtual LSValue* at(const LSValue* key) const;
+	//virtual LSValue** atL(const LSValue* key);
 	virtual std::ostream& print(std::ostream&) const override;
 	virtual std::string json() const override;
 	virtual LSValue* clone() const override;
-	virtual LSValue* getClass() const override;
 	virtual int typeID() const override { return 6; }
-	virtual const BaseRawType* getRawType() const override;
+	virtual RawType getRawType() const override;
 };
 
 }

@@ -4,7 +4,7 @@
 #include "../../compiler/value/LeftValue.hpp"
 #include "../../compiler/value/VariableValue.hpp"
 #include "../../vm/value/LSNumber.hpp"
-#include "../../vm/value/LSArray.hpp"
+#include "../../vm/value/LSVec.hpp"
 #include "../../vm/value/LSObject.hpp"
 
 using namespace std;
@@ -112,10 +112,10 @@ jit_value_t PrefixExpression::compile(Compiler& c) const {
 		case TokenType::PLUS_PLUS: {
 			if (expression->type.nature == Nature::VALUE) {
 				jit_value_t x = expression->compile(c);
-				jit_value_t y = LS_CREATE_INTEGER(c.F, 1);
+				jit_value_t y = LS_CREATE_I32(c.F, 1);
 				jit_value_t sum = jit_insn_add(c.F, x, y);
 				jit_insn_store(c.F, x, sum);
-				if (type.nature == Nature::POINTER) {
+				if (type.nature == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, sum, type);
 				}
 				return sum;
@@ -128,10 +128,10 @@ jit_value_t PrefixExpression::compile(Compiler& c) const {
 		case TokenType::MINUS_MINUS: {
 			if (expression->type.nature == Nature::VALUE) {
 				jit_value_t x = expression->compile(c);
-				jit_value_t y = LS_CREATE_INTEGER(c.F, 1);
+				jit_value_t y = LS_CREATE_I32(c.F, 1);
 				jit_value_t sum = jit_insn_sub(c.F, x, y);
 				jit_insn_store(c.F, x, sum);
-				if (type.nature == Nature::POINTER) {
+				if (type.nature == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, sum, type);
 				}
 				return sum;
@@ -145,7 +145,7 @@ jit_value_t PrefixExpression::compile(Compiler& c) const {
 			if (expression->type.nature == Nature::VALUE) {
 				jit_value_t x = expression->compile(c);
 				jit_value_t r = jit_insn_to_not_bool(c.F, x);
-				if (type.nature == Nature::POINTER) {
+				if (type.nature == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, r, Type::BOOLEAN);
 				}
 				return r;
@@ -159,7 +159,7 @@ jit_value_t PrefixExpression::compile(Compiler& c) const {
 			if (expression->type.nature == Nature::VALUE) {
 				jit_value_t x = expression->compile(c);
 				jit_value_t r = jit_insn_neg(c.F, x);
-				if (type.nature == Nature::POINTER) {
+				if (type.nature == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, r, type);
 				}
 				return r;
@@ -173,7 +173,7 @@ jit_value_t PrefixExpression::compile(Compiler& c) const {
 			if (expression->type.nature == Nature::VALUE) {
 				jit_value_t x = expression->compile(c);
 				jit_value_t r = jit_insn_not(c.F, x);
-				if (type.nature == Nature::POINTER) {
+				if (type.nature == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, r, type);
 				}
 				return r;
@@ -188,15 +188,15 @@ jit_value_t PrefixExpression::compile(Compiler& c) const {
 			if (VariableValue* vv = dynamic_cast<VariableValue*>(expression)) {
 
 				if (vv->name == "Number") {
-					jit_value_t n = LS_CREATE_INTEGER(c.F, 0);
-					if (type.nature == Nature::POINTER) {
+					jit_value_t n = LS_CREATE_I32(c.F, 0);
+					if (type.nature == Nature::LSVALUE) {
 						return VM::value_to_pointer(c.F, n, Type::INTEGER);
 					}
 					return n;
 				}
 				if (vv->name == "Boolean") {
-					jit_value_t n = LS_CREATE_INTEGER(c.F, 0);
-					if (type.nature == Nature::POINTER) {
+					jit_value_t n = LS_CREATE_I32(c.F, 0);
+					if (type.nature == Nature::LSVALUE) {
 						return VM::value_to_pointer(c.F, n, Type::BOOLEAN);
 					}
 					return n;
@@ -205,7 +205,7 @@ jit_value_t PrefixExpression::compile(Compiler& c) const {
 					return LS_CREATE_POINTER(c.F, new LSString(""));
 				}
 				if (vv->name == "Array") {
-					return LS_CREATE_POINTER(c.F, new LSArray<LSValue*>());
+					return LS_CREATE_POINTER(c.F, new LSVec<LSValue*>());
 				}
 				if (vv->name == "Object") {
 					return LS_CREATE_POINTER(c.F, new LSObject());
@@ -217,21 +217,21 @@ jit_value_t PrefixExpression::compile(Compiler& c) const {
 					if (vv->name == "Number") {
 						if (fc->arguments.size() > 0) {
 							jit_value_t n = fc->arguments[0]->compile(c);
-							if (type.nature == Nature::POINTER) {
+							if (type.nature == Nature::LSVALUE) {
 								return VM::value_to_pointer(c.F, n, Type::INTEGER);
 							}
 							return n;
 						} else {
-							jit_value_t n = LS_CREATE_INTEGER(c.F, 0);
-							if (type.nature == Nature::POINTER) {
+							jit_value_t n = LS_CREATE_I32(c.F, 0);
+							if (type.nature == Nature::LSVALUE) {
 								return VM::value_to_pointer(c.F, n, Type::INTEGER);
 							}
 							return n;
 						}
 					}
 					if (vv->name == "Boolean") {
-						jit_value_t n = LS_CREATE_INTEGER(c.F, 0);
-						if (type.nature == Nature::POINTER) {
+						jit_value_t n = LS_CREATE_I32(c.F, 0);
+						if (type.nature == Nature::LSVALUE) {
 							return VM::value_to_pointer(c.F, n, Type::BOOLEAN);
 						}
 						return n;
@@ -243,7 +243,7 @@ jit_value_t PrefixExpression::compile(Compiler& c) const {
 						return LS_CREATE_POINTER(c.F, new LSString(""));
 					}
 					if (vv->name == "Array") {
-						return LS_CREATE_POINTER(c.F, new LSArray<LSValue*>());
+						return LS_CREATE_POINTER(c.F, new LSVec<LSValue*>());
 					}
 					if (vv->name == "Object") {
 						return LS_CREATE_POINTER(c.F, new LSObject());

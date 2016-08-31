@@ -3,9 +3,8 @@
 
 #include <string>
 
-#include "../../compiler/value/Value.hpp"
+#include "Value.hpp"
 #include "../lexical/Token.hpp"
-#include "../../vm/value/LSString.hpp"
 
 namespace ls {
 
@@ -14,7 +13,6 @@ public:
 
 	std::string value;
 	Token* token;
-	LSString* ls_string;
 
 	String(std::string& value, Token* token);
 	virtual ~String();

@@ -1,5 +1,6 @@
 #include <sstream>
 #include <chrono>
+#include <cassert>
 
 #include "VM.hpp"
 
@@ -8,10 +9,9 @@
 #include "Context.hpp"
 #include "../compiler/semantic/SemanticAnalyser.hpp"
 #include "../compiler/semantic/SemanticException.hpp"
-#include "value/LSNumber.hpp"
-#include "value/LSArray.hpp"
+#include "LSValue.hpp"
+#include "value/LSVec.hpp"
 #include "Program.hpp"
-#include "value/LSObject.hpp"
 
 using namespace std;
 
@@ -50,7 +50,7 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 	double compile_time = program->compile(*this, ctx, mode);
 	if (compile_time < 0.0) {
 		delete program;
-		return "";
+		return "{}";
 	}
 
 	// Execute
@@ -81,7 +81,7 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 	/*
 		for (auto g : globals) {
 			if (globals_ref[g.first]) continue;
-			LSValue* v = res_array->operator[] (i + 1);
+			LSValue* v = res_vec->operator[] (i + 1);
 			ctx += "\"" + g.first + "\":" + v->to_json();
 			if (i < globals.size() - 1) ctx += ",";
 			i++;
@@ -102,10 +102,10 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 
 	} else if (mode == ExecMode::FILE_JSON) {
 
-		LSArray<LSValue*>* res_array = (LSArray<LSValue*>*) res;
+		LSVec<LSValue*>* res_vec = (LSVec<LSValue*>*) res;
 
 		ostringstream oss;
-		res_array->operator[] (0)->print(oss);
+		res_vec->operator[] (0)->print(oss);
 		result = oss.str();
 
 		LSValue::delete_temporary(res);
@@ -165,71 +165,66 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 }
 
 jit_type_t VM::get_jit_type(const Type& type) {
-	if (type.nature == Nature::POINTER) {
+	if (type.nature == Nature::LSVALUE || type.raw_type == RawType::FUNCTION) {
 		return LS_POINTER;
 	}
-	if (type.raw_type == RawType::INTEGER) {
-		return LS_INTEGER;
+	if (type.raw_type == RawType::I32) {
+		return LS_I32;
 	}
 	if (type.raw_type == RawType::BOOLEAN) {
 		return LS_BOOLEAN;
 	}
-	if (type.raw_type == RawType::LONG or type.raw_type == RawType::FUNCTION) {
-		return LS_LONG;
+	if (type.raw_type == RawType::I64) {
+		return LS_I64;
 	}
-	if (type.raw_type == RawType::FLOAT) {
-		return LS_REAL;
+	if (type.raw_type == RawType::F64) {
+		return LS_F64;
 	}
-	return LS_INTEGER;
+	assert(0);
+	return LS_I32;
 }
 
-LSValue* create_null_object(int) {
-	return LSNull::get();
+LSValue* VM_convert_i32(int32_t n) {
+	return new LSVar(n);
 }
-LSValue* create_number_object_int(int n) {
-	return LSNumber::get(n);
+LSValue* VM_convert_i64(int64_t n) {
+	return new LSVar(n);
 }
-LSValue* create_number_object_long(long n) {
-	return LSNumber::get(n);
+LSValue* VM_convert_bool(int32_t n) {
+	return new LSVar((bool) n);
 }
-LSValue* create_bool_object(bool n) {
-	return LSBoolean::get(n);
+LSValue* VM_convert_f32(float n) {
+	return new LSVar(n);
 }
-LSValue* create_func_object(void* f) {
-	return new LSFunction(f);
-}
-LSValue* create_float_object(double n) {
-	return LSNumber::get(n);
+LSValue* VM_convert_f64(double n) {
+	return new LSVar(n);
 }
 
 void* get_conv_fun(Type type) {
-	if (type.raw_type == RawType::NULLL) {
-		return (void*) &create_null_object;
+	if (type.raw_type == RawType::I32) {
+		return (void*) &VM_convert_i32;
 	}
-	if (type.raw_type == RawType::INTEGER) {
-		return (void*) &create_number_object_int;
+	if (type.raw_type == RawType::I64) {
+		return (void*) &VM_convert_i64;
 	}
-	if (type.raw_type == RawType::LONG) {
-		return (void*) &create_number_object_long;
+	if (type.raw_type == RawType::F32) {
+		return (void*) &VM_convert_f32;
 	}
-	if (type.raw_type == RawType::FLOAT) {
-		return (void*) &create_float_object;
+	if (type.raw_type == RawType::F64) {
+		return (void*) &VM_convert_f64;
 	}
 	if (type.raw_type == RawType::BOOLEAN) {
-		return (void*) &create_bool_object;
+		return (void*) &VM_convert_bool;
 	}
-	if (type.raw_type == RawType::FUNCTION) {
-		return (void*) &create_func_object;
-	}
-	return (void*) &create_number_object_int;
+	assert(0);
+	return nullptr;
 }
 
 jit_value_t VM::value_to_pointer(jit_function_t F, jit_value_t v, Type type) {
 
 	void* fun = get_conv_fun(type);
 
-	bool floatt = jit_type_get_kind(jit_value_get_type(v)) == JIT_TYPE_FLOAT64;
-	if (floatt) {
+	if (jit_type_get_kind(jit_value_get_type(v)) == JIT_TYPE_FLOAT64) {
 		fun = (void*) &create_float_object;
 	}
 
@@ -247,10 +242,10 @@ jit_value_t VM::pointer_to_value(jit_function_t F, jit_value_t v, Type type) {
 
 	if (type == Type::BOOLEAN) {
 		jit_type_t args_types[1] = {LS_POINTER};
-		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_INTEGER, args_types, 1, 0);
+		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_I32, args_types, 1, 0);
 		return jit_insn_call_native(F, "convert", (void*) VM_boolean_to_value, sig, &v, 1, JIT_CALL_NOTHROW);
 	}
-	return LS_CREATE_INTEGER(F, 0);
+	return LS_CREATE_I32(F, 0);
 }
 
 /*
@@ -362,82 +357,111 @@ void VM_print_int(int val) {
 }
 
 void VM::print_int(jit_function_t F, jit_value_t val) {
-	jit_type_t args[1] = {LS_INTEGER};
+	jit_type_t args[1] = {LS_I32};
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_void, args, 1, 0);
 	jit_insn_call_native(F, "print_int", (void*) VM_print_int, sig, &val, 1, JIT_CALL_NOTHROW);
 }
 
-jit_value_t VM::get_null(jit_function_t F) {
-	return LS_CREATE_POINTER(F, LSNull::get());
+LSValue* VM_create_null() {
+	return new LSVar();
 }
 
-LSObject* VM_create_object() {
-	return new LSObject();
+jit_value_t VM::create_null(jit_function_t F) {
+	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, {}, 0, 0);
+	return jit_insn_call_native(F, "create_null", (void*) VM_create_null, sig, {}, 0, JIT_CALL_NOTHROW);
 }
 
-jit_value_t VM::create_object(jit_function_t F) {
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_void_ptr, {}, 0, 0);
-	return jit_insn_call_native(F, "create_object", (void*) VM_create_object, sig, {}, 0, JIT_CALL_NOTHROW);
+LSValue* VM_create_bool(int value) {
+	return new LSVar((bool) value);
 }
 
-LSArray<LSValue*>* VM_create_array_ptr(int cap) {
-	LSArray<LSValue*>* array = new LSArray<LSValue*>();
-	array->reserve(cap);
-	return array;
-}
-
-LSArray<int>* VM_create_array_int(int cap) {
-	LSArray<int>* array = new LSArray<int>();
-	array->reserve(cap);
-	return array;
-}
-
-LSArray<double>* VM_create_array_float(int cap) {
-	LSArray<double>* array = new LSArray<double>();
-	array->reserve(cap);
-	return array;
-}
-
-jit_value_t VM::create_array(jit_function_t F, const Type& element_type, int cap) {
-	jit_type_t args[1] = {LS_INTEGER};
+jit_value_t VM::create_bool(jit_function_t F, bool value)
+{
+	jit_type_t args[1] = { LS_BOOLEAN };
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args, 1, 0);
-	jit_value_t s = LS_CREATE_INTEGER(F, cap);
+	jit_value_t s = LS_CREATE_BOOLEAN(F, value);
 
-	if (element_type == Type::INTEGER) {
-		return jit_insn_call_native(F, "create_array", (void*) VM_create_array_int, sig, &s, 1, JIT_CALL_NOTHROW);
+	return jit_insn_call_native(F, "create_bool", (void*) VM_create_bool, sig, &s, 1, JIT_CALL_NOTHROW);
+}
+
+LSVec<void*>* VM_create_vec_voidptr(int cap) {
+	LSVec<void*>* vec = new LSVec<void*>();
+	vec->reserve(cap);
+	return vec;
+}
+
+LSVec<LSValue*>* VM_create_vec_lsptr(int cap) {
+	LSVec<LSValue*>* vec = new LSVec<LSValue*>();
+	vec->reserve(cap);
+	return vec;
+}
+
+LSVec<int>* VM_create_vec_i32(int cap) {
+	LSVec<int>* vec = new LSVec<int32_t>();
+	vec->reserve(cap);
+	return vec;
+}
+
+LSVec<double>* VM_create_vec_f64(int cap) {
+	LSVec<double>* vec = new LSVec<double>();
+	vec->reserve(cap);
+	return vec;
+}
+
+jit_value_t VM::create_vec(jit_function_t F, const Type& element_type, int cap) {
+	jit_type_t args[1] = {LS_I32};
+	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args, 1, 0);
+	jit_value_t s = LS_CREATE_I32(F, cap);
+
+	if (element_type == Type::I32) {
+		return jit_insn_call_native(F, "create_vec", (void*) VM_create_vec_i32, sig, &s, 1, JIT_CALL_NOTHROW);
 	}
-	if (element_type == Type::FLOAT) {
-		return jit_insn_call_native(F, "create_array", (void*) VM_create_array_float, sig, &s, 1, JIT_CALL_NOTHROW);
+	if (element_type == Type::F64) {
+		return jit_insn_call_native(F, "create_vec", (void*) VM_create_vec_f64, sig, &s, 1, JIT_CALL_NOTHROW);
 	}
-	return jit_insn_call_native(F, "create_array", (void*) VM_create_array_ptr, sig, &s, 1, JIT_CALL_NOTHROW);
+	if (element_type.nature == Nature::LSVALUE) {
+		return jit_insn_call_native(F, "create_vec", (void*) VM_create_vec_lsptr, sig, &s, 1, JIT_CALL_NOTHROW);
+	}
+	if (element_type.raw_type == RawType::FUNCTION) {
+		return jit_insn_call_native(F, "create_vec", (void*) VM_create_vec_voidptr, sig, &s, 1, JIT_CALL_NOTHROW);
+	}
 }
 
-void VM_push_array_ptr(LSArray<LSValue*>* array, LSValue* value) {
-	array->push_move(value);
+void VM_push_vec_voidptr(LSVec<void*>* vec, void* value) {
+	vec->push_move(value);
 }
 
-void VM_push_array_int(LSArray<int>* array, int value) {
-	array->push_back(value);
+void VM_push_vec_lsptr(LSVec<LSValue*>* vec, LSValue* value) {
+	vec->push_move(value);
 }
 
-void VM_push_array_float(LSArray<double>* array, double value) {
-	array->push_back(value);
+void VM_push_vec_i32(LSVec<int32_t>* vec, int32_t value) {
+	vec->push_back(value);
 }
 
-void VM::push_move_array(jit_function_t F, const Type& element_type, jit_value_t array, jit_value_t value) {
+void VM_push_vec_f64(LSVec<double>* vec, double value) {
+	vec->push_back(value);
+}
+
+void VM::push_move_vec(jit_function_t F, const Type& element_type, jit_value_t vec, jit_value_t value) {
 	/* Because of the move, there is no need to call delete_temporary on the pushed value.
-	 * If value points to a temporary variable his ownership will be transfer to the array.
+	 * If value points to a temporary variable his ownership will be transfer to the vec.
 	 */
 	jit_type_t args[2] = {LS_POINTER, get_jit_type(element_type)};
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_void, args, 2, 0);
-	jit_value_t args_v[] = {array, value};
+	jit_value_t args_v[] = {vec, value};
 
-	if (element_type == Type::INTEGER) {
-		jit_insn_call_native(F, "push_array", (void*) VM_push_array_int, sig, args_v, 2, JIT_CALL_NOTHROW);
-	} else if (element_type == Type::FLOAT) {
-		jit_insn_call_native(F, "push_array", (void*) VM_push_array_float, sig, args_v, 2, JIT_CALL_NOTHROW);
-	} else {
-		jit_insn_call_native(F, "push_array", (void*) VM_push_array_ptr, sig, args_v, 2, JIT_CALL_NOTHROW);
+	if (element_type == Type::I32) {
+		jit_insn_call_native(F, "push_vec", (void*) VM_push_vec_i32, sig, args_v, 2, JIT_CALL_NOTHROW);
+	}
+	if (element_type == Type::F64) {
+		jit_insn_call_native(F, "push_vec", (void*) VM_push_vec_f64, sig, args_v, 2, JIT_CALL_NOTHROW);
+	}
+	if (element_type.nature == Nature::LSVALUE) {
+		jit_insn_call_native(F, "push_vec", (void*) VM_push_vec_lsptr, sig, args_v, 2, JIT_CALL_NOTHROW);
+	}
+	if (element_type.raw_type == RawType::FUNCTION) {
+		jit_insn_call_native(F, "push_vec", (void*) VM_push_vec_voidptr, sig, args_v, 2, JIT_CALL_NOTHROW);
 	}
 }
 

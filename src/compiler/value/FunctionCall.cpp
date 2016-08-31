@@ -10,7 +10,7 @@
 #include "../../vm/Module.hpp"
 #include "../../vm/Program.hpp"
 #include "../../vm/Type.hpp"
-#include "../../vm/value/LSArray.hpp"
+#include "../../vm/value/LSVec.hpp"
 #include "../../vm/value/LSClass.hpp"
 #include "../../vm/value/LSNumber.hpp"
 #include "../../vm/value/LSObject.hpp"
@@ -343,10 +343,10 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 }
 
 LSValue* create_float_object_3(double n) {
-	return LSNumber::get(n);
+	return new LSVar(n);
 }
 LSValue* create_int_object_3(int n) {
-	return LSNumber::get(n);
+	return new LSVar(n);
 }
 
 jit_value_t FunctionCall::compile(Compiler& c) const {
@@ -359,15 +359,15 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 	VariableValue* vv = dynamic_cast<VariableValue*>(function);
 	if (vv != nullptr) {
 		if (vv->name == "Boolean") {
-			jit_value_t n = jit_value_create_nint_constant(c.F, LS_INTEGER, 0);
-			if (type.nature == Nature::POINTER) {
+			jit_value_t n = jit_value_create_nint_constant(c.F, LS_I32, 0);
+			if (type.nature == Nature::LSVALUE) {
 				return VM::value_to_pointer(c.F, n, Type::BOOLEAN);
 			}
 			return n;
 		}
 		if (vv->name == "Number") {
-			jit_value_t n = LS_CREATE_INTEGER(c.F, 0);
-			if (type.nature == Nature::POINTER) {
+			jit_value_t n = LS_CREATE_I32(c.F, 0);
+			if (type.nature == Nature::LSVALUE) {
 				return VM::value_to_pointer(c.F, n, Type::INTEGER);
 			}
 			return n;
@@ -379,7 +379,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 			return LS_CREATE_POINTER(c.F, new LSString(""));
 		}
 		if (vv->name == "Array") {
-			return LS_CREATE_POINTER(c.F, new LSArray<LSValue*>());
+			return LS_CREATE_POINTER(c.F, new LSVec<LSValue*>());
 		}
 		if (vv->name == "Object") {
 			return LS_CREATE_POINTER(c.F, new LSObject());
@@ -429,7 +429,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 		}
 
 		if (res != nullptr) {
-			if (type.nature == Nature::POINTER) {
+			if (type.nature == Nature::LSVALUE) {
 				return VM::value_to_pointer(c.F, res, type);
 			}
 			return res;
@@ -481,7 +481,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 		}
 
 		if (res != nullptr) {
-			if (type.nature == Nature::POINTER) {
+			if (type.nature == Nature::LSVALUE) {
 				return VM::value_to_pointer(c.F, res, type);
 			}
 			return res;
@@ -509,7 +509,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 
 		jit_value_t res = jit_insn_call_native(c.F, "std_func", (void*) std_func, sig, args.data(), arg_count, JIT_CALL_NOTHROW);
 
-		if (return_type.nature == Nature::VALUE and type.nature == Nature::POINTER) {
+		if (return_type.nature == Nature::VALUE and type.nature == Nature::LSVALUE) {
 			return VM::value_to_pointer(c.F, res, type);
 		}
 		return res;
@@ -535,7 +535,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 
 		jit_value_t res = jit_insn_call_native(c.F, "std_func", (void*) std_func, sig, args.data(), arg_count, JIT_CALL_NOTHROW);
 
-		if (return_type.nature == Nature::VALUE and type.nature == Nature::POINTER) {
+		if (return_type.nature == Nature::VALUE and type.nature == Nature::LSVALUE) {
 			return VM::value_to_pointer(c.F, res, type);
 		}
 		return res;
@@ -569,7 +569,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 				jit_value_t v1 = arguments[1]->compile(c);
 				jit_value_t ret = jit_func(c.F, v0, v1);
 
-				if (type.nature == Nature::POINTER) {
+				if (type.nature == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, ret, type);
 				}
 				return ret;
@@ -582,7 +582,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 	 */
 	vector<jit_value_t> fun;
 
-	if (function->type.nature == Nature::POINTER) {
+	if (function->type.nature == Nature::LSVALUE) {
 		jit_value_t fun_addr = function->compile(c);
 		fun.push_back(jit_insn_load_relative(c.F, fun_addr, 16, LS_POINTER));
 	} else {
@@ -623,7 +623,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 	// Custom function call : 1 op
 	VM::inc_ops(c.F, 1);
 
-	if (return_type.nature != Nature::POINTER and type.nature == Nature::POINTER) {
+	if (return_type.nature != Nature::LSVALUE and type.nature == Nature::LSVALUE) {
 		return VM::value_to_pointer(c.F, ret, type);
 	}
 

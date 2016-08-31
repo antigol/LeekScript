@@ -6,16 +6,15 @@
 
 namespace ls {
 
-class ArrayAccess : public LeftValue {
+class IndexAccess : public LeftValue {
 public:
 
-	Value* array;
+	Value* container;
 	Value* key;
 	Value* key2;
-	Type array_element_type;
 
-	ArrayAccess();
-	virtual ~ArrayAccess();
+	IndexAccess();
+	virtual ~IndexAccess();
 
 	virtual void print(std::ostream&, int indent, bool debug) const override;
 	virtual unsigned line() const override;

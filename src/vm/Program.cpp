@@ -1,7 +1,7 @@
 #include "Program.hpp"
 #include "Context.hpp"
 #include "value/LSNull.hpp"
-#include "value/LSArray.hpp"
+#include "value/LSVec.hpp"
 #include <chrono>
 #include "../compiler/lexical/LexicalAnalyser.hpp"
 #include "../compiler/syntaxic/SyntaxicAnalyser.hpp"
@@ -127,7 +127,7 @@ void Program::compile_main(Context& context) {
 	// catch (ex) {
 	jit_value_t ex = jit_insn_start_catcher(F);
 	VM::print_int(F, ex);
-	jit_insn_return(F, LS_CREATE_POINTER(F, LSNull::get()));
+	jit_insn_return(F, LS_CREATE_POINTER(F, new LSVar()));
 
 	jit_function_compile(F);
 	jit_context_build_end(jit_context);
@@ -145,15 +145,15 @@ LSValue* Program::execute() {
 	}
 	if (output_type == Type::INTEGER) {
 		auto fun = (int (*)()) closure;
-		return LSNumber::get((double) fun());
+		return new LSVar((double) fun());
 	}
 	if (output_type == Type::FLOAT) {
 		auto fun = (double (*)()) closure;
-		return LSNumber::get(fun());
+		return new LSVar(fun());
 	}
 	if (output_type == Type::LONG) {
 		auto fun = (long (*)()) closure;
-		return LSNumber::get(fun());
+		return new LSVar(fun());
 	}
 	if (output_type.raw_type == RawType::FUNCTION and output_type.nature == Nature::VALUE) {
 		auto fun = (void* (*)()) closure;
@@ -175,22 +175,22 @@ std::ostream& operator << (std::ostream& os, const Program* program) {
 
 extern map<string, jit_value_t> internals;
 
-LSArray<LSValue*>* Program_create_array() {
-	return new LSArray<LSValue*>();
+LSVec<LSValue*>* Program_create_array() {
+	return new LSVec<LSValue*>();
 }
-void Program_push_null(LSArray<LSValue*>* array, int) {
-	array->push_clone(LSNull::get());
+void Program_push_null(LSVec<LSValue*>* array, int) {
+	array->push_clone(new LSVar());
 }
-void Program_push_boolean(LSArray<LSValue*>* array, int value) {
+void Program_push_boolean(LSVec<LSValue*>* array, int value) {
 	array->push_clone(LSBoolean::get(value));
 }
-void Program_push_integer(LSArray<LSValue*>* array, int value) {
-	array->push_clone(LSNumber::get(value));
+void Program_push_integer(LSVec<LSValue*>* array, int value) {
+	array->push_clone(new LSVar(value));
 }
-void Program_push_function(LSArray<LSValue*>* array, void* value) {
+void Program_push_function(LSVec<LSValue*>* array, void* value) {
 	array->push_clone(new LSFunction(value));
 }
-void Program_push_pointer(LSArray<LSValue*>* array, LSValue* value) {
+void Program_push_pointer(LSVec<LSValue*>* array, LSValue* value) {
 	array->push_clone(value);
 }
 
@@ -217,7 +217,7 @@ void Program::compile_jit(Compiler& c, Context& context, bool toplevel) {
 			jit_value_t jit_val = LS_CREATE_POINTER(c.F, value);
 			jit_insn_store(c.F, jit_var, jit_val);
 
-			c.add_var(name, jit_var, Type(value->getRawType(), Nature::POINTER), false);
+			c.add_var(name, jit_var, Type(value->getRawType(), Nature::LSVALUE), false);
 
 			value->refs++;
 		}

@@ -21,7 +21,7 @@ public:
 
 	Function* main;
 	std::vector<Function*> functions;
-	std::map<std::string, LSValue*> system_vars;
+	std::map<std::string, void*> system_vars;
 
 
 	Program(const std::string& code);

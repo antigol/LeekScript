@@ -6,7 +6,7 @@
 
 #include "StringSTD.hpp"
 #include "../value/LSNumber.hpp"
-#include "../value/LSArray.hpp"
+#include "../value/LSVec.hpp"
 
 
 using namespace std;
@@ -182,7 +182,7 @@ LSValue* string_reverse(LSString* string) {
 }
 
 LSValue* string_size(LSString* string) {
-	LSValue* r = LSNumber::get(string->unicode_length());
+	LSValue* r = new LSVar(string->unicode_length());
 	if (string->refs == 0) {
 		delete string;
 	}
@@ -190,7 +190,7 @@ LSValue* string_size(LSString* string) {
 }
 
 LSValue* string_split(LSString* string, LSString* delimiter) {
-	LSArray<LSValue*>* parts = new LSArray<LSValue*>();
+	LSVec<LSValue*>* parts = new LSVec<LSValue*>();
 	if (*delimiter == "") {
 		for (char c : *string) {
 			parts->push_inc(new LSString(c));
@@ -255,7 +255,7 @@ LSValue* string_substring(LSString* string, LSNumber* start, LSNumber* length) {
 }
 
 LSValue* string_toArray(const LSString* string) {
-	LSArray<LSValue*>* parts = new LSArray<LSValue*>();
+	LSVec<LSValue*>* parts = new LSVec<LSValue*>();
 	for (char c : *string) {
 		parts->push_inc(new LSString(c));
 	}

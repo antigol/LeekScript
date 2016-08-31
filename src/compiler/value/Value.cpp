@@ -19,10 +19,10 @@ bool Value::will_take_element(SemanticAnalyser*, const Type arg_type) {
 }
 
 bool Value::must_be_pointer(SemanticAnalyser*) {
-	if (type.nature == Nature::POINTER) {
+	if (type.nature == Nature::LSVALUE) {
 		return false;
 	}
-	type.nature = Nature::POINTER;
+	type.nature = Nature::LSVALUE;
 	return true;
 }
 

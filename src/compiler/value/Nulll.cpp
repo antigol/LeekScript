@@ -29,7 +29,7 @@ void Nulll::analyse(SemanticAnalyser*, const Type&) {
 }
 
 jit_value_t Nulll::compile(Compiler& c) const {
-	return VM::get_null(c.F);
+	return VM::create_null(c.F);
 }
 
 }

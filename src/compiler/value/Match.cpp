@@ -56,17 +56,17 @@ void Match::analyse(ls::SemanticAnalyser* analyser, const Type&) {
 	bool has_default = false;
 
 	value->analyse(analyser, Type::UNKNOWN);
-	if (value->type.nature == Nature::POINTER) any_pointer = true;
+	if (value->type.nature == Nature::LSVALUE) any_pointer = true;
 
 	for (auto& ps : pattern_list) {
 		for (Pattern& p : ps) {
 			if (p.begin) {
 				p.begin->analyse(analyser, Type::UNKNOWN);
-				if (p.begin->type.nature == Nature::POINTER) any_pointer = true;
+				if (p.begin->type.nature == Nature::LSVALUE) any_pointer = true;
 			}
 			if (p.end) {
 				p.end->analyse(analyser, Type::UNKNOWN);
-				if (p.end->type.nature == Nature::POINTER) any_pointer = true;
+				if (p.end->type.nature == Nature::LSVALUE) any_pointer = true;
 			}
 			has_default = has_default || p.is_default();
 		}
@@ -175,7 +175,7 @@ jit_value_t Match::compile(Compiler& c) const {
 	}
 	// In the case of no default pattern
 
-	jit_insn_store(c.F, res, VM::get_null(c.F));
+	jit_insn_store(c.F, res, VM::create_null(c.F));
 
 	jit_insn_label(c.F, &label_end);
 	if (value->type.must_manage_memory()) {

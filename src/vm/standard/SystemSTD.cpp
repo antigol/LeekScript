@@ -75,22 +75,22 @@ jit_value_t System_operations(jit_function_t F) {
 }
 
 jit_value_t System_time(jit_function_t F) {
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_LONG, {}, 0, 0);
+	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_I64, {}, 0, 0);
 	return jit_insn_call_native(F, "sec_time", (void*) get_sec_time, sig, {}, 0, JIT_CALL_NOTHROW);
 }
 
 jit_value_t System_millitime(jit_function_t F) {
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_LONG, {}, 0, 0);
+	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_I64, {}, 0, 0);
 	return jit_insn_call_native(F, "milli_time", (void*) get_milli_time, sig, {}, 0, JIT_CALL_NOTHROW);
 }
 
 jit_value_t System_microtime(jit_function_t F) {
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_LONG, {}, 0, 0);
+	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_I64, {}, 0, 0);
 	return jit_insn_call_native(F, "micro_time", (void*) get_micro_time, sig, {}, 0, JIT_CALL_NOTHROW);
 }
 
 jit_value_t System_nanotime(jit_function_t F) {
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_LONG, {}, 0, 0);
+	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_I64, {}, 0, 0);
 	return jit_insn_call_native(F, "nano_time", (void*) get_nano_time, sig, {}, 0, JIT_CALL_NOTHROW);
 }
 
