@@ -76,11 +76,6 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	for (size_t i = 0; i < arguments.size(); ++i) {
 		arguments[i]->analyse(analyser, function->type.getArgumentType(i));
-		if (arguments[i]->type != function->type.getArgumentType(i)) {
-			std::ostringstream oss;
-			arguments[i]->print(oss);
-			analyser->add_error({ SemanticException::TYPE_MISMATCH, arguments[i]->line(), oss.str() });
-		}
 	}
 
 	if (req_type != Type::UNKNOWN && function->type.getReturnType().can_be_convert_in(req_type)) {

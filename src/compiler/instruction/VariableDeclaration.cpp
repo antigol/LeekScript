@@ -11,6 +11,7 @@ namespace ls {
 
 VariableDeclaration::VariableDeclaration() {
 	global = false;
+	typeName = nullptr;
 }
 
 VariableDeclaration::~VariableDeclaration() {

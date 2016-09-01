@@ -38,8 +38,15 @@ unsigned Array::line() const {
 
 void Array::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
+
 	constant = true;
 	type = Type::VEC;
+
+	if (req_type != Type::UNKNOWN && req_type.raw_type != RawType::VEC) {
+		std::ostringstream oss;
+		print(oss, 0, false);
+		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
+	}
 
 	Type element_type = req_type.getElementType();
 
@@ -52,7 +59,9 @@ void Array::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		}
 		element_type = Type::get_compatible_type(element_type, ex->type);
 		if (element_type == Type::VOID) {
-			analyser->add_error({ SemanticException::TYPE_MISMATCH });
+			std::ostringstream oss;
+			expressions[i]->print(oss);
+			analyser->add_error({ SemanticException::TYPE_MISMATCH, expressions[i]->line(), oss.str() });
 			break;
 		}
 	}
@@ -67,6 +76,7 @@ void Array::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	}
 
 	type.setElementType(0, element_type);
+
 }
 
 jit_value_t Array::compile(Compiler& c) const {

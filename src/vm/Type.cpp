@@ -310,11 +310,10 @@ string Type::get_nature_symbol(const Nature& nature) {
 ostream& operator << (ostream& os, const Type& type) {
 
 	if (type == Type::VOID) {
-		os << "{void}";
-		return os;
+		return os << "{void}";
 	}
 	if (type == Type::UNREACHABLE) {
-		return os;
+		return os << "{unr}";
 	}
 
 	os << "{" << type.raw_type.getName() << Type::get_nature_symbol(type.nature);

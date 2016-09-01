@@ -260,9 +260,10 @@ VariableDeclaration* SyntaxicAnalyser::eatVariableDeclaration() {
 
 	vd->variable = eatIdent();
 
-	eat(TokenType::COLON);
-
-	vd->typeName = eatTypeName();
+	if (t->type == TokenType::COLON) {
+		eat();
+		vd->typeName = eatTypeName();
+	}
 
 	eat(TokenType::EQUAL);
 	vd->expression = eatExpression();
