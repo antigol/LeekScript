@@ -50,7 +50,7 @@ void Function::print(std::ostream& os, int indent, bool debug) const {
 //			os << "@";
 //		}
 		os << arguments[i]->content;
-		if (i < typeNames.size()) {
+		if (i < typeNames.size() && typeNames[i]) {
 			os << ": ";
 			typeNames[i]->print(os);
 		}
@@ -86,7 +86,7 @@ void Function::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	type = Type::FUNCTION;
 
 	for (size_t i = 0; i < arguments.size(); ++i) {
-		if (i < typeNames.size()) {
+		if (i < typeNames.size() && typeNames[i]) {
 			type.setArgumentType(i, typeNames[i]->getInternalType(analyser));
 		} else if (i < req_type.arguments_types.size()) {
 			type.setArgumentType(i, req_type.arguments_types[i]);
@@ -132,10 +132,8 @@ void Function::analyse_body(SemanticAnalyser* analyser, const Type& req_type) {
 		if (any_void && !all_void) {
 			analyser->add_error({ SemanticException::TYPE_MISMATCH, body->line() });
 		}
-	}
-
-	if (req_type != Type::UNKNOWN && type.getReturnType() != req_type) {
-		analyser->add_error({ SemanticException::TYPE_MISMATCH });
+	} else {
+		type.setReturnType(body->type);
 	}
 
 //	vars = analyser->get_local_vars();

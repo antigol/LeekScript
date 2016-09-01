@@ -42,14 +42,14 @@ unsigned If::line() const {
 void If::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	condition->analyse(analyser, Type::UNKNOWN);
-	then->analyse(analyser, req_type);
 
-	if (elze != nullptr) {
+	if (elze) {
+		then->analyse(analyser, req_type);
 		elze->analyse(analyser, req_type);
 
-		if (then->type == Type::VOID) { // then contains return instruction
+		if (then->type == Type::UNREACHABLE) { // then contains return instruction
 			type = elze->type;
-		} else if (elze->type == Type::VOID) { // elze contains return instruction
+		} else if (elze->type == Type::UNREACHABLE) { // elze contains return instruction
 			type = then->type;
 		} else {
 			type = Type::get_compatible_type(then->type, elze->type);
@@ -61,14 +61,19 @@ void If::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 			elze->analyse(analyser, type);
 		}
 	} else {
-		type = then->type;
+		then->analyse(analyser, Type::VOID);
+		type = Type::VOID;
+
+		if (req_type != Type::UNKNOWN && req_type != Type::VOID) {
+			analyser->add_error({ SemanticException::TYPE_MISMATCH, then->line() });
+		}
 	}
 }
 
 jit_value_t If::compile(Compiler& c) const {
 
 	jit_value_t res = nullptr;
-	if (type.nature != Nature::VOID) {
+	if (type != Type::VOID) {
 		res = jit_value_create(c.F, VM::get_jit_type(type));
 	}
 
@@ -96,14 +101,10 @@ jit_value_t If::compile(Compiler& c) const {
 
 	jit_insn_label(c.F, &label_else);
 
-	if (elze != nullptr) {
+	if (elze) {
 		jit_value_t else_v = elze->compile(c);
 		if (else_v) {
 			jit_insn_store(c.F, res, else_v);
-		}
-	} else {
-		if (type != Type::VOID) {
-			jit_insn_store(c.F, res, VM::create_null(c.F));
 		}
 	}
 

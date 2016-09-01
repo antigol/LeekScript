@@ -21,8 +21,11 @@ VariableDeclaration::~VariableDeclaration() {
 void VariableDeclaration::print(ostream& os, int indent, bool debug) const {
 
 	os << (global ? "global " : "let ");
-	os << variable->content << " : ";
-	typeName->print(os);
+	os << variable->content;
+	if (typeName) {
+		os << " : ";
+		typeName->print(os);
+	}
 	os << " = ";
 	expression->print(os, indent, debug);
 }

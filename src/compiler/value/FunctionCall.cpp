@@ -63,7 +63,7 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	function->analyse(analyser, Type::UNKNOWN);
 
-	if (function->type != Type::FUNCTION) {
+	if (function->type.raw_type != RawType::FUNCTION) {
 		std::ostringstream oss;
 		function->print(oss);
 		analyser->add_error({ SemanticException::CANNOT_CALL_VALUE, function->line(), oss.str() });
