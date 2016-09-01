@@ -127,7 +127,7 @@ bool CP_greater_equal(LSValue* x, LSValue* y) {
 jit_value_t Compiler::compile_ge(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2)
 {
 	if (t1.is_primitive_number() && t2.is_primitive_number()) return jit_insn_ge(F, v1, v2);
-	if (t1.nature == Nature::LSVALUE && t2.nature == Nature::LSVALUE) {
+	if (t1.raw_type.nature() == Nature::LSVALUE && t2.raw_type.nature() == Nature::LSVALUE) {
 		jit_type_t args_types[2] = { LS_POINTER, LS_POINTER };
 		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_sys_bool, args_types, 2, 0);
 		jit_value_t args[2] = { v1, v2 };
@@ -139,7 +139,7 @@ jit_value_t Compiler::compile_ge(jit_function_t F, jit_value_t v1, const Type& t
 jit_value_t Compiler::compile_lt(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2)
 {
 	if (t1.is_primitive_number() && t2.is_primitive_number()) return jit_insn_lt(F, v1, v2);
-	if (t1.nature == Nature::LSVALUE && t2.nature == Nature::LSVALUE) {
+	if (t1.raw_type.nature() == Nature::LSVALUE && t2.raw_type.nature() == Nature::LSVALUE) {
 		jit_type_t args_types[2] = { LS_POINTER, LS_POINTER };
 		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_sys_bool, args_types, 2, 0);
 		jit_value_t args[2] = { v1, v2 };
@@ -151,7 +151,7 @@ jit_value_t Compiler::compile_lt(jit_function_t F, jit_value_t v1, const Type& t
 jit_value_t Compiler::compile_eq(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2)
 {
 	if (t1.is_primitive_number() && t2.is_primitive_number()) return jit_insn_eq(F, v1, v2);
-	if (t1.nature == Nature::LSVALUE && t2.nature == Nature::LSVALUE) {
+	if (t1.raw_type.nature() == Nature::LSVALUE && t2.raw_type.nature() == Nature::LSVALUE) {
 		jit_type_t args_types[2] = { LS_POINTER, LS_POINTER };
 		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_sys_bool, args_types, 2, 0);
 		jit_value_t args[2] = { v1, v2 };

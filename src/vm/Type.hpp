@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <iostream>
+#include <jit/jit.h>
 
 namespace ls {
 
@@ -13,15 +14,21 @@ enum class Nature {
 class RawType {
 private:
 	std::string _name;
-	std::string _classname;
-	std::string _jsonname;
+	std::string _clazz;
+	std::string _json_name;
+	size_t _bytes;
+	jit_type_t _jit_type;
+	Nature _nature;
 
-	RawType(const std::string& name, const std::string& classname, const std::string& jsonname);
+	RawType(const std::string& name, const std::string& classname, const std::string& jsonname, size_t bytes, jit_type_t jit_type, Nature nature);
 
 public:
-	const std::string getName()     const { return _name; }
-	const std::string getClass()    const { return _classname; }
-	const std::string getJsonName() const { return _jsonname; }
+	const std::string name()      const { return _name; }
+	const std::string clazz()     const { return _clazz; }
+	const std::string json_name() const { return _json_name; }
+	size_t bytes()                const { return _bytes; }
+	jit_type_t jit_type()         const { return _jit_type; }
+	Nature nature()               const { return _nature; }
 
 	static const RawType UNKNOWN;
 	static const RawType VOID;
@@ -46,15 +53,14 @@ class Type {
 public:
 
 	RawType raw_type;
-	Nature nature;
 	std::string clazz;
 	std::vector<Type> element_types;
 	std::vector<Type> return_types;
 	std::vector<Type> arguments_types;
 
 	Type();
-	Type(const RawType& raw_type, Nature nature);
-	Type(const RawType& raw_type, Nature nature, const std::vector<Type>& element_types);
+	Type(const RawType& raw_type);
+	Type(const RawType& raw_type, const std::vector<Type>& element_types);
 
 	bool must_manage_memory() const;
 
@@ -66,7 +72,7 @@ public:
 	const Type& getArgumentType(size_t index) const;
 	const std::vector<Type>& getArgumentTypes() const;
 
-	const Type& getElementType(size_t i = 0) const;
+	const Type& getElementType(size_t i) const;
 	void setElementType(size_t index, const Type&);
 
 	Type mix(const Type& x) const;
@@ -86,15 +92,15 @@ public:
 	static const Type VOID; // for part of code that returns nothing
 	static const Type UNREACHABLE; // for part of code that can't be reached
 
-	static const Type VAR;
+	static const Type VAR; // LSVALUE
 	static const Type BOOLEAN;
 	static const Type I32;
 	static const Type I64;
 	static const Type F32;
 	static const Type F64;
-	static const Type VEC;
-	static const Type MAP;
-	static const Type SET;
+	static const Type VEC; // LSVALUE
+	static const Type MAP; // LSVALUE
+	static const Type SET; // LSVALUE
 	static const Type FUNCTION;
 	static const Type TUPLE;
 

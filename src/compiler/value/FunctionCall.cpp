@@ -260,8 +260,8 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 					if (arg.raw_type == RawType::FUNCTION) {
 						for (unsigned int j = 0; j < arg.getArgumentTypes().size(); ++j) {
 							if (arg.getArgumentType(j) == Type::PTR_ARRAY_ELEMENT) {
-								cout << "set arg " << j << " : " << object_type.getElementType() << endl;
-								arg.setArgumentType(j, object_type.getElementType());
+								cout << "set arg " << j << " : " << object_type.getElementType(0) << endl;
+								arg.setArgumentType(j, object_type.getElementType(0));
 								function->type.setArgumentType(i, arg);
 							}
 						}
@@ -282,7 +282,7 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 			for (Value* arg : arguments) {
 				arg->analyse(analyser, Type::UNKNOWN);
 				effectiveType = arg->type;
-				if (arg->type.nature != Nature::VALUE) {
+				if (arg->type.raw_type.nature() != Nature::VALUE) {
 					isByValue = false;
 				}
 			}
@@ -322,7 +322,7 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		}
 	} else {
 		Type ret_type = function->type.getReturnType();
-		if (ret_type.nature != Nature::UNKNOWN) {
+		if (ret_type.raw_type.nature() != Nature::UNKNOWN) {
 			type = ret_type;
 		}
 		/*
@@ -337,8 +337,8 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	return_type = function->type.getReturnType();
 
-	if (req_type.nature != Nature::UNKNOWN) {
-		type.nature = req_type.nature;
+	if (req_type.raw_type.nature() != Nature::UNKNOWN) {
+		type.raw_type.nature() = req_type.raw_type.nature();
 	}
 	*/
 
@@ -364,14 +364,14 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 	if (vv != nullptr) {
 		if (vv->name == "Boolean") {
 			jit_value_t n = jit_value_create_nint_constant(c.F, LS_I32, 0);
-			if (type.nature == Nature::LSVALUE) {
+			if (type.raw_type.nature() == Nature::LSVALUE) {
 				return VM::value_to_pointer(c.F, n, Type::BOOLEAN);
 			}
 			return n;
 		}
 		if (vv->name == "Number") {
 			jit_value_t n = LS_CREATE_I32(c.F, 0);
-			if (type.nature == Nature::LSVALUE) {
+			if (type.raw_type.nature() == Nature::LSVALUE) {
 				return VM::value_to_pointer(c.F, n, Type::INTEGER);
 			}
 			return n;
@@ -433,7 +433,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 		}
 
 		if (res != nullptr) {
-			if (type.nature == Nature::LSVALUE) {
+			if (type.raw_type.nature() == Nature::LSVALUE) {
 				return VM::value_to_pointer(c.F, res, type);
 			}
 			return res;
@@ -485,7 +485,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 		}
 
 		if (res != nullptr) {
-			if (type.nature == Nature::LSVALUE) {
+			if (type.raw_type.nature() == Nature::LSVALUE) {
 				return VM::value_to_pointer(c.F, res, type);
 			}
 			return res;
@@ -513,7 +513,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 
 		jit_value_t res = jit_insn_call_native(c.F, "std_func", (void*) std_func, sig, args.data(), arg_count, JIT_CALL_NOTHROW);
 
-		if (return_type.nature == Nature::VALUE and type.nature == Nature::LSVALUE) {
+		if (return_type.raw_type.nature() == Nature::VALUE and type.raw_type.nature() == Nature::LSVALUE) {
 			return VM::value_to_pointer(c.F, res, type);
 		}
 		return res;
@@ -539,7 +539,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 
 		jit_value_t res = jit_insn_call_native(c.F, "std_func", (void*) std_func, sig, args.data(), arg_count, JIT_CALL_NOTHROW);
 
-		if (return_type.nature == Nature::VALUE and type.nature == Nature::LSVALUE) {
+		if (return_type.raw_type.nature() == Nature::VALUE and type.raw_type.nature() == Nature::LSVALUE) {
 			return VM::value_to_pointer(c.F, res, type);
 		}
 		return res;
@@ -551,8 +551,8 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 	VariableValue* f = dynamic_cast<VariableValue*>(function);
 
 	if (f != nullptr) {
-		if (function->type.getArgumentType(0).nature == Nature::VALUE
-			and function->type.getArgumentType(1).nature == Nature::VALUE) {
+		if (function->type.getArgumentType(0).raw_type.nature() == Nature::VALUE
+			and function->type.getArgumentType(1).raw_type.nature() == Nature::VALUE) {
 
 			jit_value_t (*jit_func)(jit_function_t, jit_value_t, jit_value_t) = nullptr;
 			if (f->name == "+") {
@@ -573,7 +573,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 				jit_value_t v1 = arguments[1]->compile(c);
 				jit_value_t ret = jit_func(c.F, v0, v1);
 
-				if (type.nature == Nature::LSVALUE) {
+				if (type.raw_type.nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, ret, type);
 				}
 				return ret;
@@ -585,6 +585,18 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 	 * Default function
 	 */
 	jit_value_t fun = function->compile(c);
+	jit_value_t res = function->type.getReturnType() != Type::VOID ? jit_value_create(c.F, VM::get_jit_type(function->type.getReturnType())) : nullptr;
+
+	jit_label_t label_ok= jit_label_undefined;
+	jit_label_t label_end = jit_label_undefined;
+	if (function->type.getReturnType() == Type::VOID) {
+		jit_insn_branch_if_not(c.F, fun, &label_end);
+	} else {
+		jit_insn_branch_if(c.F, fun, &label_ok);
+		jit_insn_store(c.F, res, VM::create_default(c.F, function->type.getReturnType()));
+		jit_insn_branch(c.F, &label_end);
+		jit_insn_label(c.F, &label_ok);
+	}
 
 	vector<jit_value_t> args;
 	vector<jit_type_t> args_types;
@@ -603,7 +615,11 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_return_type, args_types.data(), arguments.size(), 0);
 
-	jit_value_t ret = jit_insn_call_indirect(c.F, fun, sig, args.data(), arguments.size(), 0);
+	if (function->type.getReturnType() == Type::VOID) {
+		jit_insn_call_indirect(c.F, fun, sig, args.data(), arguments.size(), 0);
+	} else {
+		jit_insn_store(c.F, res, jit_insn_call_indirect(c.F, fun, sig, args.data(), arguments.size(), 0));
+	}
 
 	// Destroy temporary arguments
 	for (size_t i = 0; i < arguments.size(); ++i) {
@@ -612,18 +628,12 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 		}
 	}
 
+	jit_insn_label(c.F, &label_end);
+
 	// Custom function call : 1 op
 	VM::inc_ops(c.F, 1);
 
-	if (function->type.getReturnType().nature != Nature::LSVALUE && type.nature == Nature::LSVALUE) {
-		return VM::value_to_lsvalue(c.F, ret, function->type.getReturnType());
-	}
-	if (function->type.getReturnType() != type) {
-		// TODO i32 -> f64
-		assert(0);
-	}
-
-	return ret;
+	return Compiler::compile_convert(c.F, res, function->type.getReturnType(), type);
 }
 
 }

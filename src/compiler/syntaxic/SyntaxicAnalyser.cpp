@@ -311,6 +311,11 @@ eatFunction_eatArgument:
 	}
 	eat(TokenType::CLOSING_PARENTHESIS);
 
+	if (t->type == TokenType::ARROW) {
+		eat();
+		f->returnType = eatTypeName();
+	}
+
 	bool braces = false;
 	if (t->type == TokenType::OPEN_BRACE) {
 		braces = true;

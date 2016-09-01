@@ -62,6 +62,11 @@ void Function::print(std::ostream& os, int indent, bool debug) const {
 //		}
 	}
 
+	if (returnType) {
+		os << ")→ ";
+		returnType->print(os);
+	}
+
 	os << ") → ";
 	body->print(os, indent, debug);
 
@@ -133,7 +138,9 @@ void Function::analyse_body(SemanticAnalyser* analyser, const Type& req_type) {
 			analyser->add_error({ SemanticException::TYPE_MISMATCH, body->line() });
 		}
 	} else {
-		type.setReturnType(body->type);
+		if (type.getReturnType() == Type::UNKNOWN) {
+			type.setReturnType(body->type); // in this case there is no return instruction
+		}
 	}
 
 //	vars = analyser->get_local_vars();

@@ -32,13 +32,14 @@ unsigned Reference::line() const {
 }
 
 void Reference::analyse(SemanticAnalyser* analyser, const Type& req_type) {
-
+/*
 	var = analyser->get_var(variable);
 	type = var->type;
 
-	if (req_type.nature != Nature::UNKNOWN) {
-		type.nature = req_type.nature;
+	if (req_type.raw_type.nature() != Nature::UNKNOWN) {
+		type.raw_type.nature() = req_type.raw_type.nature();
 	}
+	*/
 
 //	cout << "ref " << variable->content << " : " << type << endl;
 }
@@ -60,23 +61,23 @@ jit_value_t Reference::compile(Compiler& c) const {
 		v = jit_value_get_param(F, var->index);
 	}
 
-	if (var->type.nature == Nature::POINTER) {
+	if (var->type.raw_type.nature() == Nature::POINTER) {
 		VM::inc_refs(F, v);
 		return v;
 	}
-	if (req_type.nature == Nature::POINTER) {
+	if (req_type.raw_type.nature() == Nature::POINTER) {
 		jit_value_t val = VM::value_to_pointer(F, v, req_type);
 		VM::inc_refs(F, val);
 		return val;
 	}
 	return v;
 	*/
-
-	if (type.nature == Nature::LSVALUE) {
+/*
+	if (type.raw_type.nature() == Nature::LSVALUE) {
 		return VM::create_ptr(c.F, new LSVar());
 	} else {
 		return VM::create_i32(c.F, 0);
-	}
+	}*/
 }
 
 }

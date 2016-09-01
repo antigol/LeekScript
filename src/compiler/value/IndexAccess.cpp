@@ -1,6 +1,7 @@
 #include "IndexAccess.hpp"
 #include "Array.hpp"
 #include "../../vm/value/LSVec.hpp"
+#include "../../vm/value/LSMap.hpp"
 #include "../../vm/value/LSVar.hpp"
 
 using namespace std;
@@ -25,7 +26,7 @@ void IndexAccess::print(std::ostream& os, int indent, bool debug) const {
 	container->print(os, indent, debug);
 	os << "[";
 	key->print(os, indent, debug);
-	if (key2 != nullptr) {
+	if (key2) {
 		os << ":";
 		key2->print(os, indent, debug);
 	}
@@ -39,40 +40,45 @@ unsigned IndexAccess::line() const {
 	return 0;
 }
 
-void IndexAccess::analyse(SemanticAnalyser* analyser, const Type&) {
-/*
-	type = Type::POINTER;
+void IndexAccess::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
 	container->analyse(analyser, Type::UNKNOWN);
-	Type key_type = Type::UNKNOWN;
+	constant = container->constant;
 
-	if (container->type.raw_type == RawType::ARRAY) {
-		key_type = Type::INTEGER;
-		type = container->type.getElementType();
-
-	} else 	if (container->type.raw_type == RawType::MAP) {
-		key_type = container->type.getElementType(0);
-		type = container->type.getElementType(1);
-
-	} else {
-
-		analyser->add_error({SemanticException::Type::CANNOT_INDEX_THIS, 0});
+	if (container->type.raw_type != RawType::VEC && container->type.raw_type != RawType::MAP) {
+		stringstream oss;
+		container->print(oss);
+		analyser->add_error({ SemanticException::CANNOT_INDEX_THIS, container->line(), oss.str() });
 	}
 
-	key->analyse(analyser, key_type);
-	if (key->type != key_type) {
-		analyser->add_error({SemanticException::Type::INDEX_TYPE, 0, "<key 1>"});
-	}
+	// VEC
+	if (container->type.raw_type == RawType::VEC) {
+		key->analyse(analyser, Type::I32);
+		constant = constant && key->constant;
+		type = container->type.getElementType(0);
 
-	if (key2) {
-		key2->analyse(analyser, key_type);
-		if (key2->type != key_type) {
-			analyser->add_error({SemanticException::Type::INDEX_TYPE, 0, "<key 2>"});
+		if (key2) {
+			key2->analyse(analyser, Type::I32);
+			constant = constant && key2->constant;
+			type = container->type;
 		}
 	}
 
-	constant = container->constant && key->constant && (!key2 || key2->constant);
-	*/
+	// MAP
+	if (container->type.raw_type == RawType::MAP) {
+		key->analyse(analyser, container->type.getElementType(0));
+		constant = constant && key->constant;
+		type = container->type.getElementType(1);
+
+		if (key2) {
+			key2->analyse(analyser, container->type.getElementType(0));
+			constant = constant && key2->constant;
+			type = Type(RawType::VEC, { container->type.getElementType(1) });
+		}
+	}
 }
+
+
 
 /*
 LSValue* access_temp(LSVec<LSValue*>* array, LSValue* key) {
@@ -101,7 +107,100 @@ int interval_access(const LSInterval* interval, int pos) {
 	return interval->atv(pos);
 }*/
 
+LSValue* IA_vec_lsptr(LSVec<LSValue*>* vec, int i) {
+	VM::operations += 2;
+	if (i >= vec->size()) {
+		if (vec->refs == 0) delete vec;
+		return new LSVar();
+	}
+	LSValue* r = (*vec)[i];
+	if (vec->refs == 0) {
+		(*vec)[i] = nullptr;
+		delete vec;
+	}
+	return r;
+}
+int32_t IA_vec_32(LSVec<int32_t>* vec, int i) {
+	VM::operations += 2;
+	int32_t r = i < vec->size() ? (*vec)[i] : 0;
+	if (vec->refs == 0) delete vec;
+	return r;
+}
+int64_t IA_vec_64(LSVec<int64_t>* vec, int i) {
+	VM::operations += 2;
+	int64_t r = i < vec->size() ? (*vec)[i] : 0;
+	if (vec->refs == 0) delete vec;
+	return r;
+}
+
+/*
+LSValue* IA_map_lsptr_lsptr(LSMap<LSValue*,LSValue*>* map, LSValue* k) {
+	VM::operations += log(map->size());
+	auto i = map->find(k);
+	if (vec->refs == 0) {
+		(*vec)[i] = nullptr;
+		delete vec;
+	}
+	return r;
+}
+int32_t IA_map_lsptr_32(LSVec<int32_t>* vec, int i) {
+	VM::operations += 2;
+	int32_t r = (*vec)[i];
+	if (vec->refs == 0) delete vec;
+	return r;
+}
+int64_t IA_map_lsptr_64(LSVec<int64_t>* vec, int i) {
+	VM::operations += 2;
+	int64_t r = (*vec)[i];
+	if (vec->refs == 0) delete vec;
+	return r;
+}
+*/
+
 jit_value_t IndexAccess::compile(Compiler& c) const {
+	jit_value_t a = container->compile(c);
+	jit_value_t k = key->compile(c);
+
+	if (!key2) {
+		jit_type_t args_types[2] = { LS_POINTER, key->type.raw_type.jit_type() };
+		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, container->type.getElementType(0).raw_type.jit_type(), args_types, 2, 0);
+		jit_value_t args[] = { a, k };
+
+		// VEC
+		if (container->type.raw_type == RawType::VEC) {
+			if (container->type.getElementType(0).raw_type.nature() == Nature::LSVALUE) return jit_insn_call_native(c.F, "access", (void*) IA_vec_lsptr, sig, args, 2, JIT_CALL_NOTHROW);
+			if (container->type.getElementType(0).raw_type.bytes() == sizeof (int32_t)) return jit_insn_call_native(c.F, "access", (void*) IA_vec_32, sig, args, 2, JIT_CALL_NOTHROW);
+			if (container->type.getElementType(0).raw_type.bytes() == sizeof (int64_t)) return jit_insn_call_native(c.F, "access", (void*) IA_vec_64, sig, args, 2, JIT_CALL_NOTHROW);
+			// TODO tuple
+			assert(0);
+		}
+
+		/*
+		// MAP
+		if (container->type.raw_type == RawType::MAP) {
+			if (container->type.getElementType(0).raw_type.nature() == Nature::LSVALUE) {
+				if (container->type.getElementType(1).raw_type.nature() == Nature::LSVALUE) return jit_insn_call_native(c.F, "access", (void*) IA_map_lsptr, sig, args, 2, JIT_CALL_NOTHROW);
+				if (container->type.getElementType(1).raw_type.bytes() == sizeof (int32_t)) return jit_insn_call_native(c.F, "access", (void*) IA_map_32, sig, args, 2, JIT_CALL_NOTHROW);
+				if (container->type.getElementType(1).raw_type.bytes() == sizeof (int64_t)) return jit_insn_call_native(c.F, "access", (void*) IA_map_64, sig, args, 2, JIT_CALL_NOTHROW);
+			}
+			if (container->type.getElementType(0).raw_type.bytes() == sizeof (int32_t)) {
+				if (container->type.getElementType(0).raw_type.nature() == Nature::LSVALUE) return jit_insn_call_native(c.F, "access", (void*) IA_vec_lsptr, sig, args, 2, JIT_CALL_NOTHROW);
+				if (container->type.getElementType(0).raw_type.bytes() == sizeof (int32_t)) return jit_insn_call_native(c.F, "access", (void*) IA_vec_32, sig, args, 2, JIT_CALL_NOTHROW);
+				if (container->type.getElementType(0).raw_type.bytes() == sizeof (int64_t)) return jit_insn_call_native(c.F, "access", (void*) IA_vec_64, sig, args, 2, JIT_CALL_NOTHROW);
+			}
+			if (container->type.getElementType(0).raw_type.bytes() == sizeof (int64_t)) {
+				if (container->type.getElementType(0).raw_type.nature() == Nature::LSVALUE) return jit_insn_call_native(c.F, "access", (void*) IA_vec_lsptr, sig, args, 2, JIT_CALL_NOTHROW);
+				if (container->type.getElementType(0).raw_type.bytes() == sizeof (int32_t)) return jit_insn_call_native(c.F, "access", (void*) IA_vec_32, sig, args, 2, JIT_CALL_NOTHROW);
+				if (container->type.getElementType(0).raw_type.bytes() == sizeof (int64_t)) return jit_insn_call_native(c.F, "access", (void*) IA_vec_64, sig, args, 2, JIT_CALL_NOTHROW);
+			}
+			// TODO tuple
+			assert(0);
+		}
+		*/
+
+	} else {
+		jit_value_t k2 = key2->compile(c);
+	}
 
 	/*
 	jit_value_t a = container->compile(c);
@@ -123,7 +222,7 @@ jit_value_t IndexAccess::compile(Compiler& c) const {
 			// Array access : 2 operations
 			VM::inc_ops(c.F, 2);
 
-			if (type.nature == Nature::LSVALUE) {
+			if (type.raw_type.nature() == Nature::LSVALUE) {
 				return VM::value_to_lsvalue(c.F, res, type);
 			}
 			return res;
@@ -148,7 +247,7 @@ jit_value_t IndexAccess::compile(Compiler& c) const {
 			// Array access : 2 operations
 			VM::inc_ops(c.F, 2);
 
-//			if (array_element_type.nature == Nature::VALUE and type.nature == Nature::POINTER) {
+//			if (array_element_type.raw_type.nature() == Nature::VALUE and type.raw_type.nature() == Nature::POINTER) {
 //				return VM::value_to_pointer(c.F, res, type);
 //			}
 			return res;

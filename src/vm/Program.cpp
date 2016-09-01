@@ -126,7 +126,7 @@ void Program::compile_main(Context& context) {
 	// catch (ex) {
 	jit_value_t ex = jit_insn_start_catcher(F);
 	VM::print_int(F, ex);
-	jit_insn_return(F, VM::create_null(F));
+	jit_insn_return(F, nullptr);
 
 	jit_function_compile(F);
 	jit_context_build_end(jit_context);
@@ -228,7 +228,7 @@ void Program::compile_jit(Compiler& c, Context& context, bool toplevel) {
 			jit_value_t jit_val = VM::create_ptr(c.F, value);
 			jit_insn_store(c.F, jit_var, jit_val);
 
-			c.add_var(name, jit_var, Type(value->getRawType(), Nature::LSVALUE), false);
+			c.add_var(name, jit_var, Type(value->getRawType()), false);
 
 			value->refs++;
 		}
@@ -269,7 +269,7 @@ void Program::compile_jit(Compiler& c, Context& context, bool toplevel) {
 
 			jit_value_t var_args[2] = {array, g.second};
 
-			if (type.nature == Nature::POINTER) {
+			if (type.raw_type.nature() == Nature::POINTER) {
 
 //				cout << "save pointer" << endl;
 				jit_insn_call_native(F, "push", (void*) &Program_push_pointer, push_sig_pointer, var_args, 2, 0);

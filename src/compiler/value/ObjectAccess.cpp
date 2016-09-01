@@ -108,8 +108,8 @@ void ObjectAccess::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		object->analyse(analyser, Type::POINTER);
 	}
 
-	if (req_type.nature != Nature::UNKNOWN) {
-		type.nature = req_type.nature;
+	if (req_type.raw_type.nature() != Nature::UNKNOWN) {
+		type.raw_type.nature() = req_type.raw_type.nature();
 	}
 
 //	cout << "object_access '" << field->content << "' type : " << type << endl;*/
@@ -135,7 +135,7 @@ jit_value_t ObjectAccess::compile(Compiler& c) const {
 		auto fun = (jit_value_t (*)(jit_function_t)) access_function;
 		jit_value_t res = fun(c.F);
 
-		if (field_type.nature != Nature::LSVALUE and type.nature == Nature::LSVALUE) {
+		if (field_type.raw_type.nature() != Nature::LSVALUE and type.raw_type.nature() == Nature::LSVALUE) {
 			return VM::value_to_pointer(c.F, res, type);
 		}
 		return res;

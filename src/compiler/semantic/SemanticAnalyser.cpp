@@ -41,7 +41,7 @@ void SemanticAnalyser::analyse(Program* program, Context* context, std::vector<M
 
 	// Add context variables
 	for (auto var : context->vars) {
-		add_var(new Token(var.first), Type(var.second->getRawType(), Nature::LSVALUE), nullptr, nullptr);
+		add_var(new Token(var.first), Type(var.second->getRawType()), nullptr, nullptr);
 	}
 
 	Type op_type = Type::FUNCTION;

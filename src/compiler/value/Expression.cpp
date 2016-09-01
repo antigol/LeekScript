@@ -125,12 +125,12 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	// First analyse of v1 and v2
 	v1->analyse(analyser, v1_type);
-	if (v1->type.nature == Nature::LSVALUE) {
-		type.nature = Nature::LSVALUE;
+	if (v1->type.raw_type.nature() == Nature::LSVALUE) {
+		type.raw_type.nature() = Nature::LSVALUE;
 	}
 	v2->analyse(analyser, v2_type);
-	if (v2->type.nature == Nature::LSVALUE) {
-		type.nature = Nature::LSVALUE;
+	if (v2->type.raw_type.nature() == Nature::LSVALUE) {
+		type.raw_type.nature() = Nature::LSVALUE;
 	}
 	constant = v1->constant and v2->constant;
 
@@ -147,10 +147,10 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		or op->type == TokenType::SWAP) {
 
 		// Set the correct type nature for the two members
-		if (v2->type.nature == Nature::LSVALUE and v1->type.nature != Nature::LSVALUE) {
+		if (v2->type.raw_type.nature() == Nature::LSVALUE and v1->type.raw_type.nature() != Nature::LSVALUE) {
 			v1->analyse(analyser, Type::POINTER);
 		}
-		if (v1->type.nature == Nature::LSVALUE and v2->type.nature != Nature::LSVALUE) {
+		if (v1->type.raw_type.nature() == Nature::LSVALUE and v2->type.raw_type.nature() != Nature::LSVALUE) {
 			v2->analyse(analyser, Type::POINTER);
 		}
 
@@ -210,7 +210,7 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	// [1, 2, 3] ~~ x -> x ^ 2
 	if (op->type == TokenType::TILDE_TILDE) {
-		v2->will_take(analyser, { v1->type.getElementType() });
+		v2->will_take(analyser, { v1->type.getElementType(0) });
 		type = Type::PTR_ARRAY;
 		type.setElementType(v2->type.getReturnType());
 	}
@@ -244,8 +244,8 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	}
 
 	// At the end the require nature is taken into account
-	if (req_type.nature != Nature::UNKNOWN) {
-		type.nature = req_type.nature;
+	if (req_type.raw_type.nature() != Nature::UNKNOWN) {
+		type.raw_type.nature() = req_type.raw_type.nature();
 	}
 	*/
 }
@@ -459,7 +459,7 @@ jit_value_t Expression::compile(Compiler& c) const {
 
 	jit_value_t (*jit_func)(jit_function_t, jit_value_t, jit_value_t) = nullptr;
 	void* ls_func;
-	bool use_jit_func = v1->type.nature == Nature::VALUE and v2->type.nature == Nature::VALUE;
+	bool use_jit_func = v1->type.raw_type.nature() == Nature::VALUE and v2->type.raw_type.nature() == Nature::VALUE;
 	vector<jit_value_t> args;
 	Type jit_returned_type = Type::UNKNOWN;
 	Type ls_returned_type = Type::POINTER; // By default ls_ function returns pointers
@@ -467,7 +467,7 @@ jit_value_t Expression::compile(Compiler& c) const {
 	switch (op->type) {
 		case TokenType::EQUAL: {
 
-			if (v1->type.nature == Nature::VALUE and v2->type.nature == Nature::VALUE) {
+			if (v1->type.raw_type.nature() == Nature::VALUE and v2->type.raw_type.nature() == Nature::VALUE) {
 
 				if (IndexAccess* l1 = dynamic_cast<IndexAccess*>(v1)) {
 
@@ -478,7 +478,7 @@ jit_value_t Expression::compile(Compiler& c) const {
 					jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_I32, args_types, 2, 0);
 					jit_value_t v = jit_insn_call_native(c.F, "", (void*) jit_store_value, sig, args.data(), 2, JIT_CALL_NOTHROW);
 
-					if (type.nature == Nature::LSVALUE) {
+					if (type.raw_type.nature() == Nature::LSVALUE) {
 						return VM::value_to_pointer(c.F, v, type);
 					}
 					return v;
@@ -487,12 +487,12 @@ jit_value_t Expression::compile(Compiler& c) const {
 					jit_value_t x = v1->compile(c);
 					jit_value_t y = v2->compile(c);
 					jit_insn_store(c.F, x, y);
-					if (v2->type.nature != Nature::LSVALUE and type.nature == Nature::LSVALUE) {
+					if (v2->type.raw_type.nature() != Nature::LSVALUE and type.raw_type.nature() == Nature::LSVALUE) {
 						return VM::value_to_pointer(c.F, y, type);
 					}
 					return y;
 				}
-			} else if (v1->type.nature == Nature::LSVALUE) {
+			} else if (v1->type.raw_type.nature() == Nature::LSVALUE) {
 
 				if (dynamic_cast<IndexAccess*>(v1)) {
 
@@ -533,13 +533,13 @@ jit_value_t Expression::compile(Compiler& c) const {
 			break;
 		}
 		case TokenType::SWAP: {
-			if (v1->type.nature == Nature::VALUE and v2->type.nature == Nature::VALUE) {
+			if (v1->type.raw_type.nature() == Nature::VALUE and v2->type.raw_type.nature() == Nature::VALUE) {
 				jit_value_t x = v1->compile(c);
 				jit_value_t y = v2->compile(c);
 				jit_value_t t = jit_insn_load(c.F, x);
 				jit_insn_store(c.F, x, y);
 				jit_insn_store(c.F, y, t);
-				if (v2->type.nature != Nature::LSVALUE and type.nature == Nature::LSVALUE) {
+				if (v2->type.raw_type.nature() != Nature::LSVALUE and type.raw_type.nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, x, type);
 				}
 				return x;
@@ -561,18 +561,18 @@ jit_value_t Expression::compile(Compiler& c) const {
 				jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_I32, args_types, 2, 0);
 				jit_value_t v = jit_insn_call_native(c.F, "", (void*) jit_add_equal_value, sig, args.data(), 2, JIT_CALL_NOTHROW);
 
-				if (type.nature == Nature::LSVALUE) {
+				if (type.raw_type.nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, v, type);
 				}
 				return v;
 			}
 
-			if (v1->type.nature == Nature::VALUE and v2->type.nature == Nature::VALUE) {
+			if (v1->type.raw_type.nature() == Nature::VALUE and v2->type.raw_type.nature() == Nature::VALUE) {
 				jit_value_t x = v1->compile(c);
 				jit_value_t y = v2->compile(c);
 				jit_value_t sum = jit_insn_add(c.F, x, y);
 				jit_insn_store(c.F, x, sum);
-				if (v2->type.nature != Nature::LSVALUE and type.nature == Nature::LSVALUE) {
+				if (v2->type.raw_type.nature() != Nature::LSVALUE and type.raw_type.nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, sum, type);
 				}
 				return sum;
@@ -583,12 +583,12 @@ jit_value_t Expression::compile(Compiler& c) const {
 		}
 		case TokenType::MINUS_EQUAL: {
 
-			if (v1->type.nature == Nature::VALUE and v2->type.nature == Nature::VALUE) {
+			if (v1->type.raw_type.nature() == Nature::VALUE and v2->type.raw_type.nature() == Nature::VALUE) {
 				jit_value_t x = v1->compile(c);
 				jit_value_t y = v2->compile(c);
 				jit_value_t sum = jit_insn_sub(c.F, x, y);
 				jit_insn_store(c.F, x, sum);
-				if (v2->type.nature != Nature::LSVALUE and type.nature == Nature::LSVALUE) {
+				if (v2->type.raw_type.nature() != Nature::LSVALUE and type.raw_type.nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, sum, type);
 				}
 				return sum;
@@ -599,13 +599,13 @@ jit_value_t Expression::compile(Compiler& c) const {
 		}
 		case TokenType::TIMES_EQUAL: {
 
-			if (v1->type.nature == Nature::VALUE and v2->type.nature == Nature::VALUE) {
+			if (v1->type.raw_type.nature() == Nature::VALUE and v2->type.raw_type.nature() == Nature::VALUE) {
 
 				jit_value_t x = v1->compile(c);
 				jit_value_t y = v2->compile(c);
 				jit_value_t sum = jit_insn_mul(c.F, x, y);
 				jit_insn_store(c.F, x, sum);
-				if (v2->type.nature != Nature::LSVALUE and type.nature == Nature::LSVALUE) {
+				if (v2->type.raw_type.nature() != Nature::LSVALUE and type.raw_type.nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, sum, type);
 				}
 				return sum;
@@ -616,14 +616,14 @@ jit_value_t Expression::compile(Compiler& c) const {
 		}
 		case TokenType::DIVIDE_EQUAL: {
 
-			if (v1->type.nature == Nature::VALUE and v2->type.nature == Nature::VALUE) {
+			if (v1->type.raw_type.nature() == Nature::VALUE and v2->type.raw_type.nature() == Nature::VALUE) {
 				jit_value_t x = v1->compile(c);
 				jit_value_t y = v2->compile(c);
 				jit_value_t xf = jit_value_create(c.F, LS_F64);
 				jit_insn_store(c.F, xf, x);
 				jit_value_t sum = jit_insn_div(c.F, xf, y);
 				jit_insn_store(c.F, x, sum);
-				if (v2->type.nature != Nature::LSVALUE and type.nature == Nature::LSVALUE) {
+				if (v2->type.raw_type.nature() != Nature::LSVALUE and type.raw_type.nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, sum, type);
 				}
 				return sum;
@@ -634,12 +634,12 @@ jit_value_t Expression::compile(Compiler& c) const {
 		}
 		case TokenType::MODULO_EQUAL: {
 
-			if (v1->type.nature == Nature::VALUE and v2->type.nature == Nature::VALUE) {
+			if (v1->type.raw_type.nature() == Nature::VALUE and v2->type.raw_type.nature() == Nature::VALUE) {
 				jit_value_t x = v1->compile(c);
 				jit_value_t y = v2->compile(c);
 				jit_value_t sum = jit_insn_rem(c.F, x, y);
 				jit_insn_store(c.F, x, sum);
-				if (v2->type.nature != Nature::LSVALUE and type.nature == Nature::LSVALUE) {
+				if (v2->type.raw_type.nature() != Nature::LSVALUE and type.raw_type.nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, sum, type);
 				}
 				return sum;
@@ -650,12 +650,12 @@ jit_value_t Expression::compile(Compiler& c) const {
 		}
 		case TokenType::POWER_EQUAL: {
 
-			if (v1->type.nature == Nature::VALUE and v2->type.nature == Nature::VALUE) {
+			if (v1->type.raw_type.nature() == Nature::VALUE and v2->type.raw_type.nature() == Nature::VALUE) {
 				jit_value_t x = v1->compile(c);
 				jit_value_t y = v2->compile(c);
 				jit_value_t sum = jit_insn_pow(c.F, x, y);
 				jit_insn_store(c.F, x, sum);
-				if (v2->type.nature != Nature::LSVALUE and type.nature == Nature::LSVALUE) {
+				if (v2->type.raw_type.nature() != Nature::LSVALUE and type.raw_type.nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, sum, type);
 				}
 				return sum;
@@ -688,7 +688,7 @@ jit_value_t Expression::compile(Compiler& c) const {
 					jit_insn_and(c.F, x, jit_insn_not(c.F, y)),
 					jit_insn_and(c.F, y, jit_insn_not(c.F, x))
 				);
-				if (type.nature == Nature::LSVALUE) {
+				if (type.raw_type.nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, r, Type::BOOLEAN);
 				}
 				return r;
@@ -746,11 +746,11 @@ jit_value_t Expression::compile(Compiler& c) const {
 		case TokenType::LOWER: {
 			if (use_jit_func) {
 				if (v1->type == Type::BOOLEAN && v2->type.isNumber()) {
-					if (type.nature == Nature::VALUE) return LS_CREATE_BOOLEAN(c.F, true);
+					if (type.raw_type.nature() == Nature::VALUE) return LS_CREATE_BOOLEAN(c.F, true);
 					else return LS_CREATE_POINTER(c.F, LSBoolean::get(true));
 				}
 				if (v1->type.isNumber() && v2->type == Type::BOOLEAN) {
-					if (type.nature == Nature::VALUE) return LS_CREATE_BOOLEAN(c.F, false);
+					if (type.raw_type.nature() == Nature::VALUE) return LS_CREATE_BOOLEAN(c.F, false);
 					else return LS_CREATE_POINTER(c.F, LSBoolean::get(false));
 				}
 			}
@@ -763,11 +763,11 @@ jit_value_t Expression::compile(Compiler& c) const {
 		case TokenType::LOWER_EQUALS: {
 			if (use_jit_func) {
 				if (v1->type == Type::BOOLEAN && v2->type.isNumber()) {
-					if (type.nature == Nature::VALUE) return LS_CREATE_BOOLEAN(c.F, true);
+					if (type.raw_type.nature() == Nature::VALUE) return LS_CREATE_BOOLEAN(c.F, true);
 					else return LS_CREATE_POINTER(c.F, LSBoolean::get(true));
 				}
 				if (v1->type.isNumber() && v2->type == Type::BOOLEAN) {
-					if (type.nature == Nature::VALUE) return LS_CREATE_BOOLEAN(c.F, false);
+					if (type.raw_type.nature() == Nature::VALUE) return LS_CREATE_BOOLEAN(c.F, false);
 					else return LS_CREATE_POINTER(c.F, LSBoolean::get(false));
 				}
 			}
@@ -780,11 +780,11 @@ jit_value_t Expression::compile(Compiler& c) const {
 		case TokenType::GREATER: {
 			if (use_jit_func) {
 				if (v1->type == Type::BOOLEAN && v2->type.isNumber()) {
-					if (type.nature == Nature::VALUE) return LS_CREATE_BOOLEAN(c.F, false);
+					if (type.raw_type.nature() == Nature::VALUE) return LS_CREATE_BOOLEAN(c.F, false);
 					else return LS_CREATE_POINTER(c.F, LSBoolean::get(false));
 				}
 				if (v1->type.isNumber() && v2->type == Type::BOOLEAN) {
-					if (type.nature == Nature::VALUE) return LS_CREATE_BOOLEAN(c.F, true);
+					if (type.raw_type.nature() == Nature::VALUE) return LS_CREATE_BOOLEAN(c.F, true);
 					else return LS_CREATE_POINTER(c.F, LSBoolean::get(true));
 				}
 			}
@@ -797,11 +797,11 @@ jit_value_t Expression::compile(Compiler& c) const {
 		case TokenType::GREATER_EQUALS: {
 			if (use_jit_func) {
 				if (v1->type == Type::BOOLEAN && v2->type.isNumber()) {
-					if (type.nature == Nature::VALUE) return LS_CREATE_BOOLEAN(c.F, false);
+					if (type.raw_type.nature() == Nature::VALUE) return LS_CREATE_BOOLEAN(c.F, false);
 					else return LS_CREATE_POINTER(c.F, LSBoolean::get(false));
 				}
 				if (v1->type.isNumber() && v2->type == Type::BOOLEAN) {
-					if (type.nature == Nature::VALUE) return LS_CREATE_BOOLEAN(c.F, true);
+					if (type.raw_type.nature() == Nature::VALUE) return LS_CREATE_BOOLEAN(c.F, true);
 					else return LS_CREATE_POINTER(c.F, LSBoolean::get(true));
 				}
 			}
@@ -816,18 +816,18 @@ jit_value_t Expression::compile(Compiler& c) const {
 #pragma GCC diagnostic ignored "-Wpmf-conversions"
 #endif
 		case TokenType::TILDE_TILDE: {
-			if (v1->type.getElementType() == Type::INTEGER) {
-				if (type.getElementType() == Type::INTEGER) {
+			if (v1->type.getElementType(0) == Type::INTEGER) {
+				if (type.getElementType(0) == Type::INTEGER) {
 					ls_func = (void*) &LSVec<int>::ls_map_int;
-				} else if (type.getElementType() == Type::FLOAT) {
+				} else if (type.getElementType(0) == Type::FLOAT) {
 					ls_func = (void*) &LSVec<int>::ls_map_real;
 				} else {
 					ls_func = (void*) &LSVec<int>::ls_map;
 				}
-			} else if (v1->type.getElementType() == Type::FLOAT) {
-				if (type.getElementType() == Type::FLOAT) {
+			} else if (v1->type.getElementType(0) == Type::FLOAT) {
+				if (type.getElementType(0) == Type::FLOAT) {
 					ls_func = (void*) &LSVec<double>::ls_map_real;
-				} else if (type.getElementType() == Type::INTEGER) {
+				} else if (type.getElementType(0) == Type::INTEGER) {
 					ls_func = (void*) &LSVec<double>::ls_map_int;
 				} else {
 					ls_func = (void*) &LSVec<double>::ls_map;
@@ -858,12 +858,12 @@ jit_value_t Expression::compile(Compiler& c) const {
 			break;
 		}
 		case TokenType::BIT_AND_EQUALS: {
-			if (v1->type.nature == Nature::VALUE and v2->type.nature == Nature::VALUE) {
+			if (v1->type.raw_type.nature() == Nature::VALUE and v2->type.raw_type.nature() == Nature::VALUE) {
 				jit_value_t x = v1->compile(c);
 				jit_value_t y = v2->compile(c);
 				jit_value_t a = jit_insn_and(c.F, x, y);
 				jit_insn_store(c.F, x, a);
-				if (v2->type.nature != Nature::LSVALUE and type.nature == Nature::LSVALUE) {
+				if (v2->type.raw_type.nature() != Nature::LSVALUE and type.raw_type.nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, a, type);
 				}
 				return a;
@@ -878,12 +878,12 @@ jit_value_t Expression::compile(Compiler& c) const {
 			break;
 		}
 		case TokenType::BIT_OR_EQUALS: {
-			if (v1->type.nature == Nature::VALUE and v2->type.nature == Nature::VALUE) {
+			if (v1->type.raw_type.nature() == Nature::VALUE and v2->type.raw_type.nature() == Nature::VALUE) {
 				jit_value_t x = v1->compile(c);
 				jit_value_t y = v2->compile(c);
 				jit_value_t o = jit_insn_or(c.F, x, y);
 				jit_insn_store(c.F, x, o);
-				if (v2->type.nature != Nature::LSVALUE and type.nature == Nature::LSVALUE) {
+				if (v2->type.raw_type.nature() != Nature::LSVALUE and type.raw_type.nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, o, type);
 				}
 				return o;
@@ -898,12 +898,12 @@ jit_value_t Expression::compile(Compiler& c) const {
 			break;
 		}
 		case TokenType::BIT_XOR_EQUALS: {
-			if (v1->type.nature == Nature::VALUE and v2->type.nature == Nature::VALUE) {
+			if (v1->type.raw_type.nature() == Nature::VALUE and v2->type.raw_type.nature() == Nature::VALUE) {
 				jit_value_t x = v1->compile(c);
 				jit_value_t y = v2->compile(c);
 				jit_value_t a = jit_insn_xor(c.F, x, y);
 				jit_insn_store(c.F, x, a);
-				if (v2->type.nature != Nature::LSVALUE and type.nature == Nature::LSVALUE) {
+				if (v2->type.raw_type.nature() != Nature::LSVALUE and type.raw_type.nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, a, type);
 				}
 				return a;
@@ -918,12 +918,12 @@ jit_value_t Expression::compile(Compiler& c) const {
 			break;
 		}
 		case TokenType::BIT_SHIFT_LEFT_EQUALS : {
-			if (v1->type.nature == Nature::VALUE and v2->type.nature == Nature::VALUE) {
+			if (v1->type.raw_type.nature() == Nature::VALUE and v2->type.raw_type.nature() == Nature::VALUE) {
 				jit_value_t x = v1->compile(c);
 				jit_value_t y = v2->compile(c);
 				jit_value_t a = jit_insn_shl(c.F, x, y);
 				jit_insn_store(c.F, x, a);
-				if (v2->type.nature != Nature::LSVALUE and type.nature == Nature::LSVALUE) {
+				if (v2->type.raw_type.nature() != Nature::LSVALUE and type.raw_type.nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, a, type);
 				}
 				return a;
@@ -938,12 +938,12 @@ jit_value_t Expression::compile(Compiler& c) const {
 			break;
 		}
 		case TokenType::BIT_SHIFT_RIGHT_EQUALS : {
-			if (v1->type.nature == Nature::VALUE and v2->type.nature == Nature::VALUE) {
+			if (v1->type.raw_type.nature() == Nature::VALUE and v2->type.raw_type.nature() == Nature::VALUE) {
 				jit_value_t x = v1->compile(c);
 				jit_value_t y = v2->compile(c);
 				jit_value_t a = jit_insn_shr(c.F, x, y);
 				jit_insn_store(c.F, x, a);
-				if (v2->type.nature != Nature::LSVALUE and type.nature == Nature::LSVALUE) {
+				if (v2->type.raw_type.nature() != Nature::LSVALUE and type.raw_type.nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, a, type);
 				}
 				return a;
@@ -958,12 +958,12 @@ jit_value_t Expression::compile(Compiler& c) const {
 			break;
 		}
 		case TokenType::BIT_SHIFT_RIGHT_UNSIGNED_EQUALS : {
-			if (v1->type.nature == Nature::VALUE and v2->type.nature == Nature::VALUE) {
+			if (v1->type.raw_type.nature() == Nature::VALUE and v2->type.raw_type.nature() == Nature::VALUE) {
 				jit_value_t x = v1->compile(c);
 				jit_value_t y = v2->compile(c);
 				jit_value_t a = jit_insn_ushr(c.F, x, y);
 				jit_insn_store(c.F, x, a);
-				if (v2->type.nature != Nature::LSVALUE and type.nature == Nature::LSVALUE) {
+				if (v2->type.raw_type.nature() != Nature::LSVALUE and type.raw_type.nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, a, type);
 				}
 				return a;
@@ -1016,7 +1016,7 @@ jit_value_t Expression::compile(Compiler& c) const {
 		jit_value_t y = v2->compile(c);
 		jit_value_t r = jit_func(c.F, x, y);
 
-		if (type.nature == Nature::LSVALUE) {
+		if (type.raw_type.nature() == Nature::LSVALUE) {
 			return VM::value_to_pointer(c.F, r, jit_returned_type);
 		}
 		return r;
@@ -1036,7 +1036,7 @@ jit_value_t Expression::compile(Compiler& c) const {
 			jit_insn_store(c.F, args[0], v);
 		}
 
-		if (type.nature == Nature::LSVALUE && ls_returned_type.nature != Nature::LSVALUE) {
+		if (type.raw_type.nature() == Nature::LSVALUE && ls_returned_type.raw_type.nature() != Nature::LSVALUE) {
 			return VM::value_to_pointer(c.F, v, ls_returned_type);
 		}
 

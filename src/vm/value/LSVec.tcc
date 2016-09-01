@@ -1894,7 +1894,6 @@ inline bool LSVec<T>::lt(const LSVec<int>* v) const {
 template <>
 inline bool LSVec<LSValue*>::lt(const LSVec<double>* v) const {
 	return false;
-	/*
 	auto i = begin();
 	auto j = v->begin();
 	while (i != end()) {

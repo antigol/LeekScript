@@ -4,63 +4,63 @@ using namespace std;
 
 namespace ls {
 
-RawType::RawType(const string& name, const string& classname, const string& jsonname)
-	: _name(name), _classname(classname), _jsonname(jsonname)
+RawType::RawType(const string& name, const string& classname, const string& jsonname, size_t bytes, jit_type_t jit_type, Nature nature)
+	: _name(name), _clazz(classname), _json_name(jsonname), _bytes(bytes), _jit_type(jit_type), _nature(nature)
 {}
 
 bool RawType::operator ==(const RawType& type) const {
-	return _name == type._name && _classname == type._classname && _jsonname == type._jsonname;
+	return _name == type._name && _clazz == type._clazz && _json_name == type._json_name && _bytes == type._bytes && _jit_type == type._jit_type && _nature == type._nature;
 }
 
-const RawType RawType::UNKNOWN("?", "?", "?");
-const RawType RawType::VOID("void", "?", "void");
-const RawType RawType::UNREACHABLE("unreachable", "?", "");
-const RawType RawType::VAR("var", "Variable", "variable");
-const RawType RawType::BOOLEAN("bool", "Boolean", "boolean");
-const RawType RawType::I32("i32", "Number", "number");
-const RawType RawType::I64("i64", "Number", "number");
-const RawType RawType::F32("f32", "Number", "number");
-const RawType RawType::F64("f64", "Number", "number");
-const RawType RawType::VEC("vec", "Vec", "vec");
-const RawType RawType::MAP("map", "Map", "map");
-const RawType RawType::SET("set", "Set", "set");
-const RawType RawType::FUNCTION("fn", "?", "fn");
-const RawType RawType::TUPLE("tuple", "Tuple", "tuple");
+const RawType RawType::UNKNOWN(    "?",           "?",        "?",        0,                nullptr,           Nature::UNKNOWN);
+const RawType RawType::VOID(       "void",        "?",        "void",     0,                jit_type_void,     Nature::VOID);
+const RawType RawType::UNREACHABLE("unreachable", "?",        "",         0,                nullptr,           Nature::VOID);
+const RawType RawType::VAR(        "var",         "Variable", "variable", sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE);
+const RawType RawType::BOOLEAN(    "bool",        "Boolean",  "boolean",  sizeof (int32_t), jit_type_int,      Nature::VALUE);
+const RawType RawType::I32(        "i32",         "Number",   "number",   sizeof (int32_t), jit_type_int,      Nature::VALUE);
+const RawType RawType::I64(        "i64",         "Number",   "number",   sizeof (int64_t), jit_type_long,     Nature::VALUE);
+const RawType RawType::F32(        "f32",         "Number",   "number",   sizeof (float),   jit_type_float32,  Nature::VALUE);
+const RawType RawType::F64(        "f64",         "Number",   "number",   sizeof (double),  jit_type_float64,  Nature::VALUE);
+const RawType RawType::VEC(        "vec",         "Vec",      "vec",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE);
+const RawType RawType::MAP(        "map",         "Map",      "map",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE);
+const RawType RawType::SET(        "set",         "Set",      "set",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE);
+const RawType RawType::FUNCTION(   "fn",          "?",        "fn",       sizeof (void*),   jit_type_void_ptr, Nature::VALUE);
+const RawType RawType::TUPLE(      "tuple",       "Tuple",    "tuple",    0,                nullptr,           Nature::VALUE);
 
-const Type Type::UNKNOWN(RawType::UNKNOWN, Nature::UNKNOWN);
-const Type Type::VOID(RawType::VOID, Nature::VOID);
-const Type Type::UNREACHABLE(RawType::UNREACHABLE, Nature::VOID);
-const Type Type::VAR(RawType::VAR, Nature::LSVALUE);
-const Type Type::BOOLEAN(RawType::BOOLEAN, Nature::VALUE);
-const Type Type::I32(RawType::I32, Nature::VALUE);
-const Type Type::I64(RawType::I64, Nature::VALUE);
-const Type Type::F32(RawType::F32, Nature::VALUE);
-const Type Type::F64(RawType::F64, Nature::VALUE);
-const Type Type::VEC(RawType::VEC, Nature::LSVALUE, { Type::UNKNOWN });
-const Type Type::MAP(RawType::VEC, Nature::LSVALUE, { Type::UNKNOWN, Type::UNKNOWN });
-const Type Type::SET(RawType::VEC, Nature::LSVALUE, { Type::UNKNOWN });
-const Type Type::FUNCTION(RawType::FUNCTION, Nature::VALUE);
-const Type Type::TUPLE(RawType::TUPLE, Nature::VALUE);
+const Type Type::UNKNOWN(    RawType::UNKNOWN);
+const Type Type::VOID(       RawType::VOID);
+const Type Type::UNREACHABLE(RawType::UNREACHABLE);
+const Type Type::VAR(        RawType::VAR);
+const Type Type::BOOLEAN(    RawType::BOOLEAN);
+const Type Type::I32(        RawType::I32);
+const Type Type::I64(        RawType::I64);
+const Type Type::F32(        RawType::F32);
+const Type Type::F64(        RawType::F64);
+const Type Type::VEC(        RawType::VEC, { Type::UNKNOWN });
+const Type Type::MAP(        RawType::VEC, { Type::UNKNOWN, Type::UNKNOWN });
+const Type Type::SET(        RawType::VEC, { Type::UNKNOWN });
+const Type Type::FUNCTION(   RawType::FUNCTION);
+const Type Type::TUPLE(      RawType::TUPLE);
 
 Type::Type() :
-	raw_type(RawType::UNKNOWN), nature(Nature::UNKNOWN)
+	raw_type(RawType::UNKNOWN)
 {}
 
-Type::Type(const RawType& raw_type, Nature nature) :
-	raw_type(raw_type), nature(nature)
+Type::Type(const RawType& raw_type) :
+	raw_type(raw_type)
 {
-	this->clazz = raw_type.getClass();
+	this->clazz = raw_type.clazz();
 }
 
-Type::Type(const RawType& raw_type, Nature nature, const vector<Type>& element_type) :
-	raw_type(raw_type), nature(nature)
+Type::Type(const RawType& raw_type, const vector<Type>& element_type) :
+	raw_type(raw_type)
 {
-	this->clazz = raw_type.getClass();
+	this->clazz = raw_type.clazz();
 	this->element_types = element_type;
 }
 
 bool Type::must_manage_memory() const {
-	return nature == Nature::LSVALUE;
+	return raw_type.nature() == Nature::LSVALUE;
 }
 
 Type Type::getReturnType() const {
@@ -116,7 +116,7 @@ void Type::setElementType(size_t index, const Type& type) {
 Type Type::mix(const Type& x) const {
 /*
 	if (*this == x) return *this;
-	if (nature == Nature::LSVALUE || x.nature == Nature::LSVALUE) return Type::POINTER;
+	if (nature == Nature::LSVALUE || x.raw_type.nature() == Nature::LSVALUE) return Type::POINTER;
 	if (raw_type == RawType::FLOAT || x.raw_type == RawType::FLOAT) return Type::FLOAT;
 	if (raw_type == RawType::INTEGER || x.raw_type == RawType::INTEGER) return Type::INTEGER;
 	*/
@@ -124,7 +124,7 @@ Type Type::mix(const Type& x) const {
 }
 
 void Type::toJson(ostream& os) const {
-	os << "{\"type\":\"" << raw_type.getJsonName() << "\"";
+	os << "{\"type\":\"" << raw_type.json_name() << "\"";
 
 	if (raw_type == RawType::FUNCTION) {
 		os << ",\"args\":[";
@@ -141,7 +141,6 @@ void Type::toJson(ostream& os) const {
 
 bool Type::operator ==(const Type& type) const {
 	return raw_type == type.raw_type &&
-			nature == type.nature &&
 			clazz == type.clazz &&
 			element_types == type.element_types &&
 			return_types == type.return_types &&
@@ -229,7 +228,7 @@ Type Type::get_compatible_type(const Type& t1, const Type& t2) {
 	if (t1.raw_type == RawType::VEC && t2.raw_type == RawType::VEC) {
 		Type compatible_element = get_compatible_type(t1.getElementType(0), t2.getElementType(0));
 		if (compatible_element == Type::VOID) return Type::VOID;
-		return Type(RawType::VEC, Nature::LSVALUE, { compatible_element });
+		return Type(RawType::VEC, { compatible_element });
 	}
 	if (t1.raw_type == RawType::VEC || t2.raw_type == RawType::VEC) return Type::VOID;
 
@@ -237,7 +236,7 @@ Type Type::get_compatible_type(const Type& t1, const Type& t2) {
 	if (t1.raw_type == RawType::SET && t2.raw_type == RawType::SET) {
 		Type compatible_element = get_compatible_type(t1.getElementType(0), t2.getElementType(0));
 		if (compatible_element == Type::VOID) return Type::VOID;
-		return Type(RawType::SET, Nature::LSVALUE, { compatible_element });
+		return Type(RawType::SET, { compatible_element });
 	}
 	if (t1.raw_type == RawType::SET || t2.raw_type == RawType::SET) return Type::VOID;
 
@@ -247,7 +246,7 @@ Type Type::get_compatible_type(const Type& t1, const Type& t2) {
 		if (compatible_key == Type::VOID) return Type::VOID;
 		Type compatible_value = get_compatible_type(t1.getElementType(0), t2.getElementType(0));
 		if (compatible_value == Type::VOID) return Type::VOID;
-		return Type(RawType::MAP, Nature::LSVALUE, { compatible_key, compatible_value });
+		return Type(RawType::MAP, { compatible_key, compatible_value });
 	}
 	if (t1.raw_type == RawType::MAP || t2.raw_type == RawType::MAP) return Type::VOID;
 
@@ -259,7 +258,7 @@ Type Type::get_compatible_type(const Type& t1, const Type& t2) {
 			compatible_elements.push_back(get_compatible_type(t1.element_types[i], t2.element_types[i]));
 			if (compatible_elements[i] == Type::VOID) return Type::VOID;
 		}
-		return Type(RawType::TUPLE, Nature::VALUE, compatible_elements);
+		return Type(RawType::TUPLE, compatible_elements);
 	}
 	if (t1.raw_type == RawType::SET || t2.raw_type == RawType::SET) return Type::VOID;
 
@@ -316,7 +315,7 @@ ostream& operator << (ostream& os, const Type& type) {
 		return os << "{unr}";
 	}
 
-	os << "{" << type.raw_type.getName() << Type::get_nature_symbol(type.nature);
+	os << "{" << type.raw_type.name() << Type::get_nature_symbol(type.raw_type.nature());
 
 	if (type.raw_type == RawType::FUNCTION) {
 		os << " (";
@@ -327,7 +326,7 @@ ostream& operator << (ostream& os, const Type& type) {
 		os << ") → " << type.getReturnType();
 	}
 	if (type.raw_type == RawType::VEC || type.raw_type == RawType::SET) {
-		os << " of " << type.getElementType();
+		os << " of " << type.getElementType(0);
 	}
 	if (type.raw_type == RawType::MAP) {
 		os << " of " << type.getElementType(0) << " → " << type.getElementType(1);

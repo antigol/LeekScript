@@ -28,7 +28,7 @@ void While::print(ostream& os, int indent, bool debug) const {
 void While::analyse(SemanticAnalyser* analyser, const Type&) {
 
 	condition->analyse(analyser, Type::UNKNOWN);
-	if (condition->type.nature != Nature::LSVALUE
+	if (condition->type.raw_type.nature() != Nature::LSVALUE
 			&& condition->type.raw_type != RawType::BOOLEAN
 			&& condition->type.raw_type != RawType::I32
 			&& condition->type.raw_type != RawType::I64) {
@@ -49,7 +49,7 @@ jit_value_t While::compile(Compiler& c) const {
 
 	// condition
 	jit_value_t cond = condition->compile(c);
-	if (condition->type.nature == Nature::LSVALUE) {
+	if (condition->type.raw_type.nature() == Nature::LSVALUE) {
 		jit_value_t cond_bool = VM::is_true(c.F, cond);
 
 		if (condition->type.must_manage_memory()) {

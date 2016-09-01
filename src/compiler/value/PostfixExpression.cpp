@@ -54,7 +54,7 @@ jit_value_t PostfixExpression::compile(Compiler& c) const {
 	switch (operatorr->type) {
 
 		case TokenType::PLUS_PLUS: {
-			if (expression->type.nature == Nature::VALUE) {
+			if (expression->type.raw_type.nature() == Nature::VALUE) {
 				jit_value_t x = expression->compile(c);
 				jit_value_t ox = jit_insn_load(c.F, x);
 				jit_value_t y = VM::create_i32(c.F, 1);
@@ -68,7 +68,7 @@ jit_value_t PostfixExpression::compile(Compiler& c) const {
 			break;
 		}
 		case TokenType::MINUS_MINUS: {
-			if (expression->type.nature == Nature::VALUE) {
+			if (expression->type.raw_type.nature() == Nature::VALUE) {
 				jit_value_t x = expression->compile(c);
 				jit_value_t ox = jit_insn_load(c.F, x);
 				jit_value_t y = VM::create_i32(c.F, 1);

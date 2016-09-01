@@ -103,7 +103,7 @@ std::string LSValue::to_json() const {
 
 string LSValue::getClass() const
 {
-	return getRawType().getClass();
+	return getRawType().clazz();
 }
 
 }

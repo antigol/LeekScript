@@ -16,7 +16,7 @@ public:
 	void* addr;
 	StaticMethod(Type return_type, std::initializer_list<Type> args, void* addr) {
 		this->addr = addr;
-		type = {RawType::FUNCTION, Nature::LSVALUE};
+		type = Type::FUNCTION;
 		type.setReturnType(return_type);
 		for (Type arg : args) {
 			type.addArgumentType(arg);
@@ -32,7 +32,7 @@ public:
 	Method(Type obj_type, Type return_type, std::initializer_list<Type> args, void* addr) {
 		this->addr = addr;
 		this->obj_type = obj_type;
-		type = {RawType::FUNCTION, Nature::LSVALUE};
+		type = Type::FUNCTION;
 		type.setReturnType(return_type);
 		for (Type arg : args) {
 			type.addArgumentType(arg);

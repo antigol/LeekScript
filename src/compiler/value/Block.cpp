@@ -85,7 +85,7 @@ jit_value_t Block::compile(Compiler& c) const {
 		if (dynamic_cast<Return*>(instructions[i])) {
 			break; // no need to compile after a return
 		}
-		if (i == instructions.size() - 1 && instructions[i]->type.nature != Nature::VOID) {
+		if (i == instructions.size() - 1 && instructions[i]->type.raw_type.nature() != Nature::VOID) {
 			if (type.must_manage_memory()) {
 				jit_type_t args[1] = {LS_POINTER};
 				jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args, 1, 0);

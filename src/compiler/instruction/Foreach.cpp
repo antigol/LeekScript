@@ -39,7 +39,7 @@ void Foreach::print(ostream& os, int indent, bool debug) const {
 
 void Foreach::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
-	if (req_type.raw_type == RawType::VEC && req_type.nature == Nature::LSVALUE) {
+	if (req_type.raw_type == RawType::VEC && req_type.raw_type.nature() == Nature::LSVALUE) {
 		type = req_type;
 	} else {
 		type = Type::VOID;
@@ -69,10 +69,10 @@ void Foreach::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	if (type == Type::VOID) {
 		body->analyse(analyser, Type::VOID);
 	} else {
-		body->analyse(analyser, type.getElementType());
-		if (type.getElementType() == Type::UNKNOWN) {
+		body->analyse(analyser, type.getElementType(0));
+		if (type.getElementType(0) == Type::UNKNOWN) {
 			type.setElementType(0, body->type);
-		} else if (type.getElementType() != body->type) {
+		} else if (type.getElementType(0) != body->type) {
 			analyser->add_error({ SemanticException::TYPE_MISMATCH });
 		}
 	}
@@ -284,8 +284,8 @@ jit_value_t Foreach::compile(Compiler& c) const {
 
 	// Potential output [for ...]
 	jit_value_t output_v = nullptr;
-	if (type.raw_type == RawType::VEC && type.nature == Nature::LSVALUE) {
-		output_v = VM::create_vec(c.F, type.getElementType());
+	if (type.raw_type == RawType::VEC && type.raw_type.nature() == Nature::LSVALUE) {
+		output_v = VM::create_vec(c.F, type.getElementType(0));
 		VM::inc_refs(c.F, output_v);
 		c.add_var("{output}", output_v, type, false); // Why create variable ? in case of `break 2` the output must be deleted
 	}
@@ -314,51 +314,51 @@ jit_value_t Foreach::compile(Compiler& c) const {
 	c.enter_loop(&label_end, &label_it);
 
 	// Static Selector
-	if (container->type == Type(RawType::VEC, Nature::LSVALUE, { Type::I32 })) {
+	if (container->type == Type(RawType::VEC, { Type::I32 })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_array_all, (void*) fun_condition_array_all, (void*) fun_value_array_int, (void*) fun_key_array_int, (void*) fun_inc_array_int,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::VEC, Nature::LSVALUE, { Type::F64 })) {
+	} else if (container->type == Type(RawType::VEC, { Type::F64 })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_array_all, (void*) fun_condition_array_all, (void*) fun_value_array_float, (void*) fun_key_array_float, (void*) fun_inc_array_float,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::VEC, Nature::LSVALUE, { Type::VAR })) {
+	} else if (container->type == Type(RawType::VEC, { Type::VAR })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_array_all, (void*) fun_condition_array_all, (void*) fun_value_array_ptr, (void*) fun_key_array_ptr, (void*) fun_inc_array_ptr,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::MAP, Nature::LSVALUE, { Type::VAR, Type::VAR })) {
+	} else if (container->type == Type(RawType::MAP, { Type::VAR, Type::VAR })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_ptr_ptr, (void*) fun_key_map_ptr_ptr, (void*) fun_inc_map_ptr_ptr,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::MAP, Nature::LSVALUE, { Type::VAR, Type::I32 })) {
+	} else if (container->type == Type(RawType::MAP, { Type::VAR, Type::I32 })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_ptr_int, (void*) fun_key_map_ptr_int, (void*) fun_inc_map_ptr_int,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::MAP, Nature::LSVALUE, { Type::VAR, Type::F64 })) {
+	} else if (container->type == Type(RawType::MAP, { Type::VAR, Type::F64 })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_ptr_float, (void*) fun_key_map_ptr_float, (void*) fun_inc_map_ptr_float,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::MAP, Nature::LSVALUE, { Type::I32, Type::VAR })) {
+	} else if (container->type == Type(RawType::MAP, { Type::I32, Type::VAR })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_int_ptr, (void*) fun_key_map_int_ptr, (void*) fun_inc_map_int_ptr,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::MAP, Nature::LSVALUE, { Type::I32, Type::I32 })) {
+	} else if (container->type == Type(RawType::MAP, { Type::I32, Type::I32 })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_int_int, (void*) fun_key_map_int_int, (void*) fun_inc_map_int_int,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::MAP, Nature::LSVALUE, { Type::I32, Type::F64 })) {
+	} else if (container->type == Type(RawType::MAP, { Type::I32, Type::F64 })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_int_float, (void*) fun_key_map_int_float, (void*) fun_inc_map_int_float,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::SET, Nature::LSVALUE, { Type::I32 })) {
+	} else if (container->type == Type(RawType::SET, { Type::I32 })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_set_all, (void*) fun_condition_set_all, (void*) fun_value_set<int>, (void*) fun_key_set<int>, (void*) fun_inc_set<int>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::SET, Nature::LSVALUE, { Type::F64 })) {
+	} else if (container->type == Type(RawType::SET, { Type::F64 })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_set_all, (void*) fun_condition_set_all, (void*) fun_value_set<double>, (void*) fun_key_set<double>, (void*) fun_inc_set<double>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::SET, Nature::LSVALUE, { Type::VAR })) {
+	} else if (container->type == Type(RawType::SET, { Type::VAR })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_set_all, (void*) fun_condition_set_all, (void*) fun_value_set<LSValue*>, (void*) fun_key_set<LSValue*>, (void*) fun_inc_set<LSValue*>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
@@ -418,7 +418,7 @@ void Foreach::compile_foreach(Compiler&c, jit_value_t container_v, jit_value_t o
 	// Body
 	jit_value_t body_v = body->compile(c);
 	if (output_v && body_v) {
-		VM::push_move_vec(c.F, type.getElementType(), output_v, body_v);
+		VM::push_move_vec(c.F, type.getElementType(0), output_v, body_v);
 	}
 
 
