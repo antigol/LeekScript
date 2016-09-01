@@ -20,7 +20,6 @@ public:
 	virtual unsigned line() const override;
 
 	virtual void analyse(SemanticAnalyser*, const Type&) override;
-	void elements_will_take(SemanticAnalyser*, const std::vector<Type>&, int level);
 
 	virtual jit_value_t compile(Compiler&) const override;
 };

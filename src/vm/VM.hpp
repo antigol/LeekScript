@@ -16,15 +16,11 @@
 
 #define LS_I32 jit_type_int
 #define LS_I64 jit_type_long
+#define LS_F32 jit_type_float32
 #define LS_F64 jit_type_float64
 #define LS_BOOLEAN LS_I32
 #define LS_POINTER jit_type_void_ptr
-
-#define LS_CREATE_I32(F, X) jit_value_create_nint_constant((F), LS_I32, (X))
-#define LS_CREATE_BOOLEAN(F, X) LS_CREATE_I32(F, X)
-#define LS_CREATE_I64(F, X) jit_value_create_long_constant((F), LS_I64, (X))
-#define LS_CREATE_F64(F, X) jit_value_create_float64_constant((F), LS_F64, (X))
-#define LS_CREATE_POINTER(F, X) jit_value_create_constant((F), new jit_constant_t { LS_POINTER, {(X)} })
+#define LS_VOID jit_type_void
 
 namespace ls {
 
@@ -62,8 +58,7 @@ public:
 
 	void add_module(Module* m);
 	static jit_type_t get_jit_type(const Type& type);
-	static jit_value_t value_to_pointer(jit_function_t, jit_value_t, Type);
-	static jit_value_t pointer_to_value(jit_function_t, jit_value_t, Type);
+	static jit_value_t value_to_lsvalue(jit_function_t, jit_value_t, Type);
 	static jit_value_t get_refs(jit_function_t F, jit_value_t obj);
 	static void inc_refs(jit_function_t F, jit_value_t obj);
 	static void inc_refs_if_not_temp(jit_function_t F, jit_value_t obj);
@@ -73,8 +68,14 @@ public:
 	static void inc_ops(jit_function_t F, int add);
 	static void get_operations(jit_function_t F);
 	static void print_int(jit_function_t F, jit_value_t val);
-	static jit_value_t create_null(jit_function_t F);
 	static jit_value_t create_bool(jit_function_t F, bool value);
+	static jit_value_t create_i32(jit_function_t F, int32_t value);
+	static jit_value_t create_i64(jit_function_t F, int64_t value);
+	static jit_value_t create_f32(jit_function_t F, double value);
+	static jit_value_t create_f64(jit_function_t F, double value);
+	static jit_value_t create_ptr(jit_function_t F, void* value);
+	static jit_value_t create_null(jit_function_t F);
+	static jit_value_t create_lsbool(jit_function_t F, bool value);
 	static jit_value_t create_vec(jit_function_t F, const Type& element_type, int cap = 0);
 	static void push_move_vec(jit_function_t F, const Type& element_type, jit_value_t array, jit_value_t value);
 	static jit_value_t move_obj(jit_function_t F, jit_value_t ptr);

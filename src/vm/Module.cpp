@@ -5,54 +5,66 @@
 
 #include "Module.hpp"
 #include "LSValue.hpp"
-#include "value/LSClass.hpp"
-#include "value/LSNumber.hpp"
+#include "value/LSVar.hpp"
 
 using namespace std;
 
 namespace ls {
 
 Module::Module(std::string name) : name(name) {
-	clazz = new LSClass(name);
+//	clazz = new LSClass(name);
 }
 
 Module::~Module() {}
 
 void Module::include(SemanticAnalyser* analyser, Program* program) {
-
+/*
 	program->system_vars.insert({name, clazz});
 	analyser->add_var(new Token(name), Type::CLASS, nullptr, nullptr);
+	*/
 }
 
 void Module::field(std::string name, Type type) {
+	/*
 	fields.push_back(ModuleField(name, type));
 	clazz->addField(name, type);
+	*/
 }
 
 void Module::static_field(std::string name, Type type, void* fun) {
+	/*
 	static_fields.push_back(ModuleStaticField(name, type, fun));
 	clazz->addStaticField(ModuleStaticField(name, type, fun));
+	*/
 }
 
 void Module::method(std::string name, initializer_list<Method> impl) {
+	/*
 	methods.push_back(ModuleMethod(name, impl));
 	vector<Method> methods = impl;
 	clazz->addMethod(name, methods);
+	*/
 }
 
 void Module::method(std::string name, Type obj_type, Type return_type, initializer_list<Type> args, void* addr) {
+	/*
 	methods.push_back(ModuleMethod(name, {{obj_type, return_type, args, addr}}));
 	clazz->addMethod(name, {{obj_type, return_type, args, addr}});
+	*/
 }
 
 void Module::static_method(string name, initializer_list<StaticMethod> impl) {
+	/*
 	static_methods.push_back(ModuleStaticMethod(name, impl));
 	clazz->addStaticMethod(name, impl);
+	*/
 }
 
 void Module::static_method(string name, Type return_type, initializer_list<Type> args, void* addr) {
+	/*
 	static_methods.push_back(ModuleStaticMethod(name, {{return_type, args, addr}}));
 	clazz->addStaticMethod(name, {{return_type, args, addr}});
+	*/
 }
 
 void Module::generate_doc(std::ostream& os, std::string translation_file) {

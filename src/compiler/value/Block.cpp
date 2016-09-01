@@ -58,7 +58,7 @@ void Block::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	analyser->leave_block();
 
 	if (type == Type::VOID) { // empty block or last instruction type is VOID
-		if (req_type != Type::VOID) {
+		if (req_type != Type::VOID && req_type != Type::UNKNOWN) {
 			type = Type::VAR; // we can only offer a null
 		}
 	}

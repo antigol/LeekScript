@@ -1,7 +1,5 @@
-#include "../../compiler/value/PostfixExpression.hpp"
-
-#include "../../compiler/value/LeftValue.hpp"
-#include "../../vm/LSValue.hpp"
+#include "PostfixExpression.hpp"
+#include "../../vm/value/LSVar.hpp"
 
 using namespace std;
 
@@ -10,7 +8,6 @@ namespace ls {
 PostfixExpression::PostfixExpression() {
 	expression = nullptr;
 	operatorr = nullptr;
-	return_value = true;
 }
 
 PostfixExpression::~PostfixExpression() {
@@ -31,20 +28,19 @@ unsigned PostfixExpression::line() const {
 }
 
 void PostfixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type) {
-	expression->analyse(analyser, Type::UNKNOWN);
-	type = expression->type;
-	this->return_value = return_value;
-
-	if (req_type.nature != Nature::UNKNOWN) {
-		type.nature = req_type.nature;
+	expression->analyse(analyser, req_type);
+	if (expression->type == Type::FUNCTION || expression->type == Type::TUPLE) {
+		analyser->add_error({ SemanticException::TYPE_MISMATCH, expression->line() });
 	}
+
+	type = expression->type;
 }
 
-LSValue* jit_inc(LSValue* x) {
-	return x->ls_inc();
+LSVar* jit_inc(LSVar* x) {
+	return x->ls_postinc();
 }
-LSValue* jit_dec(LSValue* x) {
-	return x->ls_dec();
+LSVar* jit_dec(LSVar* x) {
+	return x->ls_postdec();
 }
 
 jit_value_t PostfixExpression::compile(Compiler& c) const {
@@ -61,12 +57,9 @@ jit_value_t PostfixExpression::compile(Compiler& c) const {
 			if (expression->type.nature == Nature::VALUE) {
 				jit_value_t x = expression->compile(c);
 				jit_value_t ox = jit_insn_load(c.F, x);
-				jit_value_t y = LS_CREATE_I32(c.F, 1);
+				jit_value_t y = VM::create_i32(c.F, 1);
 				jit_value_t sum = jit_insn_add(c.F, x, y);
 				jit_insn_store(c.F, x, sum);
-				if (type.nature == Nature::LSVALUE) {
-					return VM::value_to_pointer(c.F, ox, type);
-				}
 				return ox;
 			} else {
 				args.push_back(expression->compile(c));
@@ -78,12 +71,9 @@ jit_value_t PostfixExpression::compile(Compiler& c) const {
 			if (expression->type.nature == Nature::VALUE) {
 				jit_value_t x = expression->compile(c);
 				jit_value_t ox = jit_insn_load(c.F, x);
-				jit_value_t y = LS_CREATE_I32(c.F, 1);
+				jit_value_t y = VM::create_i32(c.F, 1);
 				jit_value_t sum = jit_insn_sub(c.F, x, y);
 				jit_insn_store(c.F, x, sum);
-				if (type.nature == Nature::LSVALUE) {
-					return VM::value_to_pointer(c.F, ox, type);
-				}
 				return ox;
 			} else {
 				args.push_back(expression->compile(c));

@@ -1,5 +1,6 @@
 #include "Compiler.hpp"
 #include "../vm/VM.hpp"
+#include "../vm/LSValue.hpp"
 
 using namespace std;
 
@@ -111,6 +112,65 @@ int Compiler::get_current_loop_blocks(int deepness) const {
 		sum += loops_blocks[i];
 	}
 	return sum;
+}
+
+bool CP_equal(LSValue* x, LSValue* y) {
+	return *x == *y;
+}
+bool CP_less(LSValue* x, LSValue* y) {
+	return *x < *y;
+}
+bool CP_greater_equal(LSValue* x, LSValue* y) {
+	return *x >= *y;
+}
+
+jit_value_t Compiler::compile_ge(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2)
+{
+	if (t1.is_primitive_number() && t2.is_primitive_number()) return jit_insn_ge(F, v1, v2);
+	if (t1.nature == Nature::LSVALUE && t2.nature == Nature::LSVALUE) {
+		jit_type_t args_types[2] = { LS_POINTER, LS_POINTER };
+		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_sys_bool, args_types, 2, 0);
+		jit_value_t args[2] = { v1, v2 };
+		return jit_insn_call_native(F, "", (void*) CP_greater_equal, sig, args, 2, JIT_CALL_NOTHROW);
+	}
+	return nullptr;
+}
+
+jit_value_t Compiler::compile_lt(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2)
+{
+	if (t1.is_primitive_number() && t2.is_primitive_number()) return jit_insn_lt(F, v1, v2);
+	if (t1.nature == Nature::LSVALUE && t2.nature == Nature::LSVALUE) {
+		jit_type_t args_types[2] = { LS_POINTER, LS_POINTER };
+		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_sys_bool, args_types, 2, 0);
+		jit_value_t args[2] = { v1, v2 };
+		return jit_insn_call_native(F, "", (void*) CP_less, sig, args, 2, JIT_CALL_NOTHROW);
+	}
+	return nullptr;
+}
+
+jit_value_t Compiler::compile_eq(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2)
+{
+	if (t1.is_primitive_number() && t2.is_primitive_number()) return jit_insn_eq(F, v1, v2);
+	if (t1.nature == Nature::LSVALUE && t2.nature == Nature::LSVALUE) {
+		jit_type_t args_types[2] = { LS_POINTER, LS_POINTER };
+		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_sys_bool, args_types, 2, 0);
+		jit_value_t args[2] = { v1, v2 };
+		return jit_insn_call_native(F, "", (void*) CP_equal, sig, args, 2, JIT_CALL_NOTHROW);
+	}
+	return nullptr;
+}
+
+jit_value_t Compiler::compile_convert(jit_function_t F, jit_value_t v, const Type& t_in, const Type& t_out)
+{
+	if (t_in == t_out) return v;
+	if (t_out == Type::VAR) {
+		return VM::value_to_lsvalue(F, v, t_in);
+	}
+	if (t_in == Type::I32 && t_out == Type::F64) {
+		return jit_insn_convert(F, v, VM::get_jit_type(t_out), 0);
+	}
+	assert(0);
+	return nullptr;
 }
 
 }

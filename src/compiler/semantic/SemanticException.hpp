@@ -24,7 +24,8 @@ public:
 		CANNOT_INDEX_THIS,
 		VALUE_MUST_BE_A_LVALUE,
 		UNKNOWN_TYPE,
-		TYPE_MISMATCH
+		TYPE_MISMATCH,
+		NUMBER_ARGUMENTS_MISMATCH
 	};
 
 	static bool translation_loaded;

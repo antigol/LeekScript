@@ -1,13 +1,9 @@
 #include <iostream>
 #include "LSValue.hpp"
-#include "value/LSNumber.hpp"
-#include "value/LSNull.hpp"
-#include "value/LSBoolean.hpp"
+#include "value/LSVar.hpp"
 #include "value/LSVec.hpp"
 #include "value/LSMap.hpp"
 #include "value/LSSet.hpp"
-#include "value/LSObject.hpp"
-#include "value/LSFunction.hpp"
 #include "VM.hpp"
 
 using namespace std;
@@ -41,10 +37,13 @@ LSValue::~LSValue() {
 	#endif
 }
 
-bool LSValue::eq(const LSVar*) const                      { return false; }
-bool LSValue::eq(const LSVec<LSValue*>*) const             { return false; }
-bool LSValue::eq(const LSVec<int>*) const                  { return false; }
-bool LSValue::eq(const LSVec<double>*) const               { return false; }
+bool LSValue::eq(const LSVar*) const                         { return false; }
+bool LSValue::eq(const LSVec<LSValue*>*) const               { return false; }
+bool LSValue::eq(const LSVec<void*>*) const                  { return false; }
+bool LSValue::eq(const LSVec<int32_t>*) const                { return false; }
+bool LSValue::eq(const LSVec<int64_t>*) const                { return false; }
+bool LSValue::eq(const LSVec<float>*) const                  { return false; }
+bool LSValue::eq(const LSVec<double>*) const                 { return false; }
 bool LSValue::eq(const LSMap<LSValue*,LSValue*>*) const      { return false; }
 bool LSValue::eq(const LSMap<LSValue*,int>*) const           { return false; }
 bool LSValue::eq(const LSMap<LSValue*,double>*) const        { return false; }
@@ -52,13 +51,19 @@ bool LSValue::eq(const LSMap<int,LSValue*>*) const           { return false; }
 bool LSValue::eq(const LSMap<int,int>*) const                { return false; }
 bool LSValue::eq(const LSMap<int,double>*) const             { return false; }
 bool LSValue::eq(const LSSet<LSValue*>*) const               { return false; }
-bool LSValue::eq(const LSSet<int>*) const                    { return false; }
+bool LSValue::eq(const LSSet<void*>*) const                  { return false; }
+bool LSValue::eq(const LSSet<int32_t>*) const                { return false; }
+bool LSValue::eq(const LSSet<int64_t>*) const                { return false; }
+bool LSValue::eq(const LSSet<float>*) const                  { return false; }
 bool LSValue::eq(const LSSet<double>*) const                 { return false; }
 
-bool LSValue::lt(const LSVar*) const                      { return typeID() < 4; }
-bool LSValue::lt(const LSVec<LSValue*>*) const             { return typeID() < 5; }
-bool LSValue::lt(const LSVec<int>*) const                  { return typeID() < 5; }
-bool LSValue::lt(const LSVec<double>*) const               { return typeID() < 5; }
+bool LSValue::lt(const LSVar*) const                         { return typeID() < 4; }
+bool LSValue::lt(const LSVec<void*>*) const                  { return typeID() < 5; }
+bool LSValue::lt(const LSVec<LSValue*>*) const               { return typeID() < 5; }
+bool LSValue::lt(const LSVec<int32_t>*) const                { return typeID() < 5; }
+bool LSValue::lt(const LSVec<int64_t>*) const                { return typeID() < 5; }
+bool LSValue::lt(const LSVec<float>*) const                  { return typeID() < 5; }
+bool LSValue::lt(const LSVec<double>*) const                 { return typeID() < 5; }
 bool LSValue::lt(const LSMap<LSValue*,LSValue*>*) const      { return typeID() < 6; }
 bool LSValue::lt(const LSMap<LSValue*,int>*) const           { return typeID() < 6; }
 bool LSValue::lt(const LSMap<LSValue*,double>*) const        { return typeID() < 6; }

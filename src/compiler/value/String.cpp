@@ -24,9 +24,15 @@ unsigned String::line() const {
 	return token->line;
 }
 
-void String::analyse(SemanticAnalyser*, const Type&) {
+void String::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	type = Type::VAR;
 	constant = true;
+
+	if (req_type != Type::UNKNOWN && req_type != Type::VAR) {
+		stringstream oss;
+		print(oss, 0, false);
+		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
+	}
 }
 
 LSValue* String_create(string* s) {
@@ -35,7 +41,7 @@ LSValue* String_create(string* s) {
 
 jit_value_t String::compile(Compiler& c) const {
 
-	jit_value_t base = LS_CREATE_POINTER(c.F, &value);
+	jit_value_t base = VM::create_ptr(c.F, (void*) &value);
 
 	jit_type_t args_types[1] = {LS_POINTER};
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_types, 1, 0);

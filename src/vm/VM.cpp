@@ -165,6 +165,9 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 }
 
 jit_type_t VM::get_jit_type(const Type& type) {
+	if (type == Type::VOID) {
+		return LS_VOID;
+	}
 	if (type.nature == Nature::LSVALUE || type.raw_type == RawType::FUNCTION) {
 		return LS_POINTER;
 	}
@@ -220,12 +223,12 @@ void* get_conv_fun(Type type) {
 	return nullptr;
 }
 
-jit_value_t VM::value_to_pointer(jit_function_t F, jit_value_t v, Type type) {
+jit_value_t VM::value_to_lsvalue(jit_function_t F, jit_value_t v, Type type) {
 
 	void* fun = get_conv_fun(type);
 
 	if (jit_type_get_kind(jit_value_get_type(v)) == JIT_TYPE_FLOAT64) {
-		fun = (void*) &create_float_object;
+		fun = (void*) &VM_convert_f64;
 	}
 
 	jit_type_t args_types[1] = { get_jit_type(type) };
@@ -233,38 +236,6 @@ jit_value_t VM::value_to_pointer(jit_function_t F, jit_value_t v, Type type) {
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_types, 1, 0);
 	return jit_insn_call_native(F, "convert", (void*) fun, sig, &v, 1, JIT_CALL_NOTHROW);
 }
-
-int VM_boolean_to_value(LSBoolean* b) {
-	return b->value;
-}
-
-jit_value_t VM::pointer_to_value(jit_function_t F, jit_value_t v, Type type) {
-
-	if (type == Type::BOOLEAN) {
-		jit_type_t args_types[1] = {LS_POINTER};
-		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_I32, args_types, 1, 0);
-		return jit_insn_call_native(F, "convert", (void*) VM_boolean_to_value, sig, &v, 1, JIT_CALL_NOTHROW);
-	}
-	return LS_CREATE_I32(F, 0);
-}
-
-/*
-bool VM::get_number(jit_function_t F, jit_value_t val) {
-
-	// x & (1 << 31) == 0
-
-	jit_value_t is_int = jit_insn_eq(F,
-		jit_insn_and(F, val, jit_value_create_nint_constant(F, jit_type_int, 2147483648)),
-		jit_value_create_nint_constant(F, jit_type_int, 0)
-	);
-
-	jit_value_t res;
-
-	jit_label_t label_else;
-	jit_insn_branch_if_not(F, is_int, &label_else);
-
-	return false;
-}*/
 
 int VM_get_refs(LSValue* val) {
 	return val->refs;
@@ -362,6 +333,37 @@ void VM::print_int(jit_function_t F, jit_value_t val) {
 	jit_insn_call_native(F, "print_int", (void*) VM_print_int, sig, &val, 1, JIT_CALL_NOTHROW);
 }
 
+jit_value_t VM::create_bool(jit_function_t F, bool value)
+{
+	return create_i32(F, value);
+}
+
+jit_value_t VM::create_i32(jit_function_t F, int32_t value)
+{
+	return jit_value_create_nint_constant(F, LS_I32, value);
+}
+
+jit_value_t VM::create_i64(jit_function_t F, int64_t value)
+{
+	return jit_value_create_long_constant(F, LS_I64, value);
+}
+
+jit_value_t VM::create_f32(jit_function_t F, double value)
+{
+	return jit_value_create_float32_constant(F, LS_F32, value);
+}
+
+jit_value_t VM::create_f64(jit_function_t F, double value)
+{
+	return jit_value_create_float64_constant(F, LS_F64, value);
+}
+
+jit_value_t VM::create_ptr(jit_function_t F, void* value)
+{
+	jit_constant_t constant = { LS_POINTER, { value } };
+	return jit_value_create_constant(F, &constant);
+}
+
 LSValue* VM_create_null() {
 	return new LSVar();
 }
@@ -375,11 +377,11 @@ LSValue* VM_create_bool(int value) {
 	return new LSVar((bool) value);
 }
 
-jit_value_t VM::create_bool(jit_function_t F, bool value)
+jit_value_t VM::create_lsbool(jit_function_t F, bool value)
 {
 	jit_type_t args[1] = { LS_BOOLEAN };
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args, 1, 0);
-	jit_value_t s = LS_CREATE_BOOLEAN(F, value);
+	jit_value_t s = create_bool(F, value);
 
 	return jit_insn_call_native(F, "create_bool", (void*) VM_create_bool, sig, &s, 1, JIT_CALL_NOTHROW);
 }
@@ -411,7 +413,7 @@ LSVec<double>* VM_create_vec_f64(int cap) {
 jit_value_t VM::create_vec(jit_function_t F, const Type& element_type, int cap) {
 	jit_type_t args[1] = {LS_I32};
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args, 1, 0);
-	jit_value_t s = LS_CREATE_I32(F, cap);
+	jit_value_t s = create_i32(F, cap);
 
 	if (element_type == Type::I32) {
 		return jit_insn_call_native(F, "create_vec", (void*) VM_create_vec_i32, sig, &s, 1, JIT_CALL_NOTHROW);

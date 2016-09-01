@@ -14,6 +14,7 @@
 #include "../../vm/standard/SystemSTD.hpp"
 #include "../../vm/standard/FunctionSTD.hpp"
 #include "../../vm/standard/ClassSTD.hpp"
+#include "../../vm/value/LSVar.hpp"
 #include "SemanticException.hpp"
 #include "../instruction/VariableDeclaration.hpp"
 
@@ -32,34 +33,6 @@ SemanticAnalyser::SemanticAnalyser() {
 
 SemanticAnalyser::~SemanticAnalyser() {}
 
-void SemanticVar::will_take(SemanticAnalyser* analyser, const std::vector<Type>& arg_types) {
-	if (value != nullptr) {
-		value->will_take(analyser, arg_types);
-		this->type.will_take(arg_types);
-	}
-}
-
-void SemanticVar::will_take_element(SemanticAnalyser* analyser, const Type& type) {
-	if (value != nullptr) {
-		value->will_take_element(analyser, type);
-		this->type.will_take_element(type);
-	}
-}
-
-void SemanticVar::must_be_pointer(SemanticAnalyser* analyser) {
-	if (value != nullptr) {
-		value->must_be_pointer(analyser);
-		this->type.nature = Nature::LSVALUE;
-	}
-}
-
-extern LSValue* jit_add(LSValue* x, LSValue* y);
-extern LSValue* jit_sub(LSValue* x, LSValue* y);
-extern LSValue* jit_mul(LSValue* x, LSValue* y);
-extern LSValue* jit_div(LSValue* x, LSValue* y);
-extern LSValue* jit_pow(LSValue* x, LSValue* y);
-extern LSValue* jit_mod(LSValue* x, LSValue* y);
-
 void SemanticAnalyser::analyse(Program* program, Context* context, std::vector<Module*>& modules) {
 
 	this->program = program;
@@ -75,7 +48,7 @@ void SemanticAnalyser::analyse(Program* program, Context* context, std::vector<M
 	op_type.setArgumentType(0, Type::VAR);
 	op_type.setArgumentType(1, Type::VAR);
 	op_type.setReturnType(Type::VAR);
-	program->system_vars.emplace("+", (void*) &jit_add);
+	program->system_vars.emplace("+", (void*) &LSVar::ls_add);
 	add_var(new Token("+"), op_type, nullptr, nullptr);
 //	program->system_vars.insert(pair<string, LSValue*>("-", new LSFunction((void*) &jit_sub, 1, true)));
 //	add_var(new Token("-"), op_type, nullptr, nullptr);
@@ -124,7 +97,7 @@ void SemanticAnalyser::analyse(Program* program, Context* context, std::vector<M
 		program->main->type.setReturnType(program->main->body->type);
 	}
 
-	program->functions = functions;
+//	program->functions = functions;
 }
 
 void SemanticAnalyser::enter_function(Function* f) {
@@ -241,9 +214,9 @@ SemanticVar* SemanticAnalyser::add_var(Token* v, Type type, Value* value, Variab
 	return variables.back().back().at(v->content);
 }
 
-void SemanticAnalyser::add_function(Function* l) {
-	functions.push_back(l);
-}
+//void SemanticAnalyser::add_function(Function* l) {
+//	functions.push_back(l);
+//}
 
 map<string, SemanticVar*>& SemanticAnalyser::get_local_vars() {
 	return variables.back().back();

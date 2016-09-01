@@ -12,16 +12,18 @@ using namespace std;
 namespace ls {
 
 ObjectAccess::ObjectAccess() {
+	/*
 	field = nullptr;
 	object = nullptr;
 	type = Type::POINTER;
 	class_attr = false;
 	attr_addr = nullptr;
+	*/
 }
 
 ObjectAccess::~ObjectAccess() {
 	delete object;
-	delete field_string;
+//	delete field_string;
 }
 
 void ObjectAccess::print(ostream& os, int indent, bool debug) const {
@@ -37,7 +39,7 @@ unsigned ObjectAccess::line() const {
 }
 
 void ObjectAccess::analyse(SemanticAnalyser* analyser, const Type& req_type) {
-
+/*
 	if (field_string == nullptr) {
 		field_string = new LSString(field->content);
 	}
@@ -110,9 +112,9 @@ void ObjectAccess::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		type.nature = req_type.nature;
 	}
 
-//	cout << "object_access '" << field->content << "' type : " << type << endl;
+//	cout << "object_access '" << field->content << "' type : " << type << endl;*/
 }
-
+/*
 void ObjectAccess::change_type(SemanticAnalyser*, const Type& req_type) {
 	type = req_type;
 }
@@ -124,9 +126,9 @@ LSValue* object_access(LSValue* o, LSString* k) {
 LSValue** object_access_l(LSValue* o, LSString* k) {
 	return o->attrL(k);
 }
-
+*/
 jit_value_t ObjectAccess::compile(Compiler& c) const {
-
+/*
 	// Special case for custom attributes, accessible via a function
 	if (access_function != nullptr) {
 
@@ -158,11 +160,11 @@ jit_value_t ObjectAccess::compile(Compiler& c) const {
 
 		VM::delete_temporary(c.F, o);
 		return res;
-	}
+	}*/
 }
 
 jit_value_t ObjectAccess::compile_l(Compiler& c) const {
-
+/*
 	jit_value_t o = object->compile(c);
 
 	jit_type_t args_types[2] = {LS_POINTER, LS_POINTER};
@@ -173,7 +175,7 @@ jit_value_t ObjectAccess::compile_l(Compiler& c) const {
 
 	jit_value_t res = jit_insn_call_native(c.F, "access_l", (void*) object_access_l, sig, args, 2, JIT_CALL_NOTHROW);
 
-	return res;
+	return res;*/
 }
 
 }

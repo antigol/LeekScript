@@ -1,11 +1,8 @@
-#include "../../compiler/value/PrefixExpression.hpp"
-
-#include "../../compiler/value/FunctionCall.hpp"
-#include "../../compiler/value/LeftValue.hpp"
-#include "../../compiler/value/VariableValue.hpp"
-#include "../../vm/value/LSNumber.hpp"
+#include "PrefixExpression.hpp"
+#include "FunctionCall.hpp"
+#include "LeftValue.hpp"
+#include "VariableValue.hpp"
 #include "../../vm/value/LSVec.hpp"
-#include "../../vm/value/LSObject.hpp"
 
 using namespace std;
 
@@ -37,7 +34,7 @@ unsigned PrefixExpression::line() const {
 }
 
 void PrefixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type) {
-
+/*
 	expression->analyse(analyser, Type::UNKNOWN);
 
 	if (operatorr->type == TokenType::PLUS_PLUS
@@ -81,8 +78,10 @@ void PrefixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	if (req_type.nature != Nature::UNKNOWN) {
 		type.nature = req_type.nature;
 	}
+	*/
 }
 
+/*
 LSValue* jit_not(LSValue* x) {
 	return x->ls_not();
 }
@@ -98,9 +97,10 @@ LSValue* jit_pre_dec(LSValue* x) {
 LSValue* jit_pre_tilde(LSValue* v) {
 	return v->ls_tilde();
 }
+*/
 
 jit_value_t PrefixExpression::compile(Compiler& c) const {
-
+/*
 	jit_type_t args_types[1] = {LS_POINTER};
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_types, 1, 0);
 	vector<jit_value_t> args;
@@ -260,6 +260,7 @@ jit_value_t PrefixExpression::compile(Compiler& c) const {
 	jit_value_t result = jit_insn_call_native(c.F, "", func, sig, args.data(), 1, JIT_CALL_NOTHROW);
 
 	return result;
+	*/
 }
 
 }

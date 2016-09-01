@@ -5,93 +5,14 @@
 #include "../../../lib/utf8.h"
 
 #include "StringSTD.hpp"
-#include "../value/LSNumber.hpp"
+#include "../value/LSVar.hpp"
 #include "../value/LSVec.hpp"
 
 
 using namespace std;
 
 namespace ls {
-
-LSValue* string_charAt(LSString* string, LSNumber* index);
-LSValue* string_contains(LSString* haystack, LSString* needle);
-LSValue* string_endsWith(LSString* string, LSString* ending);
-int string_indexOf(LSString* haystack, LSString* needle);
-LSValue* string_length(LSString* string);
-LSValue* string_map(LSString* string, void* fun);
-LSValue* string_replace(LSString* string, LSString* from, LSString* to);
-LSValue* string_reverse(LSString* string);
-LSValue* string_size(LSString* string);
-LSValue* string_split(LSString* string, LSString* delimiter);
-LSValue* string_startsWith(const LSString* string, const LSString* starting);
-LSValue* string_substring(LSString* string, LSNumber* start, LSNumber* length);
-LSValue* string_toLower(LSString* string);
-LSValue* string_toUpper(LSString* string);
-LSValue* string_toArray(const LSString* string);
-int string_begin_code(const LSString*);
-int string_code(const LSString*, int pos);
-long string_number(const LSString*);
-
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpmf-conversions"
-#endif
-StringSTD::StringSTD() : Module("String") {
-
-	method("charAt", Type::STRING, Type::STRING, {Type::INTEGER_P}, (void*) &LSString::charAt);
-	method("contains", Type::STRING, Type::BOOLEAN_P, {Type::STRING}, (void*) &string_contains);
-	method("endsWith", Type::STRING, Type::BOOLEAN_P, {Type::STRING}, (void*) &string_endsWith);
-	method("indexOf", Type::STRING, Type::INTEGER, {Type::STRING}, (void*) &string_indexOf);
-	method("length", Type::STRING, Type::INTEGER_P, {}, (void*) &string_length);
-	method("size", Type::STRING, Type::INTEGER_P, {}, (void*) &string_size);
-	method("replace", Type::STRING, Type::STRING, {Type::STRING, Type::STRING}, (void*) &string_replace);
-	method("reverse", Type::STRING, Type::STRING, {}, (void*) &string_reverse);
-	method("substring", Type::STRING, Type::STRING, {Type::INTEGER_P, Type::INTEGER_P}, (void*) &string_substring);
-	method("toArray", Type::STRING, Type::PTR_ARRAY, {}, (void*) &string_toArray);
-	method("toLower", Type::STRING, Type::STRING, {}, (void*) &string_toLower);
-	method("toUpper", Type::STRING, Type::STRING, {}, (void*) &string_toUpper);
-	method("split", Type::STRING, Type::STRING_ARRAY, {Type::STRING}, (void*) &string_split);
-	method("startsWith", Type::STRING, Type::BOOLEAN_P, {Type::STRING}, (void*) &string_startsWith);
-	method("code", {
-		{Type::STRING, Type::INTEGER, {}, (void*) &string_begin_code},
-		{Type::STRING, Type::INTEGER, {Type::INTEGER}, (void*) &string_code},
-	});
-	method("number", Type::STRING, Type::LONG, {}, (void*) &string_number);
-
-	Type map_fun_type = Type::FUNCTION;
-	map_fun_type.setArgumentType(0, Type::STRING);
-	map_fun_type.setReturnType(Type::STRING);
-	method("map", Type::STRING, Type::STRING, {map_fun_type}, (void*) &string_map);
-
-	/*
-	 * Static methods
-	 */
-	static_method("charAt", Type::STRING, {Type::STRING, Type::INTEGER_P}, (void*) &string_charAt);
-	static_method("contains", Type::BOOLEAN_P, {Type::STRING, Type::STRING}, (void*) &string_contains);
-	static_method("endsWith", Type::BOOLEAN_P, {Type::STRING, Type::STRING}, (void*) &string_endsWith);
-	static_method("length", Type::INTEGER_P, {Type::STRING}, (void*) &string_length);
-	static_method("size", Type::INTEGER_P, {Type::STRING}, (void*) &string_size);
-	static_method("replace", Type::STRING, {Type::STRING, Type::STRING, Type::STRING}, (void*) &string_replace);
-	static_method("reverse", Type::STRING, {Type::STRING}, (void*) &string_reverse);
-	static_method("substring", Type::STRING, {Type::STRING, Type::INTEGER_P, Type::INTEGER_P}, (void*) &string_substring);
-	static_method("toArray", Type::PTR_ARRAY, {Type::STRING}, (void*) &string_toArray);
-	static_method("toLower", Type::STRING, {Type::STRING}, (void*) &string_toLower);
-	static_method("toUpper", Type::STRING, {Type::STRING}, (void*) &string_toUpper);
-	static_method("split", Type::STRING_ARRAY, {Type::STRING, Type::STRING}, (void*) &string_split);
-	static_method("startsWith", Type::BOOLEAN_P, {Type::STRING, Type::STRING}, (void*) &string_startsWith);
-	static_method("map", Type::STRING, {Type::STRING, map_fun_type}, (void*) &string_map);
-	static_method("code", {
-		{Type::INTEGER, {Type::STRING}, (void*) &string_begin_code},
-		{Type::INTEGER, {Type::STRING, Type::INTEGER}, (void*) &string_code},
-	});
-	static_method("number", Type::LONG, {Type::STRING}, (void*) &string_number);
-}
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
-
-StringSTD::~StringSTD() {}
-
+/*
 LSValue* string_charAt(LSString* string, LSNumber* index) {
 	LSValue* r = new LSString(string->operator[] (index->value));
 	if (string->refs == 0) {
@@ -300,6 +221,71 @@ long string_number(const LSString* s) {
 	if (s->refs == 0) delete s;
 	return r;
 }
+*/
+
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpmf-conversions"
+#endif
+StringSTD::StringSTD() : Module("String") {
+/*
+	method("charAt", Type::STRING, Type::STRING, {Type::INTEGER_P}, (void*) &LSString::charAt);
+	method("contains", Type::STRING, Type::BOOLEAN_P, {Type::STRING}, (void*) &string_contains);
+	method("endsWith", Type::STRING, Type::BOOLEAN_P, {Type::STRING}, (void*) &string_endsWith);
+	method("indexOf", Type::STRING, Type::INTEGER, {Type::STRING}, (void*) &string_indexOf);
+	method("length", Type::STRING, Type::INTEGER_P, {}, (void*) &string_length);
+	method("size", Type::STRING, Type::INTEGER_P, {}, (void*) &string_size);
+	method("replace", Type::STRING, Type::STRING, {Type::STRING, Type::STRING}, (void*) &string_replace);
+	method("reverse", Type::STRING, Type::STRING, {}, (void*) &string_reverse);
+	method("substring", Type::STRING, Type::STRING, {Type::INTEGER_P, Type::INTEGER_P}, (void*) &string_substring);
+	method("toArray", Type::STRING, Type::PTR_ARRAY, {}, (void*) &string_toArray);
+	method("toLower", Type::STRING, Type::STRING, {}, (void*) &string_toLower);
+	method("toUpper", Type::STRING, Type::STRING, {}, (void*) &string_toUpper);
+	method("split", Type::STRING, Type::STRING_ARRAY, {Type::STRING}, (void*) &string_split);
+	method("startsWith", Type::STRING, Type::BOOLEAN_P, {Type::STRING}, (void*) &string_startsWith);
+	method("code", {
+		{Type::STRING, Type::INTEGER, {}, (void*) &string_begin_code},
+		{Type::STRING, Type::INTEGER, {Type::INTEGER}, (void*) &string_code},
+	});
+	method("number", Type::STRING, Type::LONG, {}, (void*) &string_number);
+
+	Type map_fun_type = Type::FUNCTION;
+	map_fun_type.setArgumentType(0, Type::STRING);
+	map_fun_type.setReturnType(Type::STRING);
+	method("map", Type::STRING, Type::STRING, {map_fun_type}, (void*) &string_map);
+*/
+
+	/*
+	 * Static methods
+	 */
+
+	/*
+	static_method("charAt", Type::STRING, {Type::STRING, Type::INTEGER_P}, (void*) &string_charAt);
+	static_method("contains", Type::BOOLEAN_P, {Type::STRING, Type::STRING}, (void*) &string_contains);
+	static_method("endsWith", Type::BOOLEAN_P, {Type::STRING, Type::STRING}, (void*) &string_endsWith);
+	static_method("length", Type::INTEGER_P, {Type::STRING}, (void*) &string_length);
+	static_method("size", Type::INTEGER_P, {Type::STRING}, (void*) &string_size);
+	static_method("replace", Type::STRING, {Type::STRING, Type::STRING, Type::STRING}, (void*) &string_replace);
+	static_method("reverse", Type::STRING, {Type::STRING}, (void*) &string_reverse);
+	static_method("substring", Type::STRING, {Type::STRING, Type::INTEGER_P, Type::INTEGER_P}, (void*) &string_substring);
+	static_method("toArray", Type::PTR_ARRAY, {Type::STRING}, (void*) &string_toArray);
+	static_method("toLower", Type::STRING, {Type::STRING}, (void*) &string_toLower);
+	static_method("toUpper", Type::STRING, {Type::STRING}, (void*) &string_toUpper);
+	static_method("split", Type::STRING_ARRAY, {Type::STRING, Type::STRING}, (void*) &string_split);
+	static_method("startsWith", Type::BOOLEAN_P, {Type::STRING, Type::STRING}, (void*) &string_startsWith);
+	static_method("map", Type::STRING, {Type::STRING, map_fun_type}, (void*) &string_map);
+	static_method("code", {
+		{Type::INTEGER, {Type::STRING}, (void*) &string_begin_code},
+		{Type::INTEGER, {Type::STRING, Type::INTEGER}, (void*) &string_code},
+	});
+	static_method("number", Type::LONG, {Type::STRING}, (void*) &string_number);
+	*/
+}
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
+StringSTD::~StringSTD() {}
 
 }
 

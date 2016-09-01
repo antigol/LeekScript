@@ -7,10 +7,11 @@ namespace ls {
 
 Function::Function() {
 	body = nullptr;
-	parent = nullptr;
-	pos = 0;
+//	parent = nullptr;
+//	pos = 0;
 	constant = true;
-	function_added = false;
+	returnType = nullptr;
+//	function_added = false;
 }
 
 Function::~Function() {
@@ -18,11 +19,16 @@ Function::~Function() {
 	for (auto value : defaultValues) {
 		delete value;
 	}
+	for (auto value : typeNames) {
+		delete value;
+	}
+	delete returnType;
 }
 
-void Function::addArgument(Token* name, bool reference, Value* defaultValue) {
+void Function::addArgument(Token* name, bool reference, TypeName* typeName, Value* defaultValue) {
 	arguments.push_back(name);
 	references.push_back(reference);
+	typeNames.push_back(typeName);
 	defaultValues.push_back(defaultValue);
 }
 
@@ -38,12 +44,17 @@ void Function::print(std::ostream& os, int indent, bool debug) const {
 	}
 
 	os << "(";
-	for (unsigned i = 0; i < arguments.size(); ++i) {
+	for (size_t i = 0; i < arguments.size(); ++i) {
 		if (i > 0) os << ", ";
 //		if (references.at(i)) {
 //			os << "@";
 //		}
-		os << arguments.at(i)->content;
+		os << arguments[i]->content;
+		if (i < typeNames.size()) {
+			os << ": ";
+			typeNames[i]->print(os);
+		}
+
 //
 //		if ((Value*)defaultValues.at(i) != nullptr) {
 //			os << " = ";
@@ -65,67 +76,45 @@ unsigned Function::line() const {
 
 void Function::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
-//	cout << "Function::analyse req_type " << req_type << endl;
+//	parent = analyser->current_function();
 
-	parent = analyser->current_function();
-
-	if (!function_added) {
-		analyser->add_function(this);
-		function_added = true;
-	}
+//	if (!function_added) {
+//		analyser->add_function(this);
+//		function_added = true;
+//	}
 
 	type = Type::FUNCTION;
 
-	for (unsigned int i = 0; i < arguments.size(); ++i) {
-		type.setArgumentType(i, Type::UNKNOWN);
+	for (size_t i = 0; i < arguments.size(); ++i) {
+		if (i < typeNames.size()) {
+			type.setArgumentType(i, typeNames[i]->getInternalType(analyser));
+		} else if (i < req_type.arguments_types.size()) {
+			type.setArgumentType(i, req_type.arguments_types[i]);
+		} else {
+			type.setArgumentType(i, Type::VAR);
+		}
 	}
 
-	for (unsigned int i = 0; i < req_type.getArgumentTypes().size(); ++i) {
-		type.setArgumentType(i, req_type.getArgumentType(i));
+	if (returnType) {
+		analyse_body(analyser, returnType->getInternalType(analyser));
+	} else if (req_type.getReturnType() != Type::UNKNOWN) {
+		analyse_body(analyser, req_type.return_types[0]);
+	} else {
+		analyse_body(analyser, Type::UNKNOWN);
 	}
 
-	analyse_body(analyser, req_type.getReturnType());
-
-	if (req_type.nature != Nature::UNKNOWN) {
-		type.nature = req_type.nature;
-	}
-
-//	cout << "Function type: " << type << endl;
-}
-
-bool Function::will_take(SemanticAnalyser* analyser, const std::vector<Type>& arg_types) {
-
-//	cout << "Function::will_take " << arg_type << " at " << pos << endl;
-
-	bool changed = type.will_take(arg_types);
-
-	analyse_body(analyser, type.getReturnType());
-
-//	cout << "Function::will_take type after " << type << endl;
-
-	return changed;
-}
-
-void Function::must_return(SemanticAnalyser* analyser, const Type& ret_type) {
-
-//	cout << "Function::must_return : " << ret_type << endl;
-
-	type.setReturnType(ret_type);
-
-	analyse_body(analyser, ret_type);
 }
 
 void Function::analyse_body(SemanticAnalyser* analyser, const Type& req_type) {
 
 	analyser->enter_function(this);
 
-	for (unsigned i = 0; i < arguments.size(); ++i) {
-//		cout << "arg " << i << " type : " << type.getArgumentType(i) << endl;
+	for (size_t i = 0; i < arguments.size(); ++i) {
 		analyser->add_parameter(arguments[i], type.getArgumentType(i));
 	}
 
-	type.setReturnType(Type::UNKNOWN);
-	body->analyse(analyser, req_type);
+	type.setReturnType(req_type); // type requested to return instructions
+	body->analyse(analyser, type.getReturnType()); // type requested to body
 	if (type.return_types.size() > 1) { // the body contains return instruction
 		Type return_type = body->type == Type::VOID ? Type::UNKNOWN : body->type;
 		for (size_t i = 1; i < type.return_types.size(); ++i) {
@@ -134,54 +123,48 @@ void Function::analyse_body(SemanticAnalyser* analyser, const Type& req_type) {
 		type.return_types.clear();
 		type.setReturnType(return_type);
 		body->analyse(analyser, return_type); // second pass
+		if (body->type != return_type) { // TODO : what if the body never ends like in { return 12 } or { if 1 return 1 else return 0 }
+			analyser->add_error({ SemanticException::TYPE_MISMATCH });
+		}
 	} else {
+		// TODO { return 12 } => body.type == VOID
 		type.setReturnType(body->type);
 	}
 
-	vars = analyser->get_local_vars();
+	if (req_type != Type::UNKNOWN && type.getReturnType() != req_type) {
+		analyser->add_error({ SemanticException::TYPE_MISMATCH });
+	}
+
+//	vars = analyser->get_local_vars();
 
 	analyser->leave_function();
-
-//	cout << "function analyse body : " << type << endl;
 }
 
 void Function::capture(SemanticVar* var) {
 
-	if (std::find(captures.begin(), captures.end(), var) == captures.end()) {
+//	if (std::find(captures.begin(), captures.end(), var) == captures.end()) {
+//		captures.push_back(var);
 
-//		cout << "Function::capture " << var->name << endl;
-
-		captures.push_back(var);
-
-		if (var->function != parent) {
-			parent->capture(var);
-		}
-	}
+//		if (var->function != parent) {
+//			parent->capture(var);
+//		}
+//	}
 }
 
 jit_value_t Function::compile(Compiler& c) const {
 
-//	cout << "Function::compile : " << type << endl;
-
 	jit_context_t context = jit_context_create();
 	jit_context_build_start(context);
 
-	unsigned arg_count = arguments.size();
 	vector<jit_type_t> params;
-	for (unsigned i = 0; i < arg_count; ++i) {
-		Type t = Type::INTEGER;
-		if (i < type.getArgumentTypes().size()) {
-			t = type.getArgumentType(i);
-		}
-		params.push_back(VM::get_jit_type(t));
+	for (size_t i = 0; i < arguments.size(); ++i) {
+		params.push_back(VM::get_jit_type(type.getArgumentType(i)));
 	}
 
 	jit_type_t return_type = VM::get_jit_type(type.getReturnType());
 
-	jit_type_t signature = jit_type_create_signature(jit_abi_cdecl, return_type, params.data(), arg_count, 0);
+	jit_type_t signature = jit_type_create_signature(jit_abi_cdecl, return_type, params.data(), arguments.size(), 0);
 	jit_function_t function = jit_function_create(context, signature);
-
-//	cout << "return type : " << type.getReturnType() << endl;
 
 	c.enter_function(function);
 
@@ -198,20 +181,12 @@ jit_value_t Function::compile(Compiler& c) const {
 
 	void* f = jit_function_to_closure(function);
 
-//	cout << "function : " << f << endl;
-
 	c.leave_function();
 
 	// Create a function : 1 op
 	VM::inc_ops(c.F, 1);
 
-	if (type.nature == Nature::LSVALUE) {
-//		cout << "create function pointer " << endl;
-		return LS_CREATE_POINTER(c.F, new LSFunction(f));
-	} else {
-//		cout << "create function value " << endl;
-		return LS_CREATE_POINTER(c.F, f);
-	}
+	return VM::create_ptr(c.F, f);
 }
 
 }

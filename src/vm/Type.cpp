@@ -12,7 +12,6 @@ bool RawType::operator ==(const RawType& type) const {
 	return _name == type._name && _classname == type._classname && _jsonname == type._jsonname;
 }
 
-const RawType RawType::UNDEFINED("!", "!", "!");
 const RawType RawType::UNKNOWN("?", "?", "?");
 const RawType RawType::VOID("void", "?", "void");
 const RawType RawType::VAR("var", "Variable", "variable");
@@ -27,7 +26,6 @@ const RawType RawType::SET("set", "Set", "set");
 const RawType RawType::FUNCTION("function", "?", "function");
 const RawType RawType::TUPLE("tuple", "Tuple", "tuple");
 
-const Type Type::UNDEFINED(RawType::UNDEFINED, Nature::UNKNOWN);
 const Type Type::UNKNOWN(RawType::UNKNOWN, Nature::UNKNOWN);
 const Type Type::VOID(RawType::VOID, Nature::VOID);
 
@@ -44,18 +42,18 @@ const Type Type::FUNCTION(RawType::FUNCTION, Nature::VALUE);
 const Type Type::TUPLE(RawType::TUPLE, Nature::VALUE);
 
 Type::Type() :
-	raw_type(RawType::UNDEFINED), nature(Nature::UNKNOWN)
+	raw_type(RawType::UNKNOWN), nature(Nature::UNKNOWN)
 {}
 
-Type::Type(const RawType& raw_type, Nature nature) {
-	this->raw_type = raw_type;
-	this->nature = nature;
+Type::Type(const RawType& raw_type, Nature nature) :
+	raw_type(raw_type), nature(nature)
+{
 	this->clazz = raw_type.getClass();
 }
 
-Type::Type(const RawType& raw_type, Nature nature, const vector<Type>& element_type) {
-	this->raw_type = raw_type;
-	this->nature = nature;
+Type::Type(const RawType& raw_type, Nature nature, const vector<Type>& element_type) :
+	raw_type(raw_type), nature(nature)
+{
 	this->clazz = raw_type.getClass();
 	this->element_types = element_type;
 }
@@ -66,14 +64,14 @@ bool Type::must_manage_memory() const {
 
 Type Type::getReturnType() const {
 	if (return_types.size() == 0) {
-		return Type::UNDEFINED;
+		return Type::UNKNOWN;
 	}
 	return return_types[0];
 }
 
 void Type::setReturnType(const Type& type) {
 	if (return_types.size() == 0) {
-		return_types.push_back(Type::UNDEFINED);
+		return_types.push_back(Type::UNKNOWN);
 	}
 	return_types[0] = type;
 }
@@ -84,14 +82,14 @@ void Type::addArgumentType(const Type& type) {
 
 void Type::setArgumentType(size_t index, const Type& type) {
 	while (arguments_types.size() <= index) {
-		arguments_types.push_back(Type::UNDEFINED);
+		arguments_types.push_back(Type::UNKNOWN);
 	}
 	arguments_types[index] = type;
 }
 
 const Type& Type::getArgumentType(size_t index) const {
 	if (index >= arguments_types.size()) {
-		return Type::UNDEFINED;
+		return Type::UNKNOWN;
 	}
 	return arguments_types[index];
 }
@@ -104,66 +102,28 @@ const Type& Type::getElementType(size_t i) const {
 	if (i < element_types.size()) {
 		return element_types[i];
 	}
-	return Type::UNDEFINED;
+	return Type::UNKNOWN;
 }
 
 void Type::setElementType(size_t index, const Type& type) {
 	while (element_types.size() <= index) {
-		element_types.push_back(Type::UNDEFINED);
+		element_types.push_back(Type::UNKNOWN);
 	}
 	element_types[index] = type;
 }
 
-bool Type::will_take(const std::vector<Type>& args_type) {
-
-	bool changed = false;
-
-	for (size_t i = 0; i < args_type.size(); ++i) {
-
-		Type current_type = getArgumentType(i);
-
-		if (current_type.nature == Nature::UNKNOWN) {
-			setArgumentType(i, args_type[i]);
-			changed = true;
-		} else {
-			if (current_type.nature == Nature::VALUE and args_type[i].nature == Nature::LSVALUE) {
-				setArgumentType(i, Type(RawType::UNKNOWN, Nature::LSVALUE));
-				changed = true;
-			}
-		}
-
-	}
-
-	return changed;
-}
-
-bool Type::will_take_element(const Type& element_type) {
-
-	if (raw_type != RawType::ARRAY) {
-		return false;
-	}
-
-	Type current = getElementType();
-
-	if (current == element_type) {
-		return false;
-	}
-
-	setElementType(0, element_type);
-	return true;
-}
-
 Type Type::mix(const Type& x) const {
-
+/*
 	if (*this == x) return *this;
 	if (nature == Nature::LSVALUE || x.nature == Nature::LSVALUE) return Type::POINTER;
 	if (raw_type == RawType::FLOAT || x.raw_type == RawType::FLOAT) return Type::FLOAT;
 	if (raw_type == RawType::INTEGER || x.raw_type == RawType::INTEGER) return Type::INTEGER;
+	*/
 	return x;
 }
 
 void Type::toJson(ostream& os) const {
-	os << "{\"type\":\"" << raw_type->getJsonName() << "\"";
+	os << "{\"type\":\"" << raw_type.getJsonName() << "\"";
 
 	if (raw_type == RawType::FUNCTION) {
 		os << ",\"args\":[";
@@ -178,14 +138,9 @@ void Type::toJson(ostream& os) const {
 	os << "}";
 }
 
-bool Type::isNumber() const {
-	return dynamic_cast<const NumberRawType*>(raw_type) != nullptr;
-}
-
 bool Type::operator ==(const Type& type) const {
 	return raw_type == type.raw_type &&
 			nature == type.nature &&
-			native == type.native &&
 			clazz == type.clazz &&
 			element_types == type.element_types &&
 			return_types == type.return_types &&
@@ -196,13 +151,17 @@ bool Type::can_be_convert_in(const Type& type) const {
 	return get_compatible_type(*this, type) == type;
 }
 
+bool Type::is_primitive_number() const
+{
+	return *this == Type::BOOLEAN || *this == Type::I32 || *this == Type::I64 || *this == Type::F32 || *this == Type::F64;
+}
+
 bool Type::list_compatible(const std::vector<Type>& expected, const std::vector<Type>& actual) {
 
 	if (expected.size() != actual.size()) return false;
 
 	for (size_t i = 0; i < expected.size(); ++i) {
-		// Can we convert type actual[i] into type expected[i] ?
-		if (not expected[i].compatible(actual[i])) return false;
+		if (!actual[i].can_be_convert_in(expected[i])) return false;
 	}
 	return true;
 }
@@ -220,45 +179,9 @@ bool Type::list_more_specific(const std::vector<Type>& old, const std::vector<Ty
 }
 
 bool Type::more_specific(const Type& old, const Type& neww) {
+	if (old == Type::UNKNOWN) return true;
 
-	if (neww.raw_type != old.raw_type) {
-		if (old.raw_type == RawType::UNKNOWN) {
-			return true;
-		}
-		if (old.raw_type == RawType::NUMBER
-				&& (neww.raw_type == RawType::INTEGER || neww.raw_type == RawType::LONG || neww.raw_type == RawType::FLOAT)) {
-			return true;
-		}
-		if (old.raw_type == RawType::FLOAT
-				&& (neww.raw_type == RawType::INTEGER || neww.raw_type == RawType::LONG)) {
-			return true;
-		}
-		if (old.raw_type == RawType::LONG
-				&& neww.raw_type == RawType::INTEGER) {
-			return true;
-		}
-	}
-
-	if ((neww.raw_type == RawType::ARRAY and old.raw_type == RawType::ARRAY)
-			|| (neww.raw_type == RawType::SET and old.raw_type == RawType::SET)) {
-		if (Type::more_specific(old.getElementType(), neww.getElementType())) {
-			return true;
-		}
-	}
-
-	if (neww.raw_type == RawType::MAP and old.raw_type == RawType::MAP) {
-		if (Type::more_specific(old.getElementType(0), neww.getElementType(0))
-				|| Type::more_specific(old.getElementType(1), neww.getElementType(1))) {
-			return true;
-		}
-	}
-
-	if (neww.raw_type == RawType::FUNCTION and old.raw_type == RawType::FUNCTION) {
-		if (Type::more_specific(old.getArgumentType(0), neww.getArgumentType(0))) { //! TODO only the first arg
-			return true;
-		}
-	}
-	return false;
+	return old != neww && neww.can_be_convert_in(old);
 }
 
 Type Type::get_compatible_type(const Type& t1, const Type& t2) {
@@ -271,8 +194,6 @@ Type Type::get_compatible_type(const Type& t1, const Type& t2) {
 
 	if (t1 == Type::UNKNOWN) return t2;
 	if (t2 == Type::UNKNOWN) return t1;
-	if (t1 == Type::UNDEFINED) return t2;
-	if (t2 == Type::UNDEFINED) return t1;
 
 	// FUNCTION
 	if (t1.raw_type == RawType::FUNCTION && t2.raw_type == RawType::FUNCTION) {
@@ -392,17 +313,17 @@ ostream& operator << (ostream& os, const Type& type) {
 		return os;
 	}
 
-	os << "{" << type.raw_type->getName() << Type::get_nature_symbol(type.nature);
+	os << "{" << type.raw_type.getName() << Type::get_nature_symbol(type.nature);
 
 	if (type.raw_type == RawType::FUNCTION) {
 		os << " (";
-		for (unsigned t = 0; t < type.arguments_types.size(); ++t) {
+		for (size_t t = 0; t < type.arguments_types.size(); ++t) {
 			if (t > 0) os << ", ";
 			os << type.arguments_types[t];
 		}
 		os << ") → " << type.getReturnType();
 	}
-	if (type.raw_type == RawType::ARRAY || type.raw_type == RawType::SET) {
+	if (type.raw_type == RawType::VEC || type.raw_type == RawType::SET) {
 		os << " of " << type.getElementType();
 	}
 	if (type.raw_type == RawType::MAP) {

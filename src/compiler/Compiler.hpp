@@ -52,6 +52,12 @@ public:
 	jit_label_t* get_current_loop_end_label(int deepness) const;
 	jit_label_t* get_current_loop_cond_label(int deepness) const;
 	int get_current_loop_blocks(int deepness) const;
+
+	static jit_value_t compile_ge(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2);
+	static jit_value_t compile_lt(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2);
+	static jit_value_t compile_eq(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2);
+
+	static jit_value_t compile_convert(jit_function_t F, jit_value_t v, const Type& t_in, const Type& t_out);
 };
 
 }

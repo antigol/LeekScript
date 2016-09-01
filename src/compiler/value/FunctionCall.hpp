@@ -13,13 +13,13 @@ public:
 	Value* function;
 	std::vector<Value*> arguments;
 
-	bool is_native = false;
-	bool is_static_native = false;
-	std::string native_func;
-	Type return_type;
+//	bool is_native = false;
+//	bool is_static_native = false;
+//	std::string native_func;
+//	Type return_type;
 
-	void* std_func;
-	Value* this_ptr;
+//	void* std_func;
+//	Value* this_ptr;
 
 	FunctionCall();
 	virtual ~FunctionCall();

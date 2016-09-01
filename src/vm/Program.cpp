@@ -1,6 +1,5 @@
 #include "Program.hpp"
 #include "Context.hpp"
-#include "value/LSNull.hpp"
 #include "value/LSVec.hpp"
 #include <chrono>
 #include "../compiler/lexical/LexicalAnalyser.hpp"
@@ -127,7 +126,7 @@ void Program::compile_main(Context& context) {
 	// catch (ex) {
 	jit_value_t ex = jit_insn_start_catcher(F);
 	VM::print_int(F, ex);
-	jit_insn_return(F, LS_CREATE_POINTER(F, new LSVar()));
+	jit_insn_return(F, VM::create_null(F));
 
 	jit_function_compile(F);
 	jit_context_build_end(jit_context);
@@ -141,23 +140,28 @@ LSValue* Program::execute() {
 
 	if (output_type == Type::BOOLEAN) {
 		auto fun = (bool (*)()) closure;
-		return LSBoolean::get(fun());
+		return new LSVar((bool) fun());
 	}
-	if (output_type == Type::INTEGER) {
-		auto fun = (int (*)()) closure;
+	if (output_type == Type::I32) {
+		auto fun = (int32_t (*)()) closure;
+		return new LSVar((int32_t) fun());
+	}
+	if (output_type == Type::I64) {
+		auto fun = (int64_t (*)()) closure;
+		return new LSVar((int64_t) fun());
+	}
+	if (output_type == Type::F32) {
+		auto fun = (float (*)()) closure;
 		return new LSVar((double) fun());
 	}
-	if (output_type == Type::FLOAT) {
+	if (output_type == Type::F64) {
 		auto fun = (double (*)()) closure;
 		return new LSVar(fun());
 	}
-	if (output_type == Type::LONG) {
-		auto fun = (long (*)()) closure;
-		return new LSVar(fun());
-	}
-	if (output_type.raw_type == RawType::FUNCTION and output_type.nature == Nature::VALUE) {
+	if (output_type == Type::FUNCTION) {
 		auto fun = (void* (*)()) closure;
-		return new LSFunction(fun());
+		fun();
+		return new LSVar("<function>");
 	}
 	auto fun = (LSValue* (*)()) closure;
 	return fun();
@@ -175,6 +179,7 @@ std::ostream& operator << (std::ostream& os, const Program* program) {
 
 extern map<string, jit_value_t> internals;
 
+/*
 LSVec<LSValue*>* Program_create_array() {
 	return new LSVec<LSValue*>();
 }
@@ -193,6 +198,7 @@ void Program_push_function(LSVec<LSValue*>* array, void* value) {
 void Program_push_pointer(LSVec<LSValue*>* array, LSValue* value) {
 	array->push_clone(value);
 }
+*/
 
 void Program::compile_jit(Compiler& c, Context& context, bool toplevel) {
 
@@ -200,9 +206,9 @@ void Program::compile_jit(Compiler& c, Context& context, bool toplevel) {
 	for (auto var : system_vars) {
 
 		string name = var.first;
-		LSValue* value = var.second;
+		void* value = var.second;
 
-		jit_value_t jit_val = LS_CREATE_POINTER(c.F, value);
+		jit_value_t jit_val = VM::create_ptr(c.F, value); // TODO : check type
 		internals.insert(pair<string, jit_value_t>(name, jit_val));
 	}
 
@@ -214,7 +220,7 @@ void Program::compile_jit(Compiler& c, Context& context, bool toplevel) {
 			LSValue* value = var.second;
 
 			jit_value_t jit_var = jit_value_create(c.F, LS_POINTER);
-			jit_value_t jit_val = LS_CREATE_POINTER(c.F, value);
+			jit_value_t jit_val = VM::create_ptr(c.F, value);
 			jit_insn_store(c.F, jit_var, jit_val);
 
 			c.add_var(name, jit_var, Type(value->getRawType(), Nature::LSVALUE), false);

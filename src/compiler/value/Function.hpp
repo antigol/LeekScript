@@ -3,10 +3,11 @@
 
 #include <vector>
 
-#include "../../compiler/lexical/Ident.hpp"
-#include "../../compiler/semantic/SemanticAnalyser.hpp"
-#include "../../compiler/value/Value.hpp"
-#include "../value/Block.hpp"
+#include "../lexical/Ident.hpp"
+#include "../semantic/SemanticAnalyser.hpp"
+#include "Value.hpp"
+#include "Block.hpp"
+#include "../TypeName.hpp"
 
 namespace ls {
 
@@ -19,27 +20,25 @@ public:
 	std::vector<Token*> arguments;
 	std::vector<bool> references;
 	std::vector<Value*> defaultValues;
+	std::vector<TypeName*> typeNames;
+	TypeName* returnType;
 	std::vector<SemanticVar*> captures;
 	Block* body;
-	int pos;
-	std::map<std::string, SemanticVar*> vars;
-	bool function_added;
-	Function* parent;
+//	int pos;
+//	std::map<std::string, SemanticVar*> vars;
+//	bool function_added;
+//	Function* parent;
 
 	Function();
 	virtual ~Function();
 
-	void addArgument(Token* token, bool reference, Value* defaultValue);
+	void addArgument(Token* token, bool reference, TypeName* typeName, Value* defaultValue);
 	void capture(SemanticVar* var);
 
 	virtual void print(std::ostream&, int indent, bool debug) const override;
 	virtual unsigned line() const override;
 
 	virtual void analyse(SemanticAnalyser*, const Type&) override;
-
-	bool will_take(SemanticAnalyser*, const std::vector<Type>&) override;
-
-	void must_return(SemanticAnalyser*, const Type&) override;
 
 	void analyse_body(SemanticAnalyser*, const Type& req_type);
 

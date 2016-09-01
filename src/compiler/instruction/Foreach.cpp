@@ -70,7 +70,7 @@ void Foreach::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		body->analyse(analyser, Type::VOID);
 	} else {
 		body->analyse(analyser, type.getElementType());
-		if (type.getElementType() == Type::UNDEFINED) {
+		if (type.getElementType() == Type::UNKNOWN) {
 			type.setElementType(0, body->type);
 		} else if (type.getElementType() != body->type) {
 			analyser->add_error({ SemanticException::TYPE_MISMATCH });

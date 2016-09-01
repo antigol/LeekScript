@@ -28,7 +28,7 @@ unsigned Set::line() const {
 }
 
 void Set::analyse(SemanticAnalyser* analyser, const Type&) {
-
+/*
 	Type element_type = Type::UNKNOWN;
 
 	for (Value* ex : expressions) {
@@ -51,8 +51,9 @@ void Set::analyse(SemanticAnalyser* analyser, const Type&) {
 	}
 
 	type = Type(RawType::SET, Nature::LSVALUE, element_type);
+	*/
 }
-
+/*
 LSSet<LSValue*>* Set_create_ptr() { return new LSSet<LSValue*>(); }
 LSSet<int>* Set_create_int()      { return new LSSet<int>();      }
 LSSet<double>* Set_create_float() { return new LSSet<double>();   }
@@ -69,9 +70,10 @@ void Set_insert_int(LSSet<int>* set, int value) {
 }
 void Set_insert_float(LSSet<int>* set, double value) {
 	set->insert(value);
-}
+}*/
 
 jit_value_t Set::compile(Compiler& c) const {
+	/*
 	void* create = type.getElementType() == Type::INTEGER ? (void*) Set_create_int :
 				   type.getElementType() == Type::FLOAT   ? (void*) Set_create_float :
 															(void*) Set_create_ptr;
@@ -98,6 +100,7 @@ jit_value_t Set::compile(Compiler& c) const {
 	VM::inc_ops(c.F, ops);
 
 	return s;
+	*/
 }
 
 

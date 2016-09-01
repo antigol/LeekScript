@@ -5,19 +5,19 @@
 using namespace std;
 
 namespace ls {
-
+/*
 int set_size(const LSSet<LSValue*>* set) {
 	int r = set->size();
 	if (set->refs == 0) delete set;
 	return r;
 }
-
+*/
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpmf-conversions"
 #endif
 SetSTD::SetSTD() : Module("Set") {
-
+/*
 	method("size", {
 			   {Type::PTR_SET, Type::INTEGER, {}, (void*) set_size},
 			   {Type::FLOAT_SET, Type::INTEGER, {}, (void*) set_size},
@@ -47,6 +47,7 @@ SetSTD::SetSTD() : Module("Set") {
 			   {Type::FLOAT_SET, Type::BOOLEAN, {Type::FLOAT}, (void*) &LSSet<double>::ls_contains},
 			   {Type::INT_SET, Type::BOOLEAN, {Type::INTEGER}, (void*) &LSSet<int>::ls_contains},
 		   });
+		   */
 }
 #ifdef __GNUC__
 #pragma GCC diagnostic pop

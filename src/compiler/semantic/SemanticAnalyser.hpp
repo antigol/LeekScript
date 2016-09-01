@@ -39,8 +39,6 @@ public:
 		VariableDeclaration* vd, Function* function) :
 		name(name), scope(scope), type(type), index(index), value(value), vd(vd), function(function) {}
 
-	void will_take(SemanticAnalyser*, const std::vector<Type>&);
-	void will_take_element(SemanticAnalyser*, const Type&);
 	void must_be_pointer(SemanticAnalyser*);
 };
 
@@ -54,7 +52,7 @@ public:
 	std::vector<std::vector<std::map<std::string, SemanticVar*>>> variables;
 	std::vector<std::map<std::string, SemanticVar*>> parameters;
 
-	std::vector<Function*> functions;
+//	std::vector<Function*> functions;
 	std::stack<Function*> functions_stack;
 	std::stack<int> loops;
 

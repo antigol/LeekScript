@@ -5,19 +5,19 @@
 using namespace std;
 
 namespace ls {
-
+/*
 int map_size(const LSMap<LSValue*,LSValue*>* map) {
 	int r = map->size();
 	if (map->refs == 0) delete map;
 	return r;
 }
-
+*/
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpmf-conversions"
 #endif
 MapSTD::MapSTD() : Module("Map") {
-
+/*
 	method("size", {
 		{Type::PTR_PTR_MAP, Type::INTEGER, {}, (void*) map_size},
 		{Type::PTR_FLOAT_MAP, Type::INTEGER, {}, (void*) map_size},
@@ -62,6 +62,7 @@ MapSTD::MapSTD() : Module("Map") {
 		{Type::INT_FLOAT_MAP, Type::FLOAT, {Type::INTEGER, Type::FLOAT}, (void*) &LSMap<int,double>::ls_look},
 		{Type::INT_INT_MAP, Type::INTEGER, {Type::INTEGER, Type::INTEGER}, (void*) &LSMap<int,int>::ls_look},
 	});
+	*/
 }
 #ifdef __GNUC__
 #pragma GCC diagnostic pop

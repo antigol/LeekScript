@@ -23,7 +23,6 @@ public:
 	const std::string getClass()    const { return _classname; }
 	const std::string getJsonName() const { return _jsonname; }
 
-	static const RawType UNDEFINED;
 	static const RawType UNKNOWN;
 	static const RawType VOID;
 	static const RawType VAR;
@@ -69,10 +68,9 @@ public:
 	const Type& getElementType(size_t i = 0) const;
 	void setElementType(size_t index, const Type&);
 
-	bool will_take(const std::vector<Type>& args_type);
-	bool will_take_element(const Type& arg_type);
 	Type mix(const Type& x) const;
 	bool can_be_convert_in(const Type& type) const;
+	bool is_primitive_number() const;
 
 	void toJson(std::ostream&) const;
 
@@ -83,7 +81,6 @@ public:
 	/*
 	 * Static part
 	 */
-	static const Type UNDEFINED;
 	static const Type UNKNOWN;
 	static const Type VOID;
 

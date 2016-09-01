@@ -37,27 +37,38 @@ void TypeName::print(std::ostream& os) const {
 }
 
 Type TypeName::getInternalType(SemanticAnalyser* analyser) const {
-	if (name->content == "bool" && elements.empty()) {
-		return Type::BOOLEAN;
+
+	for (const Type& t : { Type::BOOLEAN, Type::I32, Type::I64, Type::F32, Type::F64, Type::VAR }) {
+		if (name->content == t.raw_type.getName() && elements.empty()) {
+			return t;
+		}
 	}
-	if (name->content == "int" && elements.empty()) {
-		return Type::INTEGER;
+
+	if (name->content == Type::VEC.raw_type.getName() && elements.size() == 1) {
+		return Type(RawType::VEC, Nature::LSVALUE, { elements[0]->getInternalType(analyser) });
 	}
-	if (name->content == "real" && elements.empty()) {
-		return Type::FLOAT;
-	}
-	if (name->content == "string" && elements.empty()) {
-		return Type::STRING;
-	}
-	if (name->content == "array" && elements.size() == 1) {
-		return Type(RawType::ARRAY, Nature::LSVALUE, elements[0]->getInternalType(analyser));
-	}
-	if (name->content == "map" && elements.size() == 2) {
+	if (name->content == Type::MAP.raw_type.getName() && elements.size() == 2) {
 		return Type(RawType::MAP, Nature::LSVALUE, { elements[0]->getInternalType(analyser), elements[1]->getInternalType(analyser) });
 	}
-	if (name->content == "set" && elements.size() == 1) {
-		return Type(RawType::SET, Nature::LSVALUE, elements[0]->getInternalType(analyser));
+	if (name->content == Type::SET.raw_type.getName() && elements.size() == 1) {
+		return Type(RawType::SET, Nature::LSVALUE, { elements[0]->getInternalType(analyser) });
 	}
+	if (name->content == Type::TUPLE.raw_type.getName()) {
+		Type type(RawType::TUPLE, Nature::VALUE);
+		for (size_t i = 0; i < elements.size(); ++i) {
+			type.element_types.push_back(elements[i]->getInternalType(analyser));
+		}
+		return type;
+	}
+	if (name->content == Type::FUNCTION.raw_type.getName()) {
+		Type type(RawType::FUNCTION, Nature::VALUE);
+		for (size_t i = 0; i < arguments.size(); ++i) {
+			type.arguments_types.push_back(arguments[i]->getInternalType(analyser));
+		}
+		type.setReturnType(returnType ? returnType->getInternalType(analyser) : Type::VOID);
+		return type;
+	}
+
 
 	analyser->add_error({SemanticException::Type::UNKNOWN_TYPE, name->line, name->content});
 	return Type::UNKNOWN;

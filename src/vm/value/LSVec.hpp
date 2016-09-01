@@ -74,13 +74,13 @@ public:
 
 	LSVALUE_OPERATORS
 
-	bool eq(const LSVec<LSValue*>*) const override;
-	bool eq(const LSVec<int32_t>*) const override;
-	bool eq(const LSVec<double>*) const override;
+//	bool eq(const LSVec<LSValue*>*) const override;
+//	bool eq(const LSVec<int32_t>*) const override;
+//	bool eq(const LSVec<double>*) const override;
 
-	bool lt(const LSVec<LSValue*>*) const override;
-	bool lt(const LSVec<int32_t>*) const override;
-	bool lt(const LSVec<double>*) const override;
+//	bool lt(const LSVec<LSValue*>*) const override;
+//	bool lt(const LSVec<int32_t>*) const override;
+//	bool lt(const LSVec<double>*) const override;
 
 	bool in(LSValue*) const;
 

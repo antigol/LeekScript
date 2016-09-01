@@ -1,12 +1,12 @@
 #include <algorithm>
 #include "ArraySTD.hpp"
-#include "../value/LSNumber.hpp"
 #include "../value/LSVec.hpp"
 
 using namespace std;
 
 namespace ls {
 
+/*
 LSVec<LSValue*>* array_chunk_1_ptr(LSVec<LSValue*>* array) {
 	return array->ls_chunk(1);
 }
@@ -24,13 +24,14 @@ LSValue* array_sub(LSVec<LSValue*>* array, int begin, int end) {
 	if (array->refs == 0) delete array;
 	return r;
 }
+*/
 
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpmf-conversions"
 #endif
 ArraySTD::ArraySTD() : Module("Array") {
-
+/*
 	method("average", {
 		{Type::PTR_ARRAY, Type::FLOAT, {}, (void*) &LSVec<LSValue*>::ls_average},
 		{Type::FLOAT_ARRAY, Type::FLOAT, {}, (void*) &LSVec<double>::ls_average},
@@ -273,11 +274,13 @@ ArraySTD::ArraySTD() : Module("Array") {
 		{Type::FLOAT_ARRAY, Type::FLOAT_ARRAY, {}, (void*) &LSVec<double>::ls_shuffle},
 		{Type::INT_ARRAY, Type::INT_ARRAY, {}, (void*) &LSVec<int>::ls_shuffle},
 	});
-
+*/
 
 	/*
 	 * Static methods
 	 */
+
+	/*
 	static_method("average", {
 		{Type::FLOAT, {Type::PTR_ARRAY}, (void*) &LSVec<LSValue*>::ls_average},
 		{Type::FLOAT, {Type::FLOAT_ARRAY}, (void*) &LSVec<double>::ls_average},
@@ -442,6 +445,7 @@ ArraySTD::ArraySTD() : Module("Array") {
 		{Type::BOOLEAN, {Type::FLOAT_ARRAY, Type::FLOAT}, (void*) &LSVec<double>::ls_remove_element},
 		{Type::BOOLEAN, {Type::INT_ARRAY, Type::INTEGER}, (void*) &LSVec<int>::ls_remove_element}
 	});
+	*/
 }
 #ifdef __GNUC__
 #pragma GCC diagnostic pop

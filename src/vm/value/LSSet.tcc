@@ -265,7 +265,7 @@ template <typename T>
 inline bool LSSet<T>::in(LSValue* value) const {
 	if (LSVar* var = dynamic_cast<LSVar*>(value)) {
 		if (var->type == LSVar::REAL)
-			return this->count(var->data.real);
+			return this->count(var->real);
 	}
 	return false;
 }

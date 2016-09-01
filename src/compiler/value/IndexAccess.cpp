@@ -1,11 +1,7 @@
-#include "../../compiler/value/IndexAccess.hpp"
-
-#include "../../compiler/value/Array.hpp"
-#include "../../vm/value/LSNull.hpp"
+#include "IndexAccess.hpp"
+#include "Array.hpp"
 #include "../../vm/value/LSVec.hpp"
-#include "../../vm/value/LSInterval.hpp"
-#include "../semantic/SemanticAnalyser.hpp"
-#include "../semantic/SemanticException.hpp"
+#include "../../vm/value/LSVar.hpp"
 
 using namespace std;
 
@@ -15,7 +11,6 @@ IndexAccess::IndexAccess() {
 	container = nullptr;
 	key = nullptr;
 	key2 = nullptr;
-	type = Type::POINTER;
 }
 
 IndexAccess::~IndexAccess() {
@@ -45,7 +40,8 @@ unsigned IndexAccess::line() const {
 }
 
 void IndexAccess::analyse(SemanticAnalyser* analyser, const Type&) {
-
+/*
+	type = Type::POINTER;
 	container->analyse(analyser, Type::UNKNOWN);
 	Type key_type = Type::UNKNOWN;
 
@@ -75,46 +71,10 @@ void IndexAccess::analyse(SemanticAnalyser* analyser, const Type&) {
 	}
 
 	constant = container->constant && key->constant && (!key2 || key2->constant);
+	*/
 }
 
-bool IndexAccess::will_take(SemanticAnalyser* analyser, const std::vector<Type>& arg_types) {
-
-//	cout << "ArrayAccess::will_take " << arg_type << " at " << pos << endl;
-
-	type.will_take(arg_types);
-
-	if (Array* arr = dynamic_cast<Array*>(container)) {
-		arr->elements_will_take(analyser, arg_types, 1);
-	}
-	if (IndexAccess* arr = dynamic_cast<IndexAccess*>(container)) {
-		arr->array_access_will_take(analyser, arg_types, 1);
-	}
-
-	type = container->type.getElementType();
-
-	return false;
-}
-
-bool IndexAccess::array_access_will_take(SemanticAnalyser* analyser, const std::vector<Type>& arg_types, int level) {
-
-	type.will_take(arg_types);
-
-	if (Array* arr = dynamic_cast<Array*>(container)) {
-		arr->elements_will_take(analyser, arg_types, level);
-	}
-	if (IndexAccess* arr = dynamic_cast<IndexAccess*>(container)) {
-		arr->array_access_will_take(analyser, arg_types, level + 1);
-	}
-
-	type = container->type.getElementType();
-
-	return false;
-}
-
-void IndexAccess::change_type(SemanticAnalyser*, const Type&) {
-	// TODO
-}
-
+/*
 LSValue* access_temp(LSVec<LSValue*>* array, LSValue* key) {
 	return array->at(key);
 }
@@ -139,12 +99,11 @@ LSValue* range(LSValue* array, int start, int end) {
 
 int interval_access(const LSInterval* interval, int pos) {
 	return interval->atv(pos);
-}
+}*/
 
 jit_value_t IndexAccess::compile(Compiler& c) const {
 
-//	cout << "aa " << type << endl;
-
+	/*
 	jit_value_t a = container->compile(c);
 
 	if (key2 == nullptr) {
@@ -165,7 +124,7 @@ jit_value_t IndexAccess::compile(Compiler& c) const {
 			VM::inc_ops(c.F, 2);
 
 			if (type.nature == Nature::LSVALUE) {
-				return VM::value_to_pointer(c.F, res, type);
+				return VM::value_to_lsvalue(c.F, res, type);
 			}
 			return res;
 
@@ -208,10 +167,11 @@ jit_value_t IndexAccess::compile(Compiler& c) const {
 
 		return result;
 	}
+	*/
 }
 
 jit_value_t IndexAccess::compile_l(Compiler& c) const {
-
+/*
 	jit_value_t a = container->compile(c);
 
 	jit_type_t args_types[2] = {LS_POINTER, LS_POINTER};
@@ -221,6 +181,7 @@ jit_value_t IndexAccess::compile_l(Compiler& c) const {
 
 	jit_value_t args[] = {a, k};
 	return jit_insn_call_native(c.F, "access_l", (void*) access_l_value, sig, args, 2, JIT_CALL_NOTHROW);
+	*/
 }
 
 }

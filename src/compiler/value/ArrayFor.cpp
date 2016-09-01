@@ -23,7 +23,7 @@ unsigned ArrayFor::line() const {
 }
 
 void ArrayFor::analyse(SemanticAnalyser* analyser, const Type&) {
-	forr->analyse(analyser, Type::PTR_ARRAY);
+	forr->analyse(analyser, Type::VEC);
 	type = forr->type;
 }
 

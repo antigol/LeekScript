@@ -15,6 +15,7 @@ VariableDeclaration::VariableDeclaration() {
 
 VariableDeclaration::~VariableDeclaration() {
 	delete expression;
+	delete typeName;
 }
 
 void VariableDeclaration::print(ostream& os, int indent, bool debug) const {

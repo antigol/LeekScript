@@ -61,6 +61,7 @@ public:
 	virtual bool req(const LSValue*) const = 0;
 	virtual bool eq(const LSVar*) const;
 	virtual bool eq(const LSVec<LSValue*>*) const;
+	virtual bool eq(const LSVec<void*>*) const;
 	virtual bool eq(const LSVec<int32_t>*) const;
 	virtual bool eq(const LSVec<int64_t>*) const;
 	virtual bool eq(const LSVec<float>*) const;
@@ -72,6 +73,7 @@ public:
 	virtual bool eq(const LSMap<int,int>*) const;
 	virtual bool eq(const LSMap<int,double>*) const;
 	virtual bool eq(const LSSet<LSValue*>*) const;
+	virtual bool eq(const LSSet<void*>*) const;
 	virtual bool eq(const LSSet<int32_t>*) const;
 	virtual bool eq(const LSSet<int64_t>*) const;
 	virtual bool eq(const LSSet<float>*) const;
@@ -84,7 +86,10 @@ public:
 	virtual bool rlt(const LSValue*) const = 0;
 	virtual bool lt(const LSVar*) const;
 	virtual bool lt(const LSVec<LSValue*>*) const;
-	virtual bool lt(const LSVec<int>*) const;
+	virtual bool lt(const LSVec<void*>*) const;
+	virtual bool lt(const LSVec<int32_t>*) const;
+	virtual bool lt(const LSVec<int64_t>*) const;
+	virtual bool lt(const LSVec<float>*) const;
 	virtual bool lt(const LSVec<double>*) const;
 	virtual bool lt(const LSMap<LSValue*,LSValue*>*) const;
 	virtual bool lt(const LSMap<LSValue*,int>*) const;

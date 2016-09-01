@@ -280,26 +280,33 @@ Function* SyntaxicAnalyser::eatFunction() {
 
 	eat(TokenType::OPEN_PARENTHESIS);
 
-	while (t->type != TokenType::FINISHED && t->type != TokenType::CLOSING_PARENTHESIS) {
-
+	if (t->type != TokenType::CLOSING_PARENTHESIS) {
 		bool reference = false;
+		Token* ident = nullptr;
+		Value* defaultValue = nullptr;
+
+eatFunction_eatArgument:
+		reference = false;
 		if (t->type == TokenType::AROBASE) {
 			eat();
 			reference = true;
 		}
-
-		Token* ident = eatIdent();
-
-		Value* defaultValue = nullptr;
+		ident = eatIdent();
+		TypeName* typeName = nullptr;
+		if (t->type == TokenType::COLON) {
+			eat();
+			typeName = eatTypeName();
+		}
+		defaultValue = nullptr;
 		if (t->type == TokenType::EQUAL) {
 			eat();
 			defaultValue = eatExpression();
 		}
-
-		f->addArgument(ident, reference, defaultValue);
+		f->addArgument(ident, reference, typeName, defaultValue);
 
 		if (t->type == TokenType::COMMA) {
 			eat();
+			goto eatFunction_eatArgument;
 		}
 	}
 	eat(TokenType::CLOSING_PARENTHESIS);
@@ -1141,6 +1148,19 @@ TypeName* SyntaxicAnalyser::eatTypeName() {
 		} else {
 			eat(TokenType::GREATER);
 		}
+	}
+	if (t->type == TokenType::OPEN_PARENTHESIS) {
+		eat();
+		tn->arguments.push_back(eatTypeName());
+		while (t->type == TokenType::COMMA) {
+			eat();
+			tn->arguments.push_back(eatTypeName());
+		}
+		eat(TokenType::CLOSING_PARENTHESIS);
+	}
+	if (t->type == TokenType::ARROW) {
+		eat();
+		tn->returnType = eatTypeName();
 	}
 	return tn;
 }

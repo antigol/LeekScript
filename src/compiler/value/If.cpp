@@ -1,8 +1,6 @@
-#include "../../compiler/value/If.hpp"
-
-#include "../../compiler/value/Number.hpp"
+#include "If.hpp"
 #include "../../vm/LSValue.hpp"
-#include "../../vm/value/LSNull.hpp"
+#include "../semantic/SemanticAnalyser.hpp"
 
 using namespace std;
 
@@ -43,7 +41,7 @@ unsigned If::line() const {
 
 void If::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
-	condition->analyse(analyser, Type::BOOLEAN);
+	condition->analyse(analyser, Type::UNKNOWN);
 	then->analyse(analyser, req_type);
 
 	if (elze != nullptr) {
@@ -64,13 +62,18 @@ void If::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 			elze->analyse(analyser, type);
 		}
 	} else {
-		type = Type::POINTER; // Pointer because the else will give null
+		type = Type::VAR; // Pointer because the else will give null
 
-		then->analyse(analyser, Type::POINTER);
+		then->analyse(analyser, Type::VAR);
 	}
 
-	if (req_type.nature == Nature::LSVALUE) {
-		type.nature = req_type.nature;
+	if (req_type != Type::UNKNOWN) {
+		if (then->type != req_type) {
+			analyser->add_error({ SemanticException::TYPE_MISMATCH, then->line() });
+		}
+		if (elze->type != req_type) {
+			analyser->add_error({ SemanticException::TYPE_MISMATCH, elze->line() });
+		}
 	}
 }
 
@@ -87,7 +90,6 @@ jit_value_t If::compile(Compiler& c) const {
 	jit_value_t cond = condition->compile(c);
 
 	if (condition->type.nature == Nature::LSVALUE) {
-
 		jit_value_t cond_bool = VM::is_true(c.F, cond);
 		if (condition->type.must_manage_memory()) {
 			VM::delete_temporary(c.F, cond);

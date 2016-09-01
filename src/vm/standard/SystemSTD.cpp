@@ -6,45 +6,6 @@
 
 namespace ls {
 
-jit_value_t System_operations(jit_function_t F);
-jit_value_t System_version(jit_function_t F);
-jit_value_t System_time(jit_function_t F);
-jit_value_t System_millitime(jit_function_t F);
-jit_value_t System_microtime(jit_function_t F);
-jit_value_t System_nanotime(jit_function_t F);
-void System_print(LSValue* v);
-void System_print_int(int v);
-void System_print_long(long v);
-void System_print_bool(bool v);
-void System_print_float(double v);
-
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpmf-conversions"
-#endif
-SystemSTD::SystemSTD() : Module("System") {
-
-	static_field("version", Type::INTEGER, (void*) &System_version);
-
-	static_field("operations", Type::INTEGER, (void*) &System_operations);
-
-	static_field("time", Type::LONG, (void*) &System_time);
-	static_field("milliTime", Type::LONG, (void*) &System_millitime);
-	static_field("microTime", Type::LONG, (void*) &System_microtime);
-	static_field("nanoTime", Type::LONG, (void*) &System_nanotime);
-
-	static_method("print", {
-		{Type::VOID, {Type::INTEGER}, (void*) &System_print_int},
-		{Type::VOID, {Type::LONG}, (void*) &System_print_long},
-		{Type::VOID, {Type::BOOLEAN}, (void*) &System_print_bool},
-		{Type::VOID, {Type::FLOAT}, (void*) &System_print_float},
-		{Type::VOID, {Type::POINTER}, (void*) &System_print}
-	});
-}
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
-
 long get_sec_time() {
 	return std::chrono::duration_cast<std::chrono::seconds>(
 		std::chrono::system_clock::now().time_since_epoch()
@@ -119,6 +80,35 @@ void System_print_bool(bool v) {
 void System_print_float(double v) {
 	std::cout << v << std::endl;
 }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpmf-conversions"
+#endif
+SystemSTD::SystemSTD() : Module("System") {
+/*
+	static_field("version", Type::INTEGER, (void*) &System_version);
+
+	static_field("operations", Type::INTEGER, (void*) &System_operations);
+
+	static_field("time", Type::LONG, (void*) &System_time);
+	static_field("milliTime", Type::LONG, (void*) &System_millitime);
+	static_field("microTime", Type::LONG, (void*) &System_microtime);
+	static_field("nanoTime", Type::LONG, (void*) &System_nanotime);
+
+	static_method("print", {
+		{Type::VOID, {Type::INTEGER}, (void*) &System_print_int},
+		{Type::VOID, {Type::LONG}, (void*) &System_print_long},
+		{Type::VOID, {Type::BOOLEAN}, (void*) &System_print_bool},
+		{Type::VOID, {Type::FLOAT}, (void*) &System_print_float},
+		{Type::VOID, {Type::POINTER}, (void*) &System_print}
+	});
+	*/
+}
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
 
 }
 

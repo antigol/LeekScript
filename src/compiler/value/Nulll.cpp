@@ -1,14 +1,10 @@
-#include "../../compiler/value/Nulll.hpp"
-
-#include "../../vm/value/LSNull.hpp"
+#include "Nulll.hpp"
 
 using namespace std;
 
 namespace ls {
 
 Nulll::Nulll() {
-	type = Type::NULLL;
-	constant = true;
 }
 
 Nulll::~Nulll() {}
@@ -24,8 +20,13 @@ unsigned Nulll::line() const {
 	return 0;
 }
 
-void Nulll::analyse(SemanticAnalyser*, const Type&) {
-	// nothing to do, always a pointer
+void Nulll::analyse(SemanticAnalyser* analyser, const Type& req_type) {
+	type = Type::VAR;
+	constant = true;
+
+	if (req_type != Type::UNKNOWN && type != req_type) {
+		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), "null" });
+	}
 }
 
 jit_value_t Nulll::compile(Compiler& c) const {

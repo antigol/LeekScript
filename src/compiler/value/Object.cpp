@@ -1,15 +1,10 @@
 #include "../../compiler/value/Object.hpp"
 
-#include "../../vm/value/LSNull.hpp"
-#include "../../vm/value/LSString.hpp"
-#include "../../vm/value/LSObject.hpp"
-
 using namespace std;
 
 namespace ls {
 
 Object::Object() {
-	type = Type::OBJECT;
 }
 
 Object::~Object() {
@@ -42,18 +37,19 @@ unsigned Object::line() const {
 }
 
 void Object::analyse(SemanticAnalyser* analyser, const Type&) {
+	/*type = Type::OBJECT;
 	for (Value* value : values) {
 		value->analyse(analyser, Type::POINTER);
-	}
+	}*/
 }
-
+/*
 void push_object(LSObject* o, std::string* k, LSValue* v) {
 	o->addField(*k, v);
-}
+}*/
 
 jit_value_t Object::compile(Compiler& c) const {
 
-	jit_value_t object = VM::create_object(c.F);
+/*	jit_value_t object = VM::create_object(c.F);
 
 	jit_type_t args[3] = {LS_POINTER, LS_POINTER, LS_POINTER};
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_void, args, 3, 0);
@@ -65,7 +61,7 @@ jit_value_t Object::compile(Compiler& c) const {
 		jit_insn_call_native(c.F, "push", (void*) push_object, sig, args, 3, JIT_CALL_NOTHROW);
 	}
 
-	return object;
+	return object;*/
 }
 
 }

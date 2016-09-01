@@ -11,10 +11,7 @@
 #include "../../vm/Program.hpp"
 #include "../../vm/Type.hpp"
 #include "../../vm/value/LSVec.hpp"
-#include "../../vm/value/LSClass.hpp"
-#include "../../vm/value/LSNumber.hpp"
-#include "../../vm/value/LSObject.hpp"
-#include "../../vm/value/LSString.hpp"
+#include "../../vm/value/LSVar.hpp"
 #include "../../vm/VM.hpp"
 #include "../Compiler.hpp"
 #include "../lexical/Token.hpp"
@@ -29,9 +26,8 @@ namespace ls {
 
 FunctionCall::FunctionCall() {
 	function = nullptr;
-	type = Type::UNKNOWN;
-	std_func = nullptr;
-	this_ptr = nullptr;
+//	std_func = nullptr;
+//	this_ptr = nullptr;
 }
 
 FunctionCall::~FunctionCall() {
@@ -63,26 +59,37 @@ unsigned FunctionCall::line() const {
 
 void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
-//	cout << "function call analyse : " << req_type << endl;
-
 	constant = false;
 
 	function->analyse(analyser, Type::UNKNOWN);
 
-	if (function->type.raw_type != RawType::UNKNOWN and function->type.raw_type != RawType::FUNCTION
-		and function->type.raw_type != RawType::CLASS) {
+	if (function->type != Type::FUNCTION) {
 		std::ostringstream oss;
 		function->print(oss);
-		std::string content = oss.str();
-		analyser->add_error({SemanticException::Type::CANNOT_CALL_VALUE, function->line(), content});
+		analyser->add_error({ SemanticException::CANNOT_CALL_VALUE, function->line(), oss.str() });
+	}
+	if (arguments.size() != function->type.arguments_types.size()) {
+		std::ostringstream oss;
+		function->print(oss);
+		analyser->add_error({ SemanticException::NUMBER_ARGUMENTS_MISMATCH, function->line(), oss.str() });
 	}
 
-	int a = 0;
-	for (Value* arg : arguments) {
-//		arg->analyse(analyser, function->type.getArgumentType(a++));
-		arg->analyse(analyser, Type::UNKNOWN);
+	for (size_t i = 0; i < arguments.size(); ++i) {
+		arguments[i]->analyse(analyser, function->type.getArgumentType(i));
+		if (arguments[i]->type != function->type.getArgumentType(i)) {
+			std::ostringstream oss;
+			arguments[i]->print(oss);
+			analyser->add_error({ SemanticException::TYPE_MISMATCH, arguments[i]->line(), oss.str() });
+		}
 	}
 
+	if (req_type != Type::UNKNOWN && function->type.getReturnType().can_be_convert_in(req_type)) {
+		type = req_type;
+	} else {
+		type = function->type.getReturnType();
+	}
+
+	/*
 	// Standard library constructors
 	VariableValue* vv = dynamic_cast<VariableValue*>(function);
 	if (vv != nullptr) {
@@ -267,7 +274,7 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 				}
 				cout << "type after: " << function->type << endl;
 			}
-			*/
+			*//*
 		}
 	}
 
@@ -330,7 +337,7 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 			// TODO : to be able to remove temporary variable we must know the nature
 //			type = Type::POINTER; // When the function is unknown, the return type is a pointer
 		}
-		*/
+		*//*
 	}
 
 	return_type = function->type.getReturnType();
@@ -338,16 +345,18 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	if (req_type.nature != Nature::UNKNOWN) {
 		type.nature = req_type.nature;
 	}
+	*/
 
 //	cout << "Function call function type : " << type << endl;
 }
 
+/*
 LSValue* create_float_object_3(double n) {
 	return new LSVar(n);
 }
 LSValue* create_int_object_3(int n) {
 	return new LSVar(n);
-}
+}*/
 
 jit_value_t FunctionCall::compile(Compiler& c) const {
 
@@ -355,7 +364,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 
 	/*
 	 * Standard library constructors
-	 */
+	 *//*
 	VariableValue* vv = dynamic_cast<VariableValue*>(function);
 	if (vv != nullptr) {
 		if (vv->name == "Boolean") {
@@ -388,7 +397,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 
 	/*
 	 * Compile native static standard functions : Number.abs(12)
-	 */
+	 *//*
 	if (is_static_native) {
 
 		jit_value_t res = nullptr;
@@ -438,7 +447,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 
 	/*
 	 * Native standard function call on object : 12.abs()
-	 */
+	 *//*
 	if (is_native) {
 
 		Value* object = ((ObjectAccess*) function)->object;
@@ -490,7 +499,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 
 	/*
 	 * Standard function call on object
-	 */
+	 *//*
 	if (this_ptr != nullptr) {
 
 //		cout << "compile std function " << function->type << endl;
@@ -517,7 +526,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 
 	/*
 	 * Static standard function call
-	 */
+	 *//*
 	if (std_func != nullptr) {
 
 //		cout << "compile static std function" << endl;
@@ -543,7 +552,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 
 	/*
 	 * Operator functions
-	 */
+	 *//*
 	VariableValue* f = dynamic_cast<VariableValue*>(function);
 
 	if (f != nullptr) {
@@ -580,20 +589,12 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 	/*
 	 * Default function
 	 */
-	vector<jit_value_t> fun;
+	jit_value_t fun = function->compile(c);
 
-	if (function->type.nature == Nature::LSVALUE) {
-		jit_value_t fun_addr = function->compile(c);
-		fun.push_back(jit_insn_load_relative(c.F, fun_addr, 16, LS_POINTER));
-	} else {
-		fun.push_back(function->compile(c));
-	}
-
-	int arg_count = arguments.size();
 	vector<jit_value_t> args;
 	vector<jit_type_t> args_types;
 
-	for (int i = 0; i < arg_count; ++i) {
+	for (size_t i = 0; i < arguments.size(); ++i) {
 
 		args.push_back(arguments[i]->compile(c));
 		args_types.push_back(VM::get_jit_type(function->type.getArgumentType(i)));
@@ -603,18 +604,14 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 		}
 	}
 
-	//cout << "function call return type : " << info << endl;
+	jit_type_t jit_return_type = VM::get_jit_type(function->type.getReturnType());
 
-	jit_type_t jit_return_type = VM::get_jit_type(type);
+	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_return_type, args_types.data(), arguments.size(), 0);
 
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_return_type, args_types.data(), arg_count, 0);
-
-	jit_value_t ret = jit_insn_call_indirect(c.F, fun[0], sig, args.data(), arg_count, 0);
-
-	//cout << "function call type " << type << endl;
+	jit_value_t ret = jit_insn_call_indirect(c.F, fun, sig, args.data(), arguments.size(), 0);
 
 	// Destroy temporary arguments
-	for (int i = 0; i < arg_count; ++i) {
+	for (size_t i = 0; i < arguments.size(); ++i) {
 		if (function->type.getArgumentType(i).must_manage_memory()) {
 			VM::delete_ref(c.F, args[i]);
 		}
@@ -623,8 +620,12 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 	// Custom function call : 1 op
 	VM::inc_ops(c.F, 1);
 
-	if (return_type.nature != Nature::LSVALUE and type.nature == Nature::LSVALUE) {
-		return VM::value_to_pointer(c.F, ret, type);
+	if (function->type.getReturnType().nature != Nature::LSVALUE && type.nature == Nature::LSVALUE) {
+		return VM::value_to_lsvalue(c.F, ret, function->type.getReturnType());
+	}
+	if (function->type.getReturnType() != type) {
+		// TODO i32 -> f64
+		assert(0);
 	}
 
 	return ret;

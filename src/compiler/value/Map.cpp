@@ -45,7 +45,7 @@ unsigned Map::line() const {
 }
 
 void Map::analyse(SemanticAnalyser* analyser, const Type&) {
-
+/*
 	Type key_type = Type::UNKNOWN;
 	Type value_type = Type::UNKNOWN;
 
@@ -94,8 +94,9 @@ void Map::analyse(SemanticAnalyser* analyser, const Type&) {
 
 	type = Type::PTR_PTR_MAP;
 	type.element_types = { key_type, value_type };
+	*/
 }
-
+/*
 LSMap<LSValue*,LSValue*>* LSMap_create_ptr_ptr() {
 	return new LSMap<LSValue*,LSValue*>();
 }
@@ -145,9 +146,9 @@ void LSMap_insert_int_int(LSMap<int,int>* map, int key, int value) {
 void LSMap_insert_int_float(LSMap<int,double>* map, int key, double value) {
 	map->emplace(key, value);
 }
-
+*/
 jit_value_t Map::compile(Compiler &c) const {
-
+/*
 	void* create = nullptr;
 	void* insert = nullptr;
 
@@ -187,7 +188,7 @@ jit_value_t Map::compile(Compiler &c) const {
 
 	VM::inc_ops(c.F, ops);
 
-	return map;
+	return map;*/
 }
 
 }

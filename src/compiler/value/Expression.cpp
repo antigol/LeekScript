@@ -102,6 +102,7 @@ unsigned Expression::line() const {
 
 void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
+	/*
 	operations = 1;
 	type = Type::VAR;
 
@@ -246,9 +247,10 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	if (req_type.nature != Nature::UNKNOWN) {
 		type.nature = req_type.nature;
 	}
+	*/
 }
 
-
+/*
 LSValue* jit_add(LSValue* x, LSValue* y) {
 	return x->ls_add(y);
 }
@@ -440,9 +442,9 @@ LSValue* jit_bit_shr_unsigned_equal(LSValue* x, LSValue* y) {
 bool jit_is_null(LSValue* v) {
 	return v->typeID() == 1;
 }
-
+*/
 jit_value_t Expression::compile(Compiler& c) const {
-
+/*
 	// No operator : compile v1 and return
 	if (op == nullptr) {
 		return v1->compile(c);
@@ -1040,6 +1042,7 @@ jit_value_t Expression::compile(Compiler& c) const {
 
 		return v;
 	}
+*/
 }
 
 }

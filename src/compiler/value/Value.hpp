@@ -7,16 +7,14 @@
 #include "../../vm/VM.hpp"
 #include "../Compiler.hpp"
 #include "../../vm/Type.hpp"
+#include "../semantic/SemanticAnalyser.hpp"
 
 namespace ls {
-
-class SemanticAnalyser;
 
 class Value {
 public:
 
 	Type type;
-	std::map<std::string, Type> attr_types;
 	bool constant;
 	bool parenthesis = false;
 
@@ -29,10 +27,6 @@ public:
 
 	virtual unsigned line() const = 0;
 
-	virtual bool will_take(SemanticAnalyser*, const std::vector<Type>& args_type);
-	virtual bool will_take_element(SemanticAnalyser*, const Type);
-	virtual bool must_be_pointer(SemanticAnalyser*);
-	virtual void must_return(SemanticAnalyser*, const Type&);
 	virtual void analyse(SemanticAnalyser*, const Type&) = 0;
 
 	virtual jit_value_t compile(Compiler&) const = 0;

@@ -1,12 +1,12 @@
 #include "NumberSTD.hpp"
-#include "../value/LSNumber.hpp"
+#include "../value/LSVar.hpp"
 #include "../../../lib/utf8.h"
 
 using namespace std;
 
 namespace ls {
 
-
+/*
 jit_value_t Number_e(jit_function_t F) {
 	return jit_value_create_float64_constant(F, jit_type_float64, M_E);
 }
@@ -265,13 +265,14 @@ LSString* number_char(LSNumber* x) {
 	u8_toutf8(dest, 5, &n, 1);
 	return new LSString(dest);
 }
+*/
 
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpmf-conversions"
 #endif
 NumberSTD::NumberSTD() : Module("Number") {
-
+/*
 	static_field("pi", Type::FLOAT, (void*) &Number_pi);
 	static_field("e", Type::FLOAT, (void*) &Number_e);
 	static_field("phi", Type::FLOAT, (void*) &Number_phi);
@@ -341,6 +342,7 @@ NumberSTD::NumberSTD() : Module("Number") {
 	static_method("toRadians", Type::FLOAT_P, {Type::NUMBER}, (void*) &number_toRadians);
 	static_method("isInteger", Type::BOOLEAN, {Type::NUMBER}, (void*) &number_isInteger);
 	static_method("char", Type::STRING, {Type::NUMBER}, (void*) &number_char);
+	*/
 }
 #ifdef __GNUC__
 #pragma GCC diagnostic pop

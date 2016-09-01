@@ -1,9 +1,6 @@
-#include "../../compiler/value/VariableValue.hpp"
-
+#include "VariableValue.hpp"
+#include "Function.hpp"
 #include "../../vm/VM.hpp"
-#include "math.h"
-#include "../semantic/SemanticAnalyser.hpp"
-#include "../value/Function.hpp"
 #include "../instruction/VariableDeclaration.hpp"
 
 using namespace std;
@@ -33,51 +30,22 @@ unsigned VariableValue::line() const {
 void VariableValue::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	var = analyser->get_var(token);
-	if (var != nullptr) {
+	if (var) {
 		type = var->type;
-		attr_types = var->attr_types;
 
 		if (var->function != analyser->current_function()) {
 			analyser->current_function()->capture(var);
   		}
-	} else {
-		type = Type::POINTER;
 	}
 
-	if (req_type.nature == Nature::LSVALUE) {
-		type.nature = req_type.nature;
+	if (req_type != Type::UNKNOWN && type.can_be_convert_in(req_type)) {
+		type = req_type;
 	}
-//	cout << "VV " << name << " : " << type << endl;
-//	cout << "var scope : " << (int)var->scope << endl;
-//	for (auto t : attr_types)
-//		cout << t.first << " : " << t.second << endl;
-}
 
-bool VariableValue::will_take(SemanticAnalyser* analyser, const vector<Type>& arg_types) {
-
-	if (var != nullptr and var->value != nullptr) {
-		var->value->will_take(analyser, arg_types);
-		this->type = var->value->type;
-	}
-	return false;
-}
-
-void VariableValue::must_return(SemanticAnalyser* analyser, const Type& ret_type) {
-
-	var->value->must_return(analyser, ret_type);
-	type.setReturnType(ret_type);
-}
-
-/*
- * let a = 12 // integer
- * a = 5.6 // float
- * a = 12 // integer
- * a += 1.2 // float at the previous assignment
- */
-void VariableValue::change_type(SemanticAnalyser*, const Type& type) {
-	if (var != nullptr) {
-		var->type = type;
-		this->type = type;
+	if (req_type != Type::UNKNOWN && type != req_type) {
+		stringstream oss;
+		print(oss, 0, false);
+		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
 	}
 }
 
@@ -85,28 +53,20 @@ extern map<string, jit_value_t> internals;
 
 jit_value_t VariableValue::compile(Compiler& c) const {
 
-//	cout << "compile vv " << name->content << " : " << type << endl;
-//	cout << "req type : " << req_type << endl;
-
 	jit_value_t v;
-
-	if (var->scope == VarScope::INTERNAL) {
-
-		v = internals[name];
-
-	} else if (var->scope == VarScope::LOCAL) {
-
-		v = c.get_var(name).value;
-
-	} else { // Parameter
-
-		v = jit_value_get_param(c.F, var->index);
+	switch (var->scope) {
+		case VarScope::INTERNAL:
+			v = internals[name];
+			break;
+		case VarScope::LOCAL:
+			v = c.get_var(name).value;
+			break;
+		case VarScope::PARAMETER:
+			v = jit_value_get_param(c.F, var->index);
+			break;
 	}
 
-	if (var->type.nature != Nature::LSVALUE and type.nature == Nature::LSVALUE) {
-		return VM::value_to_pointer(c.F, v, var->type);
-	}
-	return v;
+	return Compiler::compile_convert(c.F, v, var->type, type);
 }
 
 jit_value_t VariableValue::compile_l(Compiler& c) const {

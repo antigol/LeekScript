@@ -1,5 +1,6 @@
 #include "Match.hpp"
 #include "../../vm/LSValue.hpp"
+#include "../semantic/SemanticAnalyser.hpp"
 
 using namespace std;
 
@@ -50,53 +51,49 @@ unsigned Match::line() const {
 	return 0;
 }
 
-void Match::analyse(ls::SemanticAnalyser* analyser, const Type&) {
+void Match::analyse(ls::SemanticAnalyser* analyser, const Type& req_type) {
 
-	bool any_pointer = false;
 	bool has_default = false;
 
 	value->analyse(analyser, Type::UNKNOWN);
-	if (value->type.nature == Nature::LSVALUE) any_pointer = true;
+	if (value->type == Type::FUNCTION || value->type == Type::VOID) {
+		stringstream oss;
+		value->print(oss);
+		analyser->add_error({ SemanticException::TYPE_MISMATCH, value->line(), oss.str() });
+	}
 
 	for (auto& ps : pattern_list) {
 		for (Pattern& p : ps) {
 			if (p.begin) {
 				p.begin->analyse(analyser, Type::UNKNOWN);
-				if (p.begin->type.nature == Nature::LSVALUE) any_pointer = true;
 			}
 			if (p.end) {
 				p.end->analyse(analyser, Type::UNKNOWN);
-				if (p.end->type.nature == Nature::LSVALUE) any_pointer = true;
 			}
 			has_default = has_default || p.is_default();
 		}
 	}
 
-	if (any_pointer) {
-		value->analyse(analyser, Type::POINTER);
-		for (auto& ps : pattern_list) {
-			for (Pattern& p : ps) {
-				if (p.begin) {
-					p.begin->analyse(analyser, Type::POINTER);
-				}
-				if (p.end) {
-					p.end->analyse(analyser, Type::POINTER);
-				}
-			}
-		}
-	}
-
 	if (!has_default) {
 		// Return type is always pointer because in the default case, null is return
-		type = Type::POINTER;
+		type = Type::VAR;
 		for (Value* r : returns) {
-			r->analyse(analyser, Type::POINTER);
+			r->analyse(analyser, Type::VAR);
 		}
+	} else if (req_type != Type::UNKNOWN) {
+		for (Value* ret : returns) {
+			ret->analyse(analyser, req_type);
+		}
+		type = req_type;
 	} else {
 		type = Type::UNKNOWN;
 		for (Value* ret : returns) {
 			ret->analyse(analyser, Type::UNKNOWN);
 			type = Type::get_compatible_type(type, ret->type);
+			if (type == Type::VOID) {
+				analyser->add_error({ SemanticException::TYPE_MISMATCH, ret->line() });
+				break;
+			}
 		}
 		for (Value* ret : returns) {
 			ret->analyse(analyser, type);
@@ -155,13 +152,13 @@ jit_value_t Match::compile(Compiler& c) const {
 		jit_label_t label_next = jit_label_undefined;
 
 		if (pattern_list[i].size() == 1) {
-			jit_value_t cond = pattern_list[i][0].match(c, v);
+			jit_value_t cond = pattern_list[i][0].match(c, v, value->type);
 			jit_insn_branch_if_not(c.F, cond, &label_next);
 		} else {
 			jit_label_t label_match = jit_label_undefined;
 
 			for (const Pattern& pattern : pattern_list[i]) {
-				jit_value_t cond = pattern.match(c, v);
+				jit_value_t cond = pattern.match(c, v, value->type);
 				jit_insn_branch_if(c.F, cond, &label_match);
 			}
 			jit_insn_branch(c.F, &label_next);
@@ -202,47 +199,24 @@ void Match::Pattern::print(ostream &os, int indent, bool debug) const {
 	}
 }
 
-bool jit_equals_(LSValue* x, LSValue* y) {
-	return *x == *y;
-}
-bool jit_less_(LSValue* x, LSValue* y) {
-	return *x < *y;
-}
-bool jit_greater_equal_(LSValue* x, LSValue* y) {
-	return *x >= *y;
-}
-
-jit_value_t Match::Pattern::match(Compiler &c, jit_value_t v) const {
-
-	jit_type_t args_types[2] = {LS_POINTER, LS_POINTER};
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_sys_bool, args_types, 2, 0);
+jit_value_t Match::Pattern::match(Compiler &c, jit_value_t v, const Type& value_type) const {
 
 	if (interval) {
 		jit_value_t ge = nullptr;
 		if (begin) {
 			jit_value_t b = begin->compile(c);
-			if (begin->type.nature == Nature::VALUE) {
-				ge = jit_insn_ge(c.F, v, b);
-			} else {
-				jit_value_t args[2] = { v, b };
-				ge = jit_insn_call_native(c.F, "", (void*) jit_greater_equal_, sig, args, 2, JIT_CALL_NOTHROW);
-				if (begin->type.must_manage_memory()) {
-					VM::delete_temporary(c.F, b);
-				}
+			ge = Compiler::compile_ge(c.F, v, value_type, b, begin->type);
+			if (begin->type.must_manage_memory()) {
+				VM::delete_temporary(c.F, b);
 			}
 		}
 
 		jit_value_t lt = nullptr;
 		if (end) {
 			jit_value_t e = end->compile(c);
-			if (end->type.nature == Nature::VALUE) {
-				lt = jit_insn_lt(c.F, v, e);
-			} else {
-				jit_value_t args[2] = { v, e };
-				lt = jit_insn_call_native(c.F, "", (void*) jit_less_, sig, args, 2, JIT_CALL_NOTHROW);
-				if (end->type.must_manage_memory()) {
-					VM::delete_temporary(c.F, e);
-				}
+			lt = Compiler::compile_lt(c.F, v, value_type, e, end->type);
+			if (end->type.must_manage_memory()) {
+				VM::delete_temporary(c.F, e);
 			}
 		}
 
@@ -261,17 +235,10 @@ jit_value_t Match::Pattern::match(Compiler &c, jit_value_t v) const {
 		}
 
 	} else {
-		jit_value_t cond;
 		jit_value_t p = begin->compile(c);
-
-		if (begin->type.nature == Nature::VALUE) {
-			cond = jit_insn_eq(c.F, v, p);
-		} else {
-			jit_value_t args[2] = { v, p };
-			cond = jit_insn_call_native(c.F, "", (void*) jit_equals_, sig, args, 2, JIT_CALL_NOTHROW);
-			if (begin->type.must_manage_memory()) {
-				VM::delete_temporary(c.F, p);
-			}
+		jit_value_t cond = Compiler::compile_eq(c.F, v, value_type, p, begin->type);
+		if (begin->type.must_manage_memory()) {
+			VM::delete_temporary(c.F, p);
 		}
 		return cond;
 	}

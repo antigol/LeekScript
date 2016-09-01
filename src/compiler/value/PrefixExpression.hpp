@@ -1,8 +1,8 @@
 #ifndef PREFIXEXPRESSION_HPP
 #define PREFIXEXPRESSION_HPP
 
-#include "../../compiler/value/Expression.hpp"
-#include "../../compiler/value/Value.hpp"
+#include "Expression.hpp"
+#include "Value.hpp"
 #include "../lexical/Operator.hpp"
 
 namespace ls {

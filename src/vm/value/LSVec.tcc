@@ -1758,6 +1758,7 @@ bool LSVec<T>::eq(const LSVec<LSValue*>* array) const {
 }
 */
 
+/*
 template <>
 inline bool LSVec<LSValue*>::eq(const LSVec<LSValue*>* array) const {
 	if (this->size() != array->size()) {
@@ -1790,7 +1791,7 @@ bool LSVec<T>::eq(const LSVec<int>* array) const {
 }
 template <>
 inline bool LSVec<LSValue*>::eq(const LSVec<int>* array) const {
-/*
+
 	if (this->size() != array->size()) {
 		return false;
 	}
@@ -1803,7 +1804,7 @@ inline bool LSVec<LSValue*>::eq(const LSVec<int>* array) const {
 		if (n->value != *j) return false;
 	}
 	return true;
-	*/
+
 	return false;
 }
 
@@ -1851,7 +1852,7 @@ inline bool LSVec<T>::lt(const LSVec<LSValue*>* v) const {
 	return (j != v->end());
 }
 */
-
+/*
 template <>
 inline bool LSVec<LSValue*>::lt(const LSVec<LSValue*>* v) const {
 	return std::lexicographical_compare(begin(), end(), v->begin(), v->end(), [](const LSValue* a, const LSValue* b) -> bool {
@@ -1860,9 +1861,14 @@ inline bool LSVec<LSValue*>::lt(const LSVec<LSValue*>* v) const {
 }
 
 template <>
+inline bool LSVec<void*>::lt(const LSVec<LSValue*>* v) const {
+	return false;
+}
+
+template <>
 inline bool LSVec<LSValue*>::lt(const LSVec<int>* v) const {
 	return false;
-	/*
+
 	auto i = begin();
 	auto j = v->begin();
 	while (i != end()) {
@@ -1874,7 +1880,11 @@ inline bool LSVec<LSValue*>::lt(const LSVec<int>* v) const {
 		++i; ++j;
 	}
 	return (j != v->end());
-	*/
+
+}
+template <>
+inline bool LSVec<void*>::lt(const LSVec<int>* v) const {
+	return false;
 }
 template <typename T>
 inline bool LSVec<T>::lt(const LSVec<int>* v) const {
@@ -1896,21 +1906,26 @@ inline bool LSVec<LSValue*>::lt(const LSVec<double>* v) const {
 		++i; ++j;
 	}
 	return (j != v->end());
-	*/
+}
+*/
+/*
+template <>
+inline bool LSVec<void*>::lt(const LSVec<double>* v) const {
+	return false;
 }
 
 template <typename T>
 inline bool LSVec<T>::lt(const LSVec<double>* v) const {
 	return std::lexicographical_compare(this->begin(), this->end(), v->begin(), v->end());
 }
-
+*/
 template <typename T>
 bool LSVec<T>::in(LSValue* key) const {
 	const LSVar* n = dynamic_cast<const LSVar*>(key);
 	if (!n) return false;
 	if (n->type != LSVar::REAL) return false;
 	for (auto i = this->begin(); i != this->end(); i++) {
-		if ((*i) == n->data.real) {
+		if ((*i) == n->real) {
 			return true;
 		}
 	}

@@ -10,8 +10,8 @@ Return::Return() : Return(nullptr) {}
 
 Return::Return(Value* v) {
 	expression = v;
-	function = nullptr;
-	in_function = false;
+//	function = nullptr;
+//	in_function = false;
 }
 
 Return::~Return() {
@@ -26,6 +26,10 @@ void Return::print(ostream& os, int indent, bool debug) const {
 void Return::analyse(SemanticAnalyser* analyser, const Type& ) {
 
 	Function* f = analyser->current_function();
+	if (!f) {
+		analyser->add_error({ SemanticException::CONTINUE_MUST_BE_IN_LOOP });
+		return;
+	}
 	if (f->type.getReturnType() == Type::UNKNOWN) {
 		expression->analyse(analyser, Type::UNKNOWN);
 
@@ -33,9 +37,12 @@ void Return::analyse(SemanticAnalyser* analyser, const Type& ) {
 		f->type.return_types.push_back(expression->type);
 	} else {
 		expression->analyse(analyser, f->type.getReturnType());
+		if (expression->type != f->type.getReturnType()) {
+			analyser->add_error({ SemanticException::TYPE_MISMATCH });
+		}
 	}
-	function = f;
-	in_function = true;
+//	function = f;
+//	in_function = true;
 
 	type = Type::VOID;
 }

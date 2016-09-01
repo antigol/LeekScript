@@ -69,36 +69,6 @@ void Array::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	type.setElementType(0, element_type);
 }
 
-void Array::elements_will_take(SemanticAnalyser* analyser, const std::vector<Type>& arg_types, int level) {
-/*
-//	cout << "Array::elements_will_take " << type << " at " << pos << endl;
-
-	for (size_t i = 0; i < expressions.size(); ++i) {
-
-		Array* arr = dynamic_cast<Array*>(expressions[i]);
-		if (arr != nullptr && level > 0) {
-			arr->elements_will_take(analyser, arg_types, level - 1);
-		} else {
-			expressions[i]->will_take(analyser, arg_types);
-		}
-	}
-
-	// Computation of the new array type
-	Type element_type;
-	for (unsigned i = 0; i < expressions.size(); ++i) {
-		Value* ex = expressions[i];
-		if (i == 0) {
-			element_type = ex->type;
-		} else {
-			element_type = Type::get_compatible_type(element_type, ex->type);
-		}
-	}
-	this->type.setElementType(element_type);
-
-//	cout << "Array::elements_will_take type after " << this->type << endl;
-*/
-}
-
 jit_value_t Array::compile(Compiler& c) const {
 
 	jit_value_t array = VM::create_vec(c.F, type.getElementType(), expressions.size());

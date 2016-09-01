@@ -10,8 +10,6 @@
 
 namespace ls {
 
-class LSClass;
-
 class StaticMethod {
 public:
 	Type type;
@@ -86,7 +84,7 @@ class Module : public Type {
 public:
 
 	std::string name;
-	LSClass* clazz;
+//	LSClass* clazz;
 	std::vector<ModuleField> fields;
 	std::vector<ModuleMethod> methods;
 	std::vector<ModuleStaticField> static_fields;

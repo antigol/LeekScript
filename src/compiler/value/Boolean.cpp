@@ -29,25 +29,27 @@ void Boolean::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	constant = true;
 
 	type = Type::BOOLEAN;
-	if (req_type != Type::UNKNOWN) {
-		if (type.can_be_convert_in(req_type)) {
-			type = req_type;
-		} else {
-			analyser->add_error({ SemanticException::TYPE_MISMATCH });
-		}
+	if (req_type != Type::UNKNOWN && type.can_be_convert_in(req_type)) {
+		type = req_type;
+	}
+
+	if (req_type != Type::UNKNOWN && type != req_type) {
+		stringstream oss;
+		print(oss, 0, false);
+		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
 	}
 }
 
 jit_value_t Boolean::compile(Compiler& c) const {
 
 	if (type == Type::VAR) {
-		return VM::create_bool(c.F, value);
+		return VM::create_lsbool(c.F, value);
 	}
 	if (type == Type::I32) {
-		return LS_CREATE_I32(c.F, value);
+		return VM::create_i32(c.F, value);
 	}
 	if (type == Type::BOOLEAN) {
-		return LS_CREATE_BOOLEAN(c.F, value);
+		return VM::create_bool(c.F, value);
 	}
 	assert(0);
 	return nullptr;

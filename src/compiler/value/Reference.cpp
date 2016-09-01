@@ -1,7 +1,5 @@
 #include "../../compiler/value/Reference.hpp"
-
-#include "../../vm/value/LSNull.hpp"
-#include "../../vm/value/LSNumber.hpp"
+#include "../../vm/value/LSVar.hpp"
 #include "../../compiler/semantic/SemanticAnalyser.hpp"
 
 using namespace std;
@@ -75,9 +73,9 @@ jit_value_t Reference::compile(Compiler& c) const {
 	*/
 
 	if (type.nature == Nature::LSVALUE) {
-		return LS_CREATE_POINTER(c.F, new LSVar());
+		return VM::create_ptr(c.F, new LSVar());
 	} else {
-		return LS_CREATE_I32(c.F, 0);
+		return VM::create_i32(c.F, 0);
 	}
 }
 
