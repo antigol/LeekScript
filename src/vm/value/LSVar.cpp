@@ -13,6 +13,10 @@ LSVar::LSVar(const LSVar& other) :
 {
 }
 
+LSVar::LSVar(const char* text) : type(TEXT), text(text)
+{
+}
+
 LSVar::LSVar(bool boolean) : type(BOOLEAN)
 {
 	real = boolean;

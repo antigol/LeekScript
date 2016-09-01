@@ -45,7 +45,6 @@ void If::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	then->analyse(analyser, req_type);
 
 	if (elze != nullptr) {
-
 		elze->analyse(analyser, req_type);
 
 		if (then->type == Type::VOID) { // then contains return instruction
@@ -62,25 +61,14 @@ void If::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 			elze->analyse(analyser, type);
 		}
 	} else {
-		type = Type::VAR; // Pointer because the else will give null
-
-		then->analyse(analyser, Type::VAR);
-	}
-
-	if (req_type != Type::UNKNOWN) {
-		if (then->type != req_type) {
-			analyser->add_error({ SemanticException::TYPE_MISMATCH, then->line() });
-		}
-		if (elze->type != req_type) {
-			analyser->add_error({ SemanticException::TYPE_MISMATCH, elze->line() });
-		}
+		type = then->type;
 	}
 }
 
 jit_value_t If::compile(Compiler& c) const {
 
 	jit_value_t res = nullptr;
-	if (type != Type::VOID) {
+	if (type.nature != Nature::VOID) {
 		res = jit_value_create(c.F, VM::get_jit_type(type));
 	}
 

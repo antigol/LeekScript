@@ -41,7 +41,7 @@ void Block::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	type = Type::VOID;
 
-	for (unsigned i = 0; i < instructions.size(); ++i) {
+	for (size_t i = 0; i < instructions.size(); ++i) {
 		if (i < instructions.size() - 1 || req_type == Type::VOID) {
 			instructions[i]->analyse(analyser, Type::VOID);
 		} else {
@@ -49,7 +49,7 @@ void Block::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 			type = instructions[i]->type;
 		}
 		if (dynamic_cast<Return*>(instructions[i])) {
-			type = Type::VOID; // This block has really no type
+			type = Type::UNREACHABLE;
 			analyser->leave_block();
 			return; // no need to compile after a return
 		}

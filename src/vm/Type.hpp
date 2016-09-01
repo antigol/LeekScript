@@ -25,6 +25,7 @@ public:
 
 	static const RawType UNKNOWN;
 	static const RawType VOID;
+	static const RawType UNREACHABLE;
 	static const RawType VAR;
 	static const RawType BOOLEAN;
 	static const RawType I32;
@@ -82,7 +83,8 @@ public:
 	 * Static part
 	 */
 	static const Type UNKNOWN;
-	static const Type VOID;
+	static const Type VOID; // for part of code that returns nothing
+	static const Type UNREACHABLE; // for part of code that can't be reached
 
 	static const Type VAR;
 	static const Type BOOLEAN;

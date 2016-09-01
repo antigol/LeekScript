@@ -86,13 +86,22 @@ void SemanticAnalyser::analyse(Program* program, Context* context, std::vector<M
 	program->main->type.setReturnType(Type::UNKNOWN);
 	program->main->body->analyse(this, Type::UNKNOWN);
 	if (program->main->type.return_types.size() > 1) { // the body contains return instruction
-		Type return_type = program->main->body->type == Type::VOID ? Type::UNKNOWN : program->main->body->type;
-		for (size_t i = 1; i < program->main->type.return_types.size(); ++i) {
+		bool any_void = false;
+		bool all_void = true;
+		Type return_type = Type::UNKNOWN;
+		program->main->type.return_types[0] = program->main->body->type;
+		for (size_t i = 0; i < program->main->type.return_types.size(); ++i) {
+			if (program->main->type.return_types[i] == Type::UNREACHABLE) continue;
 			return_type = Type::get_compatible_type(return_type, program->main->type.return_types[i]);
+			if (program->main->type.return_types[i] == Type::VOID) any_void = true;
+			else all_void = false;
 		}
 		program->main->type.return_types.clear();
 		program->main->type.setReturnType(return_type);
 		program->main->body->analyse(this, return_type); // second pass
+		if (any_void && !all_void) {
+			add_error({ SemanticException::TYPE_MISMATCH, program->main->body->line() });
+		}
 	} else {
 		program->main->type.setReturnType(program->main->body->type);
 	}

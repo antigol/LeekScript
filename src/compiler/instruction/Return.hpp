@@ -10,8 +10,6 @@ class Return : public Instruction {
 public:
 
 	Value* expression;
-//	Function* function;
-//	bool in_function;
 
 	Return();
 	Return(Value*);

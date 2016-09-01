@@ -22,6 +22,7 @@ public:
 
 	LSVar();
 	LSVar(const LSVar& other);
+	LSVar(const char* text);
 	LSVar(bool boolean);
 	LSVar(double real);
 	LSVar(int32_t integer);

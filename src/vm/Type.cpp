@@ -14,6 +14,7 @@ bool RawType::operator ==(const RawType& type) const {
 
 const RawType RawType::UNKNOWN("?", "?", "?");
 const RawType RawType::VOID("void", "?", "void");
+const RawType RawType::UNREACHABLE("unreachable", "?", "");
 const RawType RawType::VAR("var", "Variable", "variable");
 const RawType RawType::BOOLEAN("bool", "Boolean", "boolean");
 const RawType RawType::I32("i32", "Number", "number");
@@ -23,12 +24,12 @@ const RawType RawType::F64("f64", "Number", "number");
 const RawType RawType::VEC("vec", "Vec", "vec");
 const RawType RawType::MAP("map", "Map", "map");
 const RawType RawType::SET("set", "Set", "set");
-const RawType RawType::FUNCTION("function", "?", "function");
+const RawType RawType::FUNCTION("fn", "?", "fn");
 const RawType RawType::TUPLE("tuple", "Tuple", "tuple");
 
 const Type Type::UNKNOWN(RawType::UNKNOWN, Nature::UNKNOWN);
 const Type Type::VOID(RawType::VOID, Nature::VOID);
-
+const Type Type::UNREACHABLE(RawType::UNREACHABLE, Nature::VOID);
 const Type Type::VAR(RawType::VAR, Nature::LSVALUE);
 const Type Type::BOOLEAN(RawType::BOOLEAN, Nature::VALUE);
 const Type Type::I32(RawType::I32, Nature::VALUE);
@@ -310,6 +311,9 @@ ostream& operator << (ostream& os, const Type& type) {
 
 	if (type == Type::VOID) {
 		os << "{void}";
+		return os;
+	}
+	if (type == Type::UNREACHABLE) {
 		return os;
 	}
 

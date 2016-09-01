@@ -24,9 +24,9 @@ Program::~Program() {
 	if (main != nullptr) {
 		delete main;
 	}
-	for (auto v : system_vars) {
-		delete v.second;
-	}
+//	for (auto v : system_vars) {
+//		delete v.second;
+//	}
 }
 
 double Program::compile(VM& vm, const std::string& ctx, const ExecMode mode) {
@@ -138,6 +138,11 @@ LSValue* Program::execute() {
 
 	Type output_type = main->type.getReturnType();
 
+	if (output_type == Type::VOID) {
+		auto fun = (void (*)()) closure;
+		fun();
+		return new LSVar("<void>");
+	}
 	if (output_type == Type::BOOLEAN) {
 		auto fun = (bool (*)()) closure;
 		return new LSVar((bool) fun());
@@ -158,7 +163,7 @@ LSValue* Program::execute() {
 		auto fun = (double (*)()) closure;
 		return new LSVar(fun());
 	}
-	if (output_type == Type::FUNCTION) {
+	if (output_type.raw_type == RawType::FUNCTION) {
 		auto fun = (void* (*)()) closure;
 		fun();
 		return new LSVar("<function>");

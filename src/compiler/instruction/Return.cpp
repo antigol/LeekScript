@@ -10,8 +10,6 @@ Return::Return() : Return(nullptr) {}
 
 Return::Return(Value* v) {
 	expression = v;
-//	function = nullptr;
-//	in_function = false;
 }
 
 Return::~Return() {
@@ -20,7 +18,7 @@ Return::~Return() {
 
 void Return::print(ostream& os, int indent, bool debug) const {
 	os << "return ";
-	expression->print(os, indent, debug);
+	if (expression) expression->print(os, indent, debug);
 }
 
 void Return::analyse(SemanticAnalyser* analyser, const Type& ) {
@@ -31,33 +29,35 @@ void Return::analyse(SemanticAnalyser* analyser, const Type& ) {
 		return;
 	}
 	if (f->type.getReturnType() == Type::UNKNOWN) {
-		expression->analyse(analyser, Type::UNKNOWN);
+		if (expression) expression->analyse(analyser, Type::UNKNOWN);
 
 		f->type.setReturnType(Type::UNKNOWN); // ensure that the vector is not empty
-		f->type.return_types.push_back(expression->type);
+		f->type.return_types.push_back(expression ? expression->type : Type::VOID);
 	} else {
-		expression->analyse(analyser, f->type.getReturnType());
-		if (expression->type != f->type.getReturnType()) {
-			analyser->add_error({ SemanticException::TYPE_MISMATCH });
+		if (expression) expression->analyse(analyser, f->type.getReturnType());
+		if ((!expression && f->type.getReturnType() != Type::VOID) || (expression && expression->type != f->type.getReturnType())) {
+			analyser->add_error({ SemanticException::TYPE_MISMATCH, expression->line() });
 		}
 	}
-//	function = f;
-//	in_function = true;
 
 	type = Type::VOID;
 }
 
 jit_value_t Return::compile(Compiler& c) const {
 
-	jit_value_t v = expression->compile(c);
+	if (expression) {
+		jit_value_t v = expression->compile(c);
 
-	if (expression->type.must_manage_memory()) {
-		jit_value_t r = VM::move_obj(c.F, v);
-		c.delete_variables_block(c.F, c.get_current_function_blocks());
-		jit_insn_return(c.F, r);
+		if (expression->type.must_manage_memory()) {
+			jit_value_t r = VM::move_obj(c.F, v);
+			c.delete_variables_block(c.F, c.get_current_function_blocks());
+			jit_insn_return(c.F, r);
+		} else {
+			c.delete_variables_block(c.F, c.get_current_function_blocks());
+			jit_insn_return(c.F, v);
+		}
 	} else {
-		c.delete_variables_block(c.F, c.get_current_function_blocks());
-		jit_insn_return(c.F, v);
+		jit_insn_return(c.F, nullptr);
 	}
 
 	return nullptr;

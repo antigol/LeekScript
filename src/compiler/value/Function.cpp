@@ -116,19 +116,22 @@ void Function::analyse_body(SemanticAnalyser* analyser, const Type& req_type) {
 	type.setReturnType(req_type); // type requested to return instructions
 	body->analyse(analyser, type.getReturnType()); // type requested to body
 	if (type.return_types.size() > 1) { // the body contains return instruction
-		Type return_type = body->type == Type::VOID ? Type::UNKNOWN : body->type;
-		for (size_t i = 1; i < type.return_types.size(); ++i) {
+		bool any_void = false;
+		bool all_void = true;
+		Type return_type = Type::UNKNOWN;
+		type.return_types[0] = body->type;
+		for (size_t i = 0; i < type.return_types.size(); ++i) {
+			if (type.return_types[i] == Type::UNREACHABLE) continue;
 			return_type = Type::get_compatible_type(return_type, type.return_types[i]);
+			if (type.return_types[i] == Type::VOID) any_void = true;
+			else all_void = false;
 		}
 		type.return_types.clear();
 		type.setReturnType(return_type);
 		body->analyse(analyser, return_type); // second pass
-		if (body->type != return_type) { // TODO : what if the body never ends like in { return 12 } or { if 1 return 1 else return 0 }
-			analyser->add_error({ SemanticException::TYPE_MISMATCH });
+		if (any_void && !all_void) {
+			analyser->add_error({ SemanticException::TYPE_MISMATCH, body->line() });
 		}
-	} else {
-		// TODO { return 12 } => body.type == VOID
-		type.setReturnType(body->type);
 	}
 
 	if (req_type != Type::UNKNOWN && type.getReturnType() != req_type) {
