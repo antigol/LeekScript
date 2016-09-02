@@ -76,7 +76,19 @@ bool LSVar::eq(const LSVar* var) const
 
 bool LSVar::lt(const LSVar* var) const
 {
-
+	if (type == BOOLEAN || type == REAL) {
+		if (var->type == BOOLEAN || var->type == REAL) {
+			return real < var->real;
+		} else {
+			return true;
+		}
+	} else {
+		if (var->type == BOOLEAN || var->type == REAL) {
+			return false;
+		} else {
+			return text < var->text;
+		}
+	}
 }
 
 LSVar* LSVar::ls_minus(LSVar* x)

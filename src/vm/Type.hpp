@@ -49,6 +49,9 @@ public:
 	inline bool operator !=(const RawType& type) const { return !(*this == type); }
 };
 
+// null < bool,number < text < vec < map < set < function < tuple
+
+
 class Type {
 public:
 

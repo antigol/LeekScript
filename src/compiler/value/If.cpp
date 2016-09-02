@@ -42,6 +42,11 @@ unsigned If::line() const {
 void If::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	condition->analyse(analyser, Type::UNKNOWN);
+	if (condition->type == Type::FUNCTION || condition->type == Type::VOID) {
+		stringstream oss;
+		condition->print(oss);
+		analyser->add_error({ SemanticException::TYPE_MISMATCH, condition->line(), oss.str() });
+	}
 
 	if (elze) {
 		then->analyse(analyser, req_type);

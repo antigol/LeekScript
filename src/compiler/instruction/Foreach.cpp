@@ -39,7 +39,7 @@ void Foreach::print(ostream& os, int indent, bool debug) const {
 
 void Foreach::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
-	if (req_type.raw_type == RawType::VEC && req_type.raw_type.nature() == Nature::LSVALUE) {
+	if (req_type.raw_type == RawType::VEC) {
 		type = req_type;
 	} else {
 		type = Type::VOID;
@@ -176,10 +176,6 @@ template <typename T>
 int fun_key_set(LSSet<T>* set, typename LSSet<T>::iterator it) {
 	return distance(set->begin(), it);
 }
-template <typename T>
-LSValue* fun_key_set_2ptr(LSSet<T>* set, typename LSSet<T>::iterator it) {
-	return new LSVar((size_t) distance(set->begin(), it));
-}
 
 
 
@@ -218,73 +214,13 @@ typename LSSet<T>::iterator fun_inc_set(typename LSSet<T>::iterator it) {
 	return ++it;
 }
 
-
-/*
- * Dynamic selector
- */
-enum SelectorType {
-	PTR_ARRAY = 0,
-	INT_ARRAY,
-	FLOAT_ARRAY,
-	PTR_PTR_MAP,
-	PTR_INT_MAP,
-	PTR_FLOAT_MAP,
-	INT_PTR_MAP,
-	INT_INT_MAP,
-	INT_FLOAT_MAP,
-	PTR_SET,
-	INT_SET,
-	FLOAT_SET,
-	OTHER_NOT_SUPPORTED
-};
-int fun_selector(LSValue* containter) {
-	if (dynamic_cast<LSVec<LSValue*>*>(containter)) {
-		return SelectorType::PTR_ARRAY;
-	}
-	if (dynamic_cast<LSVec<int>*>(containter)) {
-		return SelectorType::INT_ARRAY;
-	}
-	if (dynamic_cast<LSVec<double>*>(containter)) {
-		return SelectorType::FLOAT_ARRAY;
-	}
-	if (dynamic_cast<LSMap<LSValue*,LSValue*>*>(containter)) {
-		return SelectorType::PTR_PTR_MAP;
-	}
-	if (dynamic_cast<LSMap<LSValue*,int>*>(containter)) {
-		return SelectorType::PTR_INT_MAP;
-	}
-	if (dynamic_cast<LSMap<LSValue*,double>*>(containter)) {
-		return SelectorType::PTR_FLOAT_MAP;
-	}
-	if (dynamic_cast<LSMap<int,LSValue*>*>(containter)) {
-		return SelectorType::INT_PTR_MAP;
-	}
-	if (dynamic_cast<LSMap<int,int>*>(containter)) {
-		return SelectorType::INT_INT_MAP;
-	}
-	if (dynamic_cast<LSMap<int,double>*>(containter)) {
-		return SelectorType::INT_FLOAT_MAP;
-	}
-	if (dynamic_cast<LSSet<LSValue*>*>(containter)) {
-		return SelectorType::PTR_SET;
-	}
-	if (dynamic_cast<LSSet<int>*>(containter)) {
-		return SelectorType::INT_SET;
-	}
-	if (dynamic_cast<LSSet<double>*>(containter)) {
-		return SelectorType::FLOAT_SET;
-	}
-
-	return SelectorType::OTHER_NOT_SUPPORTED;
-}
-
 jit_value_t Foreach::compile(Compiler& c) const {
 
 	c.enter_block(); // { for x in [1, 2] {} }<-- this block
 
 	// Potential output [for ...]
 	jit_value_t output_v = nullptr;
-	if (type.raw_type == RawType::VEC && type.raw_type.nature() == Nature::LSVALUE) {
+	if (type.raw_type == RawType::VEC) {
 		output_v = VM::create_vec(c.F, type.getElementType(0));
 		VM::inc_refs(c.F, output_v);
 		c.add_var("{output}", output_v, type, false); // Why create variable ? in case of `break 2` the output must be deleted
@@ -386,33 +322,22 @@ void Foreach::compile_foreach(Compiler&c, jit_value_t container_v, jit_value_t o
 	// Variable it = begin()
 
 	jit_value_t it_v = jit_value_create(c.F, LS_POINTER);
-	jit_type_t args_types_begin[1] = {LS_POINTER};
-	jit_type_t sig_begin = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_types_begin, 1, 0);
-	jit_insn_store(c.F, it_v, jit_insn_call_native(c.F, "begin", (void*) fun_begin, sig_begin, &container_v, 1, JIT_CALL_NOTHROW));
+	jit_insn_store(c.F, it_v, Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) fun_begin, { container_v }));
+
 
 	// cond label:
 	jit_insn_label(c.F, &label_cond);
 
 	// Condition to continue
-	jit_type_t args_types_cond[2] = {LS_POINTER, LS_POINTER};
-	jit_type_t sig_cond = jit_type_create_signature(jit_abi_cdecl, jit_type_sys_bool, args_types_cond, 2, 0);
-	jit_value_t args_cond[2] = { container_v, it_v };
-	jit_value_t cond_v = jit_insn_call_native(c.F, "cond", (void*) fun_condition, sig_cond, args_cond, 2, JIT_CALL_NOTHROW);
+	jit_value_t cond_v = Compiler::call_native(c.F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) fun_condition, { container_v, it_v });
 	jit_insn_branch_if_not(c.F, cond_v, label_end);
 
 	// Get Value
-	jit_type_t args_types_value[1] = {LS_POINTER};
-	jit_type_t sig_value = jit_type_create_signature(jit_abi_cdecl, jit_value_type, args_types_value, 1, 0);
-	jit_value_t vtmp = jit_insn_call_native(c.F, "value", fun_value, sig_value, &it_v, 1, JIT_CALL_NOTHROW);
-	jit_insn_store(c.F, value_v, vtmp);
+	jit_insn_store(c.F, value_v, Compiler::call_native(c.F, jit_value_type, { LS_POINTER }, (void*) fun_value, { it_v }));
 
 	// Get Key
 	if (key != nullptr) {
-		jit_type_t args_types_key[2] = {LS_POINTER, LS_POINTER};
-		jit_type_t sig_key = jit_type_create_signature(jit_abi_cdecl, jit_key_type, args_types_key, 2, 0);
-		jit_value_t args_key[2] = { container_v, it_v };
-		jit_value_t ktmp = jit_insn_call_native(c.F, "key", (void*) fun_key, sig_key, args_key, 2, JIT_CALL_NOTHROW);
-		jit_insn_store(c.F, key_v, ktmp);
+		jit_insn_store(c.F, key_v, Compiler::call_native(c.F, jit_key_type, { LS_POINTER, LS_POINTER }, (void*) fun_key, { container_v, it_v }));
 	}
 
 	// Body
@@ -425,9 +350,7 @@ void Foreach::compile_foreach(Compiler&c, jit_value_t container_v, jit_value_t o
 	// it++
 	jit_insn_label(c.F, label_it);
 
-	jit_type_t args_types_inc[1] = {LS_POINTER};
-	jit_type_t sig_inc = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_types_inc, 1, 0);
-	jit_insn_store(c.F, it_v, jit_insn_call_native(c.F, "inc", fun_inc, sig_inc, &it_v, 1, JIT_CALL_NOTHROW));
+	jit_insn_store(c.F, it_v, Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) fun_inc, { it_v }));
 
 	// jump to cond
 	jit_insn_branch(c.F, &label_cond);

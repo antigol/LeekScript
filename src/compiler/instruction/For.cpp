@@ -36,7 +36,7 @@ void For::print(ostream& os, int indent, bool debug) const {
 
 void For::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
-	if (req_type.raw_type == RawType::VEC && req_type.raw_type.nature() == Nature::LSVALUE) {
+	if (req_type.raw_type == RawType::VEC) {
 		type = req_type;
 	} else {
 		type = Type::VOID;
@@ -55,6 +55,11 @@ void For::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	// Condition
 	condition->analyse(analyser, Type::UNKNOWN);
+	if (condition->type == Type::FUNCTION || condition->type == Type::VOID) {
+		stringstream oss;
+		condition->print(oss);
+		analyser->add_error({ SemanticException::TYPE_MISMATCH, condition->line(), oss.str() });
+	}
 
 	// Body
 	analyser->enter_loop();
@@ -88,7 +93,7 @@ jit_value_t For::compile(Compiler& c) const {
 	c.enter_block(); // { for init ; cond ; inc { body } }<-- this block
 
 	jit_value_t output_v = nullptr;
-	if (type.raw_type == RawType::VEC && type.raw_type.nature() == Nature::LSVALUE) {
+	if (type.raw_type == RawType::VEC) {
 		output_v = VM::create_vec(c.F, type.getElementType(0));
 		VM::inc_refs(c.F, output_v);
 		c.add_var("{output}", output_v, type, false); // Why create variable ? in case of `break 2` the output must be deleted

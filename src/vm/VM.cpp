@@ -12,6 +12,7 @@
 #include "LSValue.hpp"
 #include "value/LSVec.hpp"
 #include "Program.hpp"
+#include "../compiler/Compiler.hpp"
 
 using namespace std;
 
@@ -185,92 +186,57 @@ LSValue* VM_convert_f64(double n) {
 	return new LSVar(n);
 }
 
-void* get_conv_fun(Type type) {
-	if (type.raw_type == RawType::I32) {
-		return (void*) &VM_convert_i32;
-	}
-	if (type.raw_type == RawType::I64) {
-		return (void*) &VM_convert_i64;
-	}
-	if (type.raw_type == RawType::F32) {
-		return (void*) &VM_convert_f32;
-	}
-	if (type.raw_type == RawType::F64) {
-		return (void*) &VM_convert_f64;
-	}
-	if (type.raw_type == RawType::BOOLEAN) {
-		return (void*) &VM_convert_bool;
-	}
+jit_value_t VM::value_to_lsvalue(jit_function_t F, jit_value_t v, Type type)
+{
+	if (type == Type::I32)     return Compiler::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_convert_i32, { v });
+	if (type == Type::I64)     return Compiler::call_native(F, LS_POINTER, { LS_I64 }, (void*) VM_convert_i64, { v });
+	if (type == Type::F32)     return Compiler::call_native(F, LS_POINTER, { LS_F32 }, (void*) VM_convert_f32, { v });
+	if (type == Type::F64)     return Compiler::call_native(F, LS_POINTER, { LS_F64 }, (void*) VM_convert_f64, { v });
+	if (type == Type::BOOLEAN) return Compiler::call_native(F, LS_POINTER, { LS_BOOLEAN }, (void*) VM_convert_bool, { v });
 	assert(0);
 	return nullptr;
 }
 
-jit_value_t VM::value_to_lsvalue(jit_function_t F, jit_value_t v, Type type) {
-
-	void* fun = get_conv_fun(type);
-
-	if (jit_type_get_kind(jit_value_get_type(v)) == JIT_TYPE_FLOAT64) {
-		fun = (void*) &VM_convert_f64;
-	}
-
-	jit_type_t args_types[1] = { get_jit_type(type) };
-
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_types, 1, 0);
-	return jit_insn_call_native(F, "convert", (void*) fun, sig, &v, 1, JIT_CALL_NOTHROW);
+int32_t VM_get_refs(LSValue* val) {
+	return val ? val->refs : 0;
 }
 
-int VM_get_refs(LSValue* val) {
-	return val->refs;
-}
-
-jit_value_t VM::get_refs(jit_function_t F, jit_value_t obj) {
-	jit_type_t args[1] = {LS_POINTER};
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args, 1, 0);
-	return jit_insn_call_native(F, "get_refs", (void*) VM_get_refs, sig, &obj, 1, JIT_CALL_NOTHROW);
+jit_value_t VM::get_refs(jit_function_t F, jit_value_t ptr) {
+	return Compiler::call_native(F, LS_I32, { LS_POINTER }, (void*) VM_get_refs, { ptr });
 }
 
 void VM_inc_refs(LSValue* val) {
 	val->refs++;
 }
 
-void VM::inc_refs(jit_function_t F, jit_value_t obj) {
-	jit_type_t args[1] = {LS_POINTER};
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_void, args, 1, 0);
-	jit_insn_call_native(F, "inc_refs", (void*) VM_inc_refs, sig, &obj, 1, JIT_CALL_NOTHROW);
+void VM::inc_refs(jit_function_t F, jit_value_t ptr) {
+	Compiler::call_native(F, jit_type_void, { LS_POINTER }, (void*) VM_inc_refs, { ptr });
 }
 
 void VM_inc_refs_if_not_temp(LSValue* val) {
-	if (val->refs != 0) {
+	if (val && val->refs != 0) {
 		val->refs++;
 	}
 }
 
-void VM::inc_refs_if_not_temp(jit_function_t F, jit_value_t obj) {
-	jit_type_t args[1] = {LS_POINTER};
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_void, args, 1, 0);
-	jit_insn_call_native(F, "inc_refs_not_temp", (void*) VM_inc_refs_if_not_temp, sig, &obj, 1, JIT_CALL_NOTHROW);
+void VM::inc_refs_if_not_temp(jit_function_t F, jit_value_t ptr) {
+	Compiler::call_native(F, jit_type_void, { LS_POINTER }, (void*) VM_inc_refs_if_not_temp, { ptr });
 }
 
 void VM_dec_refs(LSValue* val) {
-	val->refs--;
+	if (val) val->refs--;
 }
 
-void VM::dec_refs(jit_function_t F, jit_value_t obj) {
-	jit_type_t args[1] = {LS_POINTER};
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_void, args, 1, 0);
-	jit_insn_call_native(F, "dec_refs", (void*) VM_dec_refs, sig, &obj, 1, JIT_CALL_NOTHROW);
+void VM::dec_refs(jit_function_t F, jit_value_t ptr) {
+	Compiler::call_native(F, jit_type_void, { LS_POINTER }, (void*) VM_dec_refs, { ptr });
 }
 
-void VM::delete_ref(jit_function_t F, jit_value_t obj) {
-	jit_type_t args[1] = {LS_POINTER};
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_void, args, 1, 0);
-	jit_insn_call_native(F, "delete", (void*) &LSValue::delete_ref, sig, &obj, 1, JIT_CALL_NOTHROW);
+void VM::delete_ref(jit_function_t F, jit_value_t ptr) {
+	Compiler::call_native(F, jit_type_void, { LS_POINTER }, (void*) LSValue::delete_ref, { ptr });
 }
 
-void VM::delete_temporary(jit_function_t F, jit_value_t obj) {
-	jit_type_t args[1] = {LS_POINTER};
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_void, args, 1, 0);
-	jit_insn_call_native(F, "delete_temporary", (void*) &LSValue::delete_temporary, sig, &obj, 1, JIT_CALL_NOTHROW);
+void VM::delete_temporary(jit_function_t F, jit_value_t ptr) {
+	Compiler::call_native(F, jit_type_void, { LS_POINTER }, (void*) LSValue::delete_temporary, { ptr });
 }
 
 
@@ -280,7 +246,7 @@ void VM_operation_exception() {
 
 void VM::inc_ops(jit_function_t F, int add) {
 
-	if (not enable_operations) return;
+	if (!enable_operations) return;
 
 	// Variable counter pointer
 	jit_value_t jit_ops_ptr = jit_value_create_long_constant(F, LS_POINTER, (long int) &VM::operations);
@@ -310,9 +276,7 @@ void VM_print_int(int val) {
 }
 
 void VM::print_int(jit_function_t F, jit_value_t val) {
-	jit_type_t args[1] = {LS_I32};
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_void, args, 1, 0);
-	jit_insn_call_native(F, "print_int", (void*) VM_print_int, sig, &val, 1, JIT_CALL_NOTHROW);
+	Compiler::call_native(F, LS_VOID, { LS_I32 }, (void*) VM_print_int, { val });
 }
 
 jit_value_t VM::create_bool(jit_function_t F, bool value)
@@ -346,14 +310,8 @@ jit_value_t VM::create_ptr(jit_function_t F, void* value)
 	return jit_value_create_constant(F, &constant);
 }
 
-//LSValue* VM_create_null() {
-//	return new LSVar();
-//}
-
 jit_value_t VM::create_null(jit_function_t F) {
 	return create_ptr(F, nullptr);
-//	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, RawType::VAR.jit_type(), {}, 0, 0);
-//	return jit_insn_call_native(F, "create_null", (void*) VM_create_null, sig, {}, 0, JIT_CALL_NOTHROW);
 }
 
 LSValue* VM_create_bool(int value) {
@@ -362,11 +320,7 @@ LSValue* VM_create_bool(int value) {
 
 jit_value_t VM::create_lsbool(jit_function_t F, bool value)
 {
-	jit_type_t args[1] = { LS_BOOLEAN };
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args, 1, 0);
-	jit_value_t s = create_bool(F, value);
-
-	return jit_insn_call_native(F, "create_bool", (void*) VM_create_bool, sig, &s, 1, JIT_CALL_NOTHROW);
+	return Compiler::call_native(F, LS_POINTER, { LS_BOOLEAN }, (void*) VM_create_bool, { create_bool(F, value) });
 }
 
 LSVec<void*>* VM_create_vec_voidptr(int cap) {
@@ -415,9 +369,8 @@ jit_value_t VM::create_vec(jit_function_t F, const Type& element_type, int cap) 
 
 jit_value_t VM::create_default(jit_function_t F, const Type& type)
 {
-	if (type.raw_type == RawType::VEC) return create_vec(F, type.getElementType(0), 0);
+	if (type.raw_type.nature() == Nature::LSVALUE) return create_null(F);
 	if (type == Type::VOID) return nullptr;
-	if (type == Type::VAR) return create_null(F);
 	if (type == Type::BOOLEAN) return create_bool(F, false);
 	if (type == Type::I32) return create_i32(F, 0);
 	if (type == Type::I64) return create_i64(F, 0);
@@ -467,15 +420,11 @@ void VM::push_move_vec(jit_function_t F, const Type& element_type, jit_value_t v
 }
 
 jit_value_t VM::move_obj(jit_function_t F, jit_value_t ptr) {
-	jit_type_t args[1] = {LS_POINTER};
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args, 1, 0);
-	return jit_insn_call_native(F, "move", (void*) LSValue::move, sig, &ptr, 1, JIT_CALL_NOTHROW);
+	return Compiler::call_native(F, LS_POINTER, { LS_POINTER }, (void*) LSValue::move, { ptr });
 }
 
 jit_value_t VM::move_inc_obj(jit_function_t F, jit_value_t ptr) {
-	jit_type_t args[1] = {LS_POINTER};
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args, 1, 0);
-	return jit_insn_call_native(F, "move_inc", (void*) LSValue::move_inc, sig, &ptr, 1, JIT_CALL_NOTHROW);
+	return Compiler::call_native(F, LS_POINTER, { LS_POINTER }, (void*) LSValue::move_inc, { ptr });
 }
 
 LSValue* VM_clone(LSValue* val) {
@@ -483,19 +432,16 @@ LSValue* VM_clone(LSValue* val) {
 }
 
 jit_value_t VM::clone_obj(jit_function_t F, jit_value_t ptr) {
-	jit_type_t args[1] = {LS_POINTER};
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args, 1, 0);
-	return jit_insn_call_native(F, "clone", (void*) VM_clone, sig, &ptr, 1, JIT_CALL_NOTHROW);
+	return Compiler::call_native(F, LS_POINTER, { LS_POINTER }, (void*) VM_clone, { ptr });
 }
 
 bool VM_is_true(LSValue* val) {
+	if (val == nullptr) return false;
 	return val->isTrue();
 }
 
 jit_value_t VM::is_true(jit_function_t F, jit_value_t ptr) {
-	jit_type_t args[1] = {LS_POINTER};
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_sys_bool, args, 1, 0);
-	return jit_insn_call_native(F, "is_true", (void*) VM_is_true, sig, &ptr, 1, JIT_CALL_NOTHROW);
+	return Compiler::call_native(F, jit_type_sys_bool, { LS_POINTER }, (void*) VM_is_true, { ptr });
 }
 
 }

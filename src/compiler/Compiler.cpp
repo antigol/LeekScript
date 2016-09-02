@@ -1,6 +1,7 @@
 #include "Compiler.hpp"
 #include "../vm/VM.hpp"
 #include "../vm/LSValue.hpp"
+#include "../vm/value/LSVar.hpp"
 
 using namespace std;
 
@@ -114,48 +115,78 @@ int Compiler::get_current_loop_blocks(int deepness) const {
 	return sum;
 }
 
+jit_value_t Compiler::call_native(jit_function_t F, jit_type_t return_type, std::vector<jit_type_t> args_type, void* function, std::vector<jit_value_t> args)
+{
+	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, return_type, args_type.data(), args_type.size(), 0);
+	return jit_insn_call_native(F, "", (void*) function, sig, args.data(), args.size(), JIT_CALL_NOTHROW);
+}
+
 bool CP_equal(LSValue* x, LSValue* y) {
+	if (x == nullptr) return y == nullptr;
+	if (y == nullptr) return false;
 	return *x == *y;
 }
 bool CP_less(LSValue* x, LSValue* y) {
+	if (y == nullptr) return false;
+	if (x == nullptr) return true;
 	return *x < *y;
 }
 bool CP_greater_equal(LSValue* x, LSValue* y) {
+	if (y == nullptr) return true;
+	if (x == nullptr) return false;
 	return *x >= *y;
 }
 
+bool CP_equal_bool_var(int32_t x, LSVar* y) {
+	if (y == nullptr) return false;
+	if (y->type == LSVar::BOOLEAN) return ((bool) x) == (y->real > 0.0);
+	return false;
+}
+bool CP_less_bool_var(int32_t x, LSVar* y) {
+	if (y == nullptr) return false;
+	if (y->type == LSVar::TEXT) return true;
+	return ((bool) x) < y->real;
+}
+bool CP_greater_equal_bool_var(int32_t x, LSVar* y) {
+	if (y == nullptr) return true;
+	if (y->type == LSVar::TEXT) return false;
+	return ((bool) x) >= y->real;
+}
+
+//  a?        a          a
+// null < bool,number < text < vec < map < set < function < tuple
+
 jit_value_t Compiler::compile_ge(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2)
 {
+	// TODO : complete all type possibilities
 	if (t1.is_primitive_number() && t2.is_primitive_number()) return jit_insn_ge(F, v1, v2);
 	if (t1.raw_type.nature() == Nature::LSVALUE && t2.raw_type.nature() == Nature::LSVALUE) {
-		jit_type_t args_types[2] = { LS_POINTER, LS_POINTER };
-		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_sys_bool, args_types, 2, 0);
-		jit_value_t args[2] = { v1, v2 };
-		return jit_insn_call_native(F, "", (void*) CP_greater_equal, sig, args, 2, JIT_CALL_NOTHROW);
+		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_greater_equal, { v1, v2 });
 	}
 	return nullptr;
 }
 
 jit_value_t Compiler::compile_lt(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2)
 {
-	if (t1.is_primitive_number() && t2.is_primitive_number()) return jit_insn_lt(F, v1, v2);
+	// TODO : complete all type possibilities
+	if (t1 == Type::BOOLEAN && t2 == Type::VAR) {
+		return call_native(F, jit_type_sys_bool, { t1.raw_type.jit_type(), LS_POINTER }, (void*) CP_less_bool_var, { v1, v2 });
+	}
+	if (t1.is_primitive_number() && t2.is_primitive_number()) {
+		return jit_insn_lt(F, v1, v2);
+	}
 	if (t1.raw_type.nature() == Nature::LSVALUE && t2.raw_type.nature() == Nature::LSVALUE) {
-		jit_type_t args_types[2] = { LS_POINTER, LS_POINTER };
-		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_sys_bool, args_types, 2, 0);
-		jit_value_t args[2] = { v1, v2 };
-		return jit_insn_call_native(F, "", (void*) CP_less, sig, args, 2, JIT_CALL_NOTHROW);
+		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_less, { v1, v2 });
 	}
 	return nullptr;
 }
 
 jit_value_t Compiler::compile_eq(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2)
 {
+	// TODO : complete all type possibilities
 	if (t1.is_primitive_number() && t2.is_primitive_number()) return jit_insn_eq(F, v1, v2);
 	if (t1.raw_type.nature() == Nature::LSVALUE && t2.raw_type.nature() == Nature::LSVALUE) {
-		jit_type_t args_types[2] = { LS_POINTER, LS_POINTER };
-		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_sys_bool, args_types, 2, 0);
-		jit_value_t args[2] = { v1, v2 };
-		return jit_insn_call_native(F, "", (void*) CP_equal, sig, args, 2, JIT_CALL_NOTHROW);
+		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_equal, { v1, v2 });
 	}
 	return nullptr;
 }

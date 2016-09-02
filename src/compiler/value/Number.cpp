@@ -72,4 +72,4 @@ jit_value_t Number::compile(Compiler& c) const {
 }
 
 
-// TODO : convertion done here (useful for i64)
+// TODO : convertion from text done here (useful for i64)

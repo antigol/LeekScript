@@ -28,11 +28,10 @@ void While::print(ostream& os, int indent, bool debug) const {
 void While::analyse(SemanticAnalyser* analyser, const Type&) {
 
 	condition->analyse(analyser, Type::UNKNOWN);
-	if (condition->type.raw_type.nature() != Nature::LSVALUE
-			&& condition->type.raw_type != RawType::BOOLEAN
-			&& condition->type.raw_type != RawType::I32
-			&& condition->type.raw_type != RawType::I64) {
-		analyser->add_error({ SemanticException::TYPE_MISMATCH });
+	if (condition->type == Type::FUNCTION || condition->type == Type::VOID) {
+		stringstream oss;
+		condition->print(oss);
+		analyser->add_error({ SemanticException::TYPE_MISMATCH, condition->line(), oss.str() });
 	}
 	analyser->enter_loop();
 	body->analyse(analyser, Type::VOID);

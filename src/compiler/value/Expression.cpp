@@ -102,6 +102,13 @@ unsigned Expression::line() const {
 
 void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
+	// No operator : just analyse v1 and return
+	if (op == nullptr) {
+		v1->analyse(analyser, req_type);
+		type = v1->type;
+		return;
+	}
+
 	if (op->type == TokenType::EQUAL) {
 		type = Type::VOID;
 		if (req_type != Type::UNKNOWN && req_type != Type::VOID) {
@@ -112,9 +119,8 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 			analyser->add_error({ SemanticException::VALUE_MUST_BE_A_LVALUE });
 		}
 		v2->analyse(analyser, v1->type);
-	}
 
-	if (op->type == TokenType::PLUS) {
+	} else if (op->type == TokenType::PLUS) {
 		v1->analyse(analyser, Type::UNKNOWN);
 		if (!v1->type.is_arithmetic()) {
 			analyser->add_error({ SemanticException::TYPE_MISMATCH, v1->line() });
@@ -489,41 +495,51 @@ void EX_store_lsptr(LSValue** dest, LSValue* value) {
 
 jit_value_t Expression::compile(Compiler& c) const
 {
-	if (op->type == TokenType::EQUAL) {
-		// type = VOID
-		// v1.type = v2.type
-		LeftValue* left = (LeftValue*) v1;
-		jit_value_t l = left->compile_l(c);
-		jit_label_t label_end = jit_label_undefined;
-		jit_insn_branch_if_not(c.F, l, &label_end);
-		jit_value_t v = v2->compile(c);
-		if (left->type.must_manage_memory()) {
-			jit_type_t args_t[2] = { LS_POINTER, LS_POINTER };
-			jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_VOID, args_t, 2, 0);
-			jit_value_t args[2] = { l, v };
-			jit_insn_call_native(c.F, "store", (void*) EX_store_lsptr, sig, args, 2, JIT_CALL_NOTHROW);
-		} else {
-			jit_insn_store_relative(c.F, l, 0, v);
-		}
-		jit_insn_label(c.F, &label_end);
-		return nullptr;
+	// No operator : compile v1 and return
+	if (op == nullptr) {
+		return v1->compile(c);
 	}
 
-	if (op->type == TokenType::PLUS) {
-		// type = req_type
-		// v1.type = v2.type
-		jit_value_t x = v1->compile(c);
-		jit_value_t y = v2->compile(c);
-		if (v1->type.raw_type.nature() == Nature::LSVALUE) {
-			jit_type_t args_t[2] = { LS_POINTER, LS_POINTER };
-			jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_t, 2, 0);
-			jit_value_t args[2] = { x, y };
-			return jit_insn_call_native(c.F, "add", (void*) &LSVar::ls_add, sig, args, 2, JIT_CALL_NOTHROW);
-		} else {
-			return Compiler::compile_convert(c.F, jit_insn_add(c.F, x, y), v1->type, type);
+	switch (op->type) {
+		case TokenType::EQUAL: {
+			// type = VOID
+			// v1.type = v2.type
+			LeftValue* left = (LeftValue*) v1;
+			jit_value_t l = left->compile_l(c);
+			jit_label_t label_end = jit_label_undefined;
+			jit_insn_branch_if_not(c.F, l, &label_end);
+			jit_value_t v = v2->compile(c);
+			if (left->type.must_manage_memory()) {
+				jit_type_t args_t[2] = { LS_POINTER, LS_POINTER };
+				jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_VOID, args_t, 2, 0);
+				jit_value_t args[2] = { l, v };
+				jit_insn_call_native(c.F, "store", (void*) EX_store_lsptr, sig, args, 2, JIT_CALL_NOTHROW);
+			} else {
+				jit_insn_store_relative(c.F, l, 0, v);
+			}
+			jit_insn_label(c.F, &label_end);
+			return nullptr;
 		}
+
+		case TokenType::PLUS: {
+			// type = req_type
+			// v1.type = v2.type
+			jit_value_t x = v1->compile(c);
+			jit_value_t y = v2->compile(c);
+			if (v1->type.raw_type.nature() == Nature::LSVALUE) {
+				jit_type_t args_t[2] = { LS_POINTER, LS_POINTER };
+				jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_t, 2, 0);
+				jit_value_t args[2] = { x, y };
+				return jit_insn_call_native(c.F, "add", (void*) &LSVar::ls_add, sig, args, 2, JIT_CALL_NOTHROW);
+			} else {
+				return Compiler::compile_convert(c.F, jit_insn_add(c.F, x, y), v1->type, type);
+			}
+		}
+
+		default: break;
 	}
 
+	assert(0);
 	return nullptr;
 /*
 	// No operator : compile v1 and return

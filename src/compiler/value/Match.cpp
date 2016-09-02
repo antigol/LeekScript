@@ -51,10 +51,8 @@ unsigned Match::line() const {
 	return 0;
 }
 
-void Match::analyse(ls::SemanticAnalyser* analyser, const Type& req_type) {
-
-	bool has_default = false;
-
+void Match::analyse(ls::SemanticAnalyser* analyser, const Type& req_type)
+{
 	value->analyse(analyser, Type::UNKNOWN);
 	if (value->type == Type::FUNCTION || value->type == Type::VOID) {
 		stringstream oss;
@@ -70,17 +68,10 @@ void Match::analyse(ls::SemanticAnalyser* analyser, const Type& req_type) {
 			if (p.end) {
 				p.end->analyse(analyser, Type::UNKNOWN);
 			}
-			has_default = has_default || p.is_default();
 		}
 	}
 
-	if (!has_default) {
-		// Return type is always pointer because in the default case, null is return
-		type = Type::VAR;
-		for (Value* r : returns) {
-			r->analyse(analyser, Type::VAR);
-		}
-	} else if (req_type != Type::UNKNOWN) {
+	if (req_type != Type::UNKNOWN) {
 		for (Value* ret : returns) {
 			ret->analyse(analyser, req_type);
 		}
@@ -91,7 +82,7 @@ void Match::analyse(ls::SemanticAnalyser* analyser, const Type& req_type) {
 			ret->analyse(analyser, Type::UNKNOWN);
 			type = Type::get_compatible_type(type, ret->type);
 			if (type == Type::VOID) {
-				analyser->add_error({ SemanticException::TYPE_MISMATCH, ret->line() });
+				analyser->add_error({ SemanticException::INCOMPATIBLE_TYPES, ret->line() });
 				break;
 			}
 		}
@@ -172,7 +163,7 @@ jit_value_t Match::compile(Compiler& c) const {
 	}
 	// In the case of no default pattern
 
-	jit_insn_store(c.F, res, VM::create_null(c.F));
+	jit_insn_store(c.F, res, VM::create_default(c.F, type));
 
 	jit_insn_label(c.F, &label_end);
 	if (value->type.must_manage_memory()) {
