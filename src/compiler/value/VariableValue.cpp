@@ -69,8 +69,11 @@ jit_value_t VariableValue::compile(Compiler& c) const {
 	return Compiler::compile_convert(c.F, v, var->type, type);
 }
 
-jit_value_t VariableValue::compile_l(Compiler& c) const {
-	return compile(c);
+jit_value_t VariableValue::compile_l(Compiler& c) const
+{
+	if (var->type != type) return nullptr;
+	jit_value_t v = compile(c);
+	return jit_insn_address_of(c.F, v);
 }
 
 }

@@ -17,7 +17,7 @@ void ExpressionInstruction::print(ostream& os, int indent, bool debug) const {
 }
 
 void ExpressionInstruction::analyse(SemanticAnalyser* analyser, const Type& req_type) {
-	if (req_type.raw_type.nature() == Nature::VOID) {
+	if (req_type == Type::VOID) {
 		value->analyse(analyser, Type::UNKNOWN);
 		type = Type::VOID;
 	} else {
@@ -30,7 +30,7 @@ jit_value_t ExpressionInstruction::compile(Compiler& c) const {
 
 	jit_value_t v = value->compile(c);
 
-	if (type.raw_type.nature() == Nature::VOID) {
+	if (type == Type::VOID) {
 		if (value->type.must_manage_memory()) {
 			VM::delete_temporary(c.F, v);
 		}

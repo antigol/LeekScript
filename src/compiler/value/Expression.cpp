@@ -73,7 +73,7 @@ void Expression::append(Operator* op, Value* exp) {
 
 void Expression::print(std::ostream& os, int indent, bool debug) const {
 
-	if (parenthesis or debug) {
+	if (parenthesis || debug) {
 		os << "(";
 	}
 
@@ -88,7 +88,7 @@ void Expression::print(std::ostream& os, int indent, bool debug) const {
 			v2->print(os, indent, debug);
 		}
 	}
-	if (parenthesis or debug) {
+	if (parenthesis || debug) {
 		os << ")";
 	}
 	if (debug) {
@@ -100,7 +100,19 @@ unsigned Expression::line() const {
 	return 0;
 }
 
-void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type) {
+void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (op->type == TokenType::EQUAL) {
+		type = Type::VOID;
+		if (req_type != Type::UNKNOWN && req_type != Type::VOID) {
+			analyser->add_error({ SemanticException::TYPE_MISMATCH, line() });
+		}
+		v1->analyse(analyser, Type::UNKNOWN);
+		if (!v1->isLeftValue()) {
+			analyser->add_error({ SemanticException::VALUE_MUST_BE_A_LVALUE });
+		}
+		v2->analyse(analyser, v1->type);
+	}
 
 	/*
 	operations = 1;
@@ -192,7 +204,7 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 		// Check if A is a l-value
 		bool is_left_value = true;
-		if (dynamic_cast<LeftValue*>(v1) == nullptr) {
+		if (!v1.isLeftValue()) {
 			std::string c = "<v>";
 			analyser->add_error({SemanticException::Type::VALUE_MUST_BE_A_LVALUE, v1->line(), c});
 			is_left_value = false;
@@ -443,7 +455,32 @@ bool jit_is_null(LSValue* v) {
 	return v->typeID() == 1;
 }
 */
-jit_value_t Expression::compile(Compiler& c) const {
+
+void EX_store_lsptr(LSValue** dest, LSValue* value) {
+	LSValue::delete_ref(*dest);
+	*dest = value->move_inc();
+}
+
+jit_value_t Expression::compile(Compiler& c) const
+{
+	if (op->type == TokenType::EQUAL) {
+		LeftValue* left = (LeftValue*) v1;
+		jit_value_t l = left->compile_l(c);
+		jit_label_t label_end = jit_label_undefined;
+		jit_insn_branch_if_not(c.F, l, &label_end);
+		jit_value_t v = v2->compile(c);
+		if (left->type.must_manage_memory()) {
+			jit_type_t args_t[2] = { LS_POINTER, LS_POINTER };
+			jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_VOID, args_t, 2, 0);
+			jit_value_t args[2] = { l, v };
+			jit_insn_call_native(c.F, "store", (void*) EX_store_lsptr, sig, args, 2, JIT_CALL_NOTHROW);
+		} else {
+			jit_insn_store_relative(c.F, l, 0, v);
+		}
+		jit_insn_label(c.F, &label_end);
+		return nullptr;
+	}
+	return nullptr;
 /*
 	// No operator : compile v1 and return
 	if (op == nullptr) {

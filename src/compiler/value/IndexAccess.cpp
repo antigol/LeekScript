@@ -40,6 +40,11 @@ unsigned IndexAccess::line() const {
 	return 0;
 }
 
+bool IndexAccess::isLeftValue() const
+{
+	return key2 == nullptr;
+}
+
 void IndexAccess::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
 	container->analyse(analyser, Type::UNKNOWN);
@@ -269,7 +274,50 @@ jit_value_t IndexAccess::compile(Compiler& c) const {
 	*/
 }
 
-jit_value_t IndexAccess::compile_l(Compiler& c) const {
+LSValue** IA_l_vec_lsptr(LSVec<LSValue*>* vec, int i) {
+	VM::operations += 2;
+	if (vec->refs == 0) {
+		delete vec;
+		return nullptr;
+	}
+	return i < vec->size() ? vec->data()+i : nullptr;
+}
+int32_t* IA_l_vec_32(LSVec<int32_t>* vec, int i) {
+	VM::operations += 2;
+	if (vec->refs == 0) {
+		delete vec;
+		return nullptr;
+	}
+	return i < vec->size() ? vec->data()+i : nullptr;
+}
+int64_t* IA_l_vec_64(LSVec<int64_t>* vec, int i) {
+	VM::operations += 2;
+	if (vec->refs == 0) {
+		delete vec;
+		return nullptr;
+	}
+	return i < vec->size() ? vec->data()+i : nullptr;
+}
+
+jit_value_t IndexAccess::compile_l(Compiler& c) const
+{
+	jit_value_t a = container->compile(c);
+	jit_value_t k = key->compile(c);
+
+	jit_type_t args_types[2] = { container->type.raw_type.jit_type(), key->type.raw_type.jit_type() };
+	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_types, 2, 0);
+	jit_value_t args[] = { a, k };
+
+	// VEC
+	if (container->type.raw_type == RawType::VEC) {
+		if (container->type.getElementType(0).raw_type.nature() == Nature::LSVALUE) return jit_insn_call_native(c.F, "access", (void*) IA_l_vec_lsptr, sig, args, 2, JIT_CALL_NOTHROW);
+		if (container->type.getElementType(0).raw_type.bytes() == sizeof (int32_t)) return jit_insn_call_native(c.F, "access", (void*) IA_l_vec_32, sig, args, 2, JIT_CALL_NOTHROW);
+		if (container->type.getElementType(0).raw_type.bytes() == sizeof (int64_t)) return jit_insn_call_native(c.F, "access", (void*) IA_l_vec_64, sig, args, 2, JIT_CALL_NOTHROW);
+		// TODO tuple
+		assert(0);
+	}
+
+
 /*
 	jit_value_t a = container->compile(c);
 
