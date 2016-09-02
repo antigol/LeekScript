@@ -65,7 +65,7 @@ Type TypeName::getInternalType(SemanticAnalyser* analyser) const {
 		for (size_t i = 0; i < arguments.size(); ++i) {
 			type.arguments_types.push_back(arguments[i]->getInternalType(analyser));
 		}
-		type.setReturnType(returnType ? returnType->getInternalType(analyser) : Type::VOID);
+		type.set_return_type(returnType ? returnType->getInternalType(analyser) : Type::VOID);
 		return type;
 	}
 

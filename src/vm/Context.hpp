@@ -13,7 +13,7 @@ public:
 	Context(std::string ctx);
 	virtual ~Context();
 
-	std::map<std::string, ls::LSValue*> vars;
+//	std::map<std::string, ls::LSValue*> vars;
 };
 
 }

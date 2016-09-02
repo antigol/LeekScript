@@ -38,7 +38,7 @@ std::string SemanticException::build_message(Type type, std::string token) {
 		}
 		return m;
 	} catch (exception&) {
-		return type_to_string(type);
+		return type_to_string(type) + " : " + token;
 	}
 }
 

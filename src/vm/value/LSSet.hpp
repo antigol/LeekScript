@@ -45,7 +45,6 @@ public:
 	virtual std::string json() const override;
 	virtual LSValue* clone() const override;
 	virtual int typeID() const override { return 7; }
-	virtual RawType getRawType() const override;
 };
 
 }

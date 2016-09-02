@@ -11,16 +11,25 @@
 #include "../compiler/semantic/SemanticException.hpp"
 #include "LSValue.hpp"
 #include "value/LSVec.hpp"
+#include "value/LSVar.hpp"
 #include "Program.hpp"
 #include "../compiler/Compiler.hpp"
+
+#include "standard/VecSTD.hpp"
 
 using namespace std;
 
 namespace ls {
 
-VM::VM() {}
+VM::VM() {
+	add_module(new VecSTD());
+}
 
-VM::~VM() {}
+VM::~VM() {
+	for (Module* m : modules) {
+		delete m;
+	}
+}
 
 unsigned int VM::operations = 0;
 const bool VM::enable_operations = true;
@@ -382,11 +391,11 @@ jit_value_t VM::create_default(jit_function_t F, const Type& type)
 }
 
 void VM_push_vec_voidptr(LSVec<void*>* vec, void* value) {
-	vec->push_move(value);
+	vec->push_back(value);
 }
 
 void VM_push_vec_lsptr(LSVec<LSValue*>* vec, LSValue* value) {
-	vec->push_move(value);
+	vec->push_back(LSValue::move_inc(value));
 }
 
 void VM_push_vec_i32(LSVec<int32_t>* vec, int32_t value) {
@@ -397,7 +406,7 @@ void VM_push_vec_f64(LSVec<double>* vec, double value) {
 	vec->push_back(value);
 }
 
-void VM::push_move_vec(jit_function_t F, const Type& element_type, jit_value_t vec, jit_value_t value) {
+void VM::push_move_inc_vec(jit_function_t F, const Type& element_type, jit_value_t vec, jit_value_t value) {
 	/* Because of the move, there is no need to call delete_temporary on the pushed value.
 	 * If value points to a temporary variable his ownership will be transfer to the vec.
 	 */
@@ -407,15 +416,14 @@ void VM::push_move_vec(jit_function_t F, const Type& element_type, jit_value_t v
 
 	if (element_type == Type::I32) {
 		jit_insn_call_native(F, "push_vec", (void*) VM_push_vec_i32, sig, args_v, 2, JIT_CALL_NOTHROW);
-	}
-	if (element_type == Type::F64) {
+	} else if (element_type == Type::F64) {
 		jit_insn_call_native(F, "push_vec", (void*) VM_push_vec_f64, sig, args_v, 2, JIT_CALL_NOTHROW);
-	}
-	if (element_type.raw_type.nature() == Nature::LSVALUE) {
+	} else if (element_type.raw_type.nature() == Nature::LSVALUE) {
 		jit_insn_call_native(F, "push_vec", (void*) VM_push_vec_lsptr, sig, args_v, 2, JIT_CALL_NOTHROW);
-	}
-	if (element_type.raw_type == RawType::FUNCTION) {
+	} else if (element_type.raw_type == RawType::FUNCTION) {
 		jit_insn_call_native(F, "push_vec", (void*) VM_push_vec_voidptr, sig, args_v, 2, JIT_CALL_NOTHROW);
+	} else {
+		assert(0);
 	}
 }
 

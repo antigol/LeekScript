@@ -5,9 +5,9 @@
 
 namespace ls {
 
-class ArraySTD : public Module {
+class VecSTD : public Module {
 public:
-	ArraySTD();
+	VecSTD();
 };
 
 }

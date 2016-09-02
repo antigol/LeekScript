@@ -67,18 +67,16 @@ public:
 
 	bool must_manage_memory() const;
 
-	Type getReturnType() const;
-	void setReturnType(const Type& type);
+	Type return_type() const;
+	void set_return_type(const Type& type);
 
-	void addArgumentType(const Type& type);
-	void setArgumentType(size_t index, const Type& type);
-	const Type& getArgumentType(size_t index) const;
-	const std::vector<Type>& getArgumentTypes() const;
+	void add_argument_type(const Type& type);
+	void set_argument_type(size_t index, const Type& type);
+	const Type& argument_type(size_t index) const;
 
-	const Type& getElementType(size_t i) const;
-	void setElementType(size_t index, const Type&);
+	const Type& element_type(size_t i) const;
+	void set_element_type(size_t index, const Type&);
 
-	Type mix(const Type& x) const;
 	bool can_be_convert_in(const Type& type) const;
 	bool is_primitive_number() const;
 	bool is_arithmetic() const;

@@ -35,12 +35,11 @@ public:
 	virtual std::ostream& print(std::ostream&) const override;
 	virtual std::string json() const override;
 	virtual LSVar* clone() const override;
-	virtual int typeID() const override;
-	virtual RawType getRawType() const override;
 
 	LSVALUE_OPERATORS
 
 	bool eq(const LSVar*) const override;
+	virtual int typeID() const override { return type == TEXT ? 4 : 3; }
 	bool lt(const LSVar*) const override;
 
 	static LSVar* ls_minus(LSVar*);

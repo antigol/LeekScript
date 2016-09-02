@@ -60,7 +60,7 @@ void IndexAccess::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	if (container->type.raw_type == RawType::VEC) {
 		key->analyse(analyser, Type::I32);
 		constant = constant && key->constant;
-		type = container->type.getElementType(0);
+		type = container->type.element_type(0);
 
 		if (key2) {
 			key2->analyse(analyser, Type::I32);
@@ -71,14 +71,14 @@ void IndexAccess::analyse(SemanticAnalyser* analyser, const Type& req_type)
 
 	// MAP
 	if (container->type.raw_type == RawType::MAP) {
-		key->analyse(analyser, container->type.getElementType(0));
+		key->analyse(analyser, container->type.element_type(0));
 		constant = constant && key->constant;
-		type = container->type.getElementType(1);
+		type = container->type.element_type(1);
 
 		if (key2) {
-			key2->analyse(analyser, container->type.getElementType(0));
+			key2->analyse(analyser, container->type.element_type(0));
 			constant = constant && key2->constant;
-			type = Type(RawType::VEC, { container->type.getElementType(1) });
+			type = Type(RawType::VEC, { container->type.element_type(1) });
 		}
 	}
 }
@@ -126,21 +126,27 @@ LSValue* IA_vec_lsptr(LSVec<LSValue*>* vec, uint32_t i) {
 	}
 	return r;
 }
-int32_t IA_vec_32(LSVec<int32_t>* vec, uint32_t i) {
+int32_t IA_vec_i32(LSVec<int32_t>* vec, uint32_t i) {
 	VM::operations += 2;
 	if (vec == nullptr) return 0;
 	int32_t r = (i < vec->size()) ? (*vec)[i] : 0;
 	if (vec->refs == 0) delete vec;
 	return r;
 }
-double IA_vec_64(LSVec<double>* vec, uint32_t i) {
+double IA_vec_f64(LSVec<double>* vec, uint32_t i) {
 	VM::operations += 2;
 	if (vec == nullptr) return 0.0;
 	double r = (i < vec->size()) ? (*vec)[i] : 0.0;
 	if (vec->refs == 0) delete vec;
 	return r;
 }
-
+void* IA_vec_void(LSVec<void*>* vec, uint32_t i) {
+	VM::operations += 2;
+	if (vec == nullptr) return nullptr;
+	void* r = (i < vec->size()) ? (*vec)[i] : nullptr;
+	if (vec->refs == 0) delete vec;
+	return r;
+}
 /*
 LSValue* IA_map_lsptr_lsptr(LSMap<LSValue*,LSValue*>* map, LSValue* k) {
 	VM::operations += log(map->size());
@@ -170,15 +176,12 @@ jit_value_t IndexAccess::compile(Compiler& c) const {
 	jit_value_t k = key->compile(c);
 
 	if (!key2) {
-		jit_type_t args_types[2] = { LS_POINTER, key->type.raw_type.jit_type() };
-		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, container->type.getElementType(0).raw_type.jit_type(), args_types, 2, 0);
-		jit_value_t args[] = { a, k };
-
 		// VEC
 		if (container->type.raw_type == RawType::VEC) {
-			if (container->type.getElementType(0).raw_type.nature() == Nature::LSVALUE) return jit_insn_call_native(c.F, "access", (void*) IA_vec_lsptr, sig, args, 2, JIT_CALL_NOTHROW);
-			if (container->type.getElementType(0).raw_type.bytes() == sizeof (int32_t)) return jit_insn_call_native(c.F, "access", (void*) IA_vec_32, sig, args, 2, JIT_CALL_NOTHROW);
-			if (container->type.getElementType(0).raw_type.bytes() == sizeof (int64_t)) return jit_insn_call_native(c.F, "access", (void*) IA_vec_64, sig, args, 2, JIT_CALL_NOTHROW);
+			if (container->type.element_type(0).raw_type.nature() == Nature::LSVALUE) return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER, LS_I32 }, (void*) IA_vec_lsptr, { a, k });
+			if (container->type.element_type(0) == Type::I32)                         return Compiler::call_native(c.F, LS_I32,     { LS_POINTER, LS_I32 }, (void*) IA_vec_i32, { a, k });
+			if (container->type.element_type(0) == Type::F64)                         return Compiler::call_native(c.F, LS_F64,     { LS_POINTER, LS_I32 }, (void*) IA_vec_f64, { a, k });
+			if (container->type.element_type(0).raw_type == RawType::FUNCTION)        return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER, LS_I32 }, (void*) IA_vec_void, { a, k });
 			// TODO tuple
 			assert(0);
 		}
@@ -313,9 +316,9 @@ jit_value_t IndexAccess::compile_l(Compiler& c) const
 
 	// VEC
 	if (container->type.raw_type == RawType::VEC) {
-		if (container->type.getElementType(0).raw_type.nature() == Nature::LSVALUE) return jit_insn_call_native(c.F, "access", (void*) IA_l_vec_lsptr, sig, args, 2, JIT_CALL_NOTHROW);
-		if (container->type.getElementType(0).raw_type.bytes() == sizeof (int32_t)) return jit_insn_call_native(c.F, "access", (void*) IA_l_vec_32, sig, args, 2, JIT_CALL_NOTHROW);
-		if (container->type.getElementType(0).raw_type.bytes() == sizeof (int64_t)) return jit_insn_call_native(c.F, "access", (void*) IA_l_vec_64, sig, args, 2, JIT_CALL_NOTHROW);
+		if (container->type.element_type(0).raw_type.nature() == Nature::LSVALUE) return jit_insn_call_native(c.F, "access", (void*) IA_l_vec_lsptr, sig, args, 2, JIT_CALL_NOTHROW);
+		if (container->type.element_type(0).raw_type.bytes() == sizeof (int32_t)) return jit_insn_call_native(c.F, "access", (void*) IA_l_vec_32, sig, args, 2, JIT_CALL_NOTHROW);
+		if (container->type.element_type(0).raw_type.bytes() == sizeof (int64_t)) return jit_insn_call_native(c.F, "access", (void*) IA_l_vec_64, sig, args, 2, JIT_CALL_NOTHROW);
 		// TODO tuple
 		assert(0);
 	}

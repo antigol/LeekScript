@@ -28,14 +28,14 @@ void Return::analyse(SemanticAnalyser* analyser, const Type& ) {
 		analyser->add_error({ SemanticException::CONTINUE_MUST_BE_IN_LOOP });
 		return;
 	}
-	if (f->type.getReturnType() == Type::UNKNOWN) {
+	if (f->type.return_type() == Type::UNKNOWN) {
 		if (expression) expression->analyse(analyser, Type::UNKNOWN);
 
-		f->type.setReturnType(Type::UNKNOWN); // ensure that the vector is not empty
+		f->type.set_return_type(Type::UNKNOWN); // ensure that the vector is not empty
 		f->type.return_types.push_back(expression ? expression->type : Type::VOID);
 	} else {
-		if (expression) expression->analyse(analyser, f->type.getReturnType());
-		if ((!expression && f->type.getReturnType() != Type::VOID) || (expression && expression->type != f->type.getReturnType())) {
+		if (expression) expression->analyse(analyser, f->type.return_type());
+		if ((!expression && f->type.return_type() != Type::VOID) || (expression && expression->type != f->type.return_type())) {
 			analyser->add_error({ SemanticException::TYPE_MISMATCH, expression->line() });
 		}
 	}

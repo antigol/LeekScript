@@ -101,10 +101,5 @@ std::string LSValue::to_json() const {
 	return "{\"t\":" + to_string(typeID()) + ",\"v\":" + json() + "}";
 }
 
-string LSValue::getClass() const
-{
-	return getRawType().clazz();
-}
-
 }
 

@@ -63,64 +63,50 @@ bool Type::must_manage_memory() const {
 	return raw_type.nature() == Nature::LSVALUE;
 }
 
-Type Type::getReturnType() const {
+Type Type::return_type() const {
 	if (return_types.size() == 0) {
 		return Type::UNKNOWN;
 	}
 	return return_types[0];
 }
 
-void Type::setReturnType(const Type& type) {
+void Type::set_return_type(const Type& type) {
 	if (return_types.size() == 0) {
 		return_types.push_back(Type::UNKNOWN);
 	}
 	return_types[0] = type;
 }
 
-void Type::addArgumentType(const Type& type) {
+void Type::add_argument_type(const Type& type) {
 	arguments_types.push_back(type);
 }
 
-void Type::setArgumentType(size_t index, const Type& type) {
+void Type::set_argument_type(size_t index, const Type& type) {
 	while (arguments_types.size() <= index) {
 		arguments_types.push_back(Type::UNKNOWN);
 	}
 	arguments_types[index] = type;
 }
 
-const Type& Type::getArgumentType(size_t index) const {
+const Type& Type::argument_type(size_t index) const {
 	if (index >= arguments_types.size()) {
 		return Type::UNKNOWN;
 	}
 	return arguments_types[index];
 }
 
-const std::vector<Type>& Type::getArgumentTypes() const {
-	return arguments_types;
-}
-
-const Type& Type::getElementType(size_t i) const {
+const Type& Type::element_type(size_t i) const {
 	if (i < element_types.size()) {
 		return element_types[i];
 	}
 	return Type::UNKNOWN;
 }
 
-void Type::setElementType(size_t index, const Type& type) {
+void Type::set_element_type(size_t index, const Type& type) {
 	while (element_types.size() <= index) {
 		element_types.push_back(Type::UNKNOWN);
 	}
 	element_types[index] = type;
-}
-
-Type Type::mix(const Type& x) const {
-/*
-	if (*this == x) return *this;
-	if (nature == Nature::LSVALUE || x.raw_type.nature() == Nature::LSVALUE) return Type::POINTER;
-	if (raw_type == RawType::FLOAT || x.raw_type == RawType::FLOAT) return Type::FLOAT;
-	if (raw_type == RawType::INTEGER || x.raw_type == RawType::INTEGER) return Type::INTEGER;
-	*/
-	return x;
 }
 
 void Type::toJson(ostream& os) const {
@@ -134,7 +120,7 @@ void Type::toJson(ostream& os) const {
 		}
 		os << "]";
 		os << ",\"return\":";
-		getReturnType().toJson(os);
+		return_type().toJson(os);
 	}
 	os << "}";
 }
@@ -208,18 +194,18 @@ Type Type::get_compatible_type(const Type& t1, const Type& t2) {
 			compatible_args.push_back(get_compatible_type(t1.arguments_types[i], t2.arguments_types[i]));
 			if (compatible_args[i] == Type::VOID) return Type::VOID;
 		}
-		if (t1.getReturnType() == Type::VOID && t2.getReturnType() == Type::VOID) {
+		if (t1.return_type() == Type::VOID && t2.return_type() == Type::VOID) {
 			Type fun = Type::FUNCTION;
 			fun.arguments_types = compatible_args;
-			fun.setReturnType(Type::VOID);
+			fun.set_return_type(Type::VOID);
 			return fun;
 		}
-		if (t1.getReturnType() == Type::VOID || t2.getReturnType() == Type::VOID) return Type::VOID;
-		Type compatible_return = get_compatible_type(t1.getReturnType(), t2.getReturnType());
+		if (t1.return_type() == Type::VOID || t2.return_type() == Type::VOID) return Type::VOID;
+		Type compatible_return = get_compatible_type(t1.return_type(), t2.return_type());
 		if (compatible_return == Type::VOID) return Type::VOID;
 		Type fun = Type::FUNCTION;
 		fun.arguments_types = compatible_args;
-		fun.setReturnType(compatible_return);
+		fun.set_return_type(compatible_return);
 		return fun;
 	}
 	if (t1.raw_type == RawType::FUNCTION || t2.raw_type == RawType::FUNCTION) return Type::VOID;
@@ -231,7 +217,7 @@ Type Type::get_compatible_type(const Type& t1, const Type& t2) {
 
 	// VEC
 	if (t1.raw_type == RawType::VEC && t2.raw_type == RawType::VEC) {
-		Type compatible_element = get_compatible_type(t1.getElementType(0), t2.getElementType(0));
+		Type compatible_element = get_compatible_type(t1.element_type(0), t2.element_type(0));
 		if (compatible_element == Type::VOID) return Type::VOID;
 		return Type(RawType::VEC, { compatible_element });
 	}
@@ -239,7 +225,7 @@ Type Type::get_compatible_type(const Type& t1, const Type& t2) {
 
 	// SET
 	if (t1.raw_type == RawType::SET && t2.raw_type == RawType::SET) {
-		Type compatible_element = get_compatible_type(t1.getElementType(0), t2.getElementType(0));
+		Type compatible_element = get_compatible_type(t1.element_type(0), t2.element_type(0));
 		if (compatible_element == Type::VOID) return Type::VOID;
 		return Type(RawType::SET, { compatible_element });
 	}
@@ -247,9 +233,9 @@ Type Type::get_compatible_type(const Type& t1, const Type& t2) {
 
 	// MAP
 	if (t1.raw_type == RawType::MAP && t2.raw_type == RawType::MAP) {
-		Type compatible_key = get_compatible_type(t1.getElementType(0), t2.getElementType(0));
+		Type compatible_key = get_compatible_type(t1.element_type(0), t2.element_type(0));
 		if (compatible_key == Type::VOID) return Type::VOID;
-		Type compatible_value = get_compatible_type(t1.getElementType(0), t2.getElementType(0));
+		Type compatible_value = get_compatible_type(t1.element_type(0), t2.element_type(0));
 		if (compatible_value == Type::VOID) return Type::VOID;
 		return Type(RawType::MAP, { compatible_key, compatible_value });
 	}
@@ -329,13 +315,13 @@ ostream& operator << (ostream& os, const Type& type) {
 			if (t > 0) os << ", ";
 			os << type.arguments_types[t];
 		}
-		os << ") → " << type.getReturnType();
+		os << ") → " << type.return_type();
 	}
 	if (type.raw_type == RawType::VEC || type.raw_type == RawType::SET) {
-		os << " of " << type.getElementType(0);
+		os << " of " << type.element_type(0);
 	}
 	if (type.raw_type == RawType::MAP) {
-		os << " of " << type.getElementType(0) << " → " << type.getElementType(1);
+		os << " of " << type.element_type(0) << " → " << type.element_type(1);
 	}
 	os << "}";
 	return os;

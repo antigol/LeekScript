@@ -1,5 +1,5 @@
 #include <algorithm>
-#include "ArraySTD.hpp"
+#include "VecSTD.hpp"
 #include "../value/LSVec.hpp"
 
 using namespace std;
@@ -30,7 +30,17 @@ LSValue* array_sub(LSVec<LSValue*>* array, int begin, int end) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpmf-conversions"
 #endif
-ArraySTD::ArraySTD() : Module("Array") {
+VecSTD::VecSTD() : Module(RawType::VEC.clazz())
+{
+	Type vec_var = Type::VEC;
+	vec_var.set_element_type(0, Type::VAR);
+
+	method("push", {
+		{vec_var, vec_var, { Type::VAR }, (void*) &LSVec<LSValue*>::ls_push},
+//		{Type::FLOAT_ARRAY, Type::FLOAT_ARRAY, {Type::FLOAT}, (void*) &LSVec<double>::ls_push},
+//		{Type::INT_ARRAY, Type::INT_ARRAY, {Type::INTEGER}, (void*) &LSVec<int>::ls_push},
+	});
+
 /*
 	method("average", {
 		{Type::PTR_ARRAY, Type::FLOAT, {}, (void*) &LSVec<LSValue*>::ls_average},
@@ -209,11 +219,6 @@ ArraySTD::ArraySTD() : Module("Array") {
 		{Type::INT_ARRAY, Type::POINTER, {}, (void*) &LSVec<int>::ls_pop}
 	});
 
-	method("push", {
-		{Type::PTR_ARRAY, Type::PTR_ARRAY, {Type::POINTER}, (void*) &LSVec<LSValue*>::ls_push},
-		{Type::FLOAT_ARRAY, Type::FLOAT_ARRAY, {Type::FLOAT}, (void*) &LSVec<double>::ls_push},
-		{Type::INT_ARRAY, Type::INT_ARRAY, {Type::INTEGER}, (void*) &LSVec<int>::ls_push},
-	});
 
 	method("pushAll", {
 		{Type::PTR_ARRAY, Type::PTR_ARRAY, {Type::PTR_ARRAY}, (void*) &LSVec<LSValue*>::ls_push_all_ptr},

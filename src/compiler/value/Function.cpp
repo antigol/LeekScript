@@ -92,17 +92,17 @@ void Function::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	for (size_t i = 0; i < arguments.size(); ++i) {
 		if (i < typeNames.size() && typeNames[i]) {
-			type.setArgumentType(i, typeNames[i]->getInternalType(analyser));
+			type.set_argument_type(i, typeNames[i]->getInternalType(analyser));
 		} else if (i < req_type.arguments_types.size()) {
-			type.setArgumentType(i, req_type.arguments_types[i]);
+			type.set_argument_type(i, req_type.arguments_types[i]);
 		} else {
-			type.setArgumentType(i, Type::VAR);
+			type.set_argument_type(i, Type::VAR);
 		}
 	}
 
 	if (returnType) {
 		analyse_body(analyser, returnType->getInternalType(analyser));
-	} else if (req_type.getReturnType() != Type::UNKNOWN) {
+	} else if (req_type.return_type() != Type::UNKNOWN) {
 		analyse_body(analyser, req_type.return_types[0]);
 	} else {
 		analyse_body(analyser, Type::UNKNOWN);
@@ -115,11 +115,11 @@ void Function::analyse_body(SemanticAnalyser* analyser, const Type& req_type) {
 	analyser->enter_function(this);
 
 	for (size_t i = 0; i < arguments.size(); ++i) {
-		analyser->add_parameter(arguments[i], type.getArgumentType(i));
+		analyser->add_parameter(arguments[i], type.argument_type(i));
 	}
 
-	type.setReturnType(req_type); // type requested to return instructions
-	body->analyse(analyser, type.getReturnType()); // type requested to body
+	type.set_return_type(req_type); // type requested to return instructions
+	body->analyse(analyser, type.return_type()); // type requested to body
 	if (type.return_types.size() > 1) { // the body contains return instruction
 		bool any_void = false;
 		bool all_void = true;
@@ -132,14 +132,14 @@ void Function::analyse_body(SemanticAnalyser* analyser, const Type& req_type) {
 			else all_void = false;
 		}
 		type.return_types.clear();
-		type.setReturnType(return_type);
+		type.set_return_type(return_type);
 		body->analyse(analyser, return_type); // second pass
 		if (any_void && !all_void) {
 			analyser->add_error({ SemanticException::TYPE_MISMATCH, body->line() });
 		}
 	} else {
-		if (type.getReturnType() == Type::UNKNOWN) {
-			type.setReturnType(body->type); // in this case there is no return instruction
+		if (type.return_type() == Type::UNKNOWN) {
+			type.set_return_type(body->type); // in this case there is no return instruction
 		}
 	}
 
@@ -166,10 +166,10 @@ jit_value_t Function::compile(Compiler& c) const {
 
 	vector<jit_type_t> params;
 	for (size_t i = 0; i < arguments.size(); ++i) {
-		params.push_back(VM::get_jit_type(type.getArgumentType(i)));
+		params.push_back(VM::get_jit_type(type.argument_type(i)));
 	}
 
-	jit_type_t return_type = VM::get_jit_type(type.getReturnType());
+	jit_type_t return_type = VM::get_jit_type(type.return_type());
 
 	jit_type_t signature = jit_type_create_signature(jit_abi_cdecl, return_type, params.data(), arguments.size(), 0);
 	jit_function_t function = jit_function_create(context, signature);

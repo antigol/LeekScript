@@ -9,7 +9,7 @@ namespace ls {
 #endif
 BooleanSTD::BooleanSTD() : Module("Boolean") {
 
-	static_method("compare", Type::I32, {Type::BOOLEAN, Type::BOOLEAN}, (void*) &boolean_compare);
+//	static_method("compare", Type::I32, {Type::BOOLEAN, Type::BOOLEAN}, (void*) &boolean_compare);
 }
 #ifdef __GNUC__
 #pragma GCC diagnostic pop

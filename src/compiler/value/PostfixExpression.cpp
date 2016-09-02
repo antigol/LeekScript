@@ -64,6 +64,7 @@ jit_value_t PostfixExpression::compile(Compiler& c) const {
 				return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) &LSVar::ls_postdec, { x });
 			}
 		}
+		default: break;
 	}
 
 	assert(0);

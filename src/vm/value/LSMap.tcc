@@ -1535,13 +1535,6 @@ inline LSValue* LSMap<int,double>::clone() const {
 	return new LSMap<int,double>(*this);
 }
 
-template <typename K, typename T>
-inline RawType LSMap<K,T>::getRawType() const {
-	return RawType::MAP;
-}
-
-
-
 
 }
 

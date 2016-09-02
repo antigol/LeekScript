@@ -275,7 +275,7 @@ inline std::ostream& LSSet<LSValue*>::print(std::ostream& os) const {
 	os << "<";
 	for (auto i = this->begin(); i != this->end(); i++) {
 		if (i != this->begin()) os << ", ";
-		os << **i;
+		os << *i;
 	}
 	os << ">";
 	return os;
@@ -315,11 +315,6 @@ inline std::string LSSet<T>::json() const {
 template <typename T>
 inline LSValue* LSSet<T>::clone() const {
 	return new LSSet<T>(*this);
-}
-
-template <typename T>
-RawType LSSet<T>::getRawType() const {
-	return RawType::SET;
 }
 
 

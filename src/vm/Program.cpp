@@ -1,6 +1,7 @@
 #include "Program.hpp"
 #include "Context.hpp"
 #include "value/LSVec.hpp"
+#include "value/LSVar.hpp"
 #include <chrono>
 #include "../compiler/lexical/LexicalAnalyser.hpp"
 #include "../compiler/syntaxic/SyntaxicAnalyser.hpp"
@@ -116,7 +117,7 @@ void Program::compile_main(Context& context) {
 	jit_context_build_start(jit_context);
 
 	jit_type_t params[0] = {};
-	jit_type_t signature = jit_type_create_signature(jit_abi_cdecl, VM::get_jit_type(main->type.getReturnType()), params, 0, 0);
+	jit_type_t signature = jit_type_create_signature(jit_abi_cdecl, VM::get_jit_type(main->type.return_type()), params, 0, 0);
 	jit_function_t F = jit_function_create(jit_context, signature);
 	jit_insn_uses_catcher(F);
 	c.enter_function(F);
@@ -136,7 +137,7 @@ void Program::compile_main(Context& context) {
 
 LSValue* Program::execute() {
 
-	Type output_type = main->type.getReturnType();
+	Type output_type = main->type.return_type();
 
 	if (output_type == Type::VOID) {
 		auto fun = (void (*)()) closure;
@@ -208,31 +209,31 @@ void Program_push_pointer(LSVec<LSValue*>* array, LSValue* value) {
 void Program::compile_jit(Compiler& c, Context& context, bool toplevel) {
 
 	// System internal variables
-	for (auto var : system_vars) {
+//	for (auto var : system_vars) {
 
-		string name = var.first;
-		void* value = var.second;
+//		string name = var.first;
+//		void* value = var.second;
 
-		jit_value_t jit_val = VM::create_ptr(c.F, value); // TODO : check type
-		internals.insert(pair<string, jit_value_t>(name, jit_val));
-	}
+//		jit_value_t jit_val = VM::create_ptr(c.F, value); // TODO : check type
+//		internals.insert(pair<string, jit_value_t>(name, jit_val));
+//	}
 
 	// User context variables
-	if (toplevel) {
-		for (auto var : context.vars) {
+//	if (toplevel) {
+//		for (auto var : context.vars) {
 
-			string name = var.first;
-			LSValue* value = var.second;
+//			string name = var.first;
+//			LSValue* value = var.second;
 
-			jit_value_t jit_var = jit_value_create(c.F, LS_POINTER);
-			jit_value_t jit_val = VM::create_ptr(c.F, value);
-			jit_insn_store(c.F, jit_var, jit_val);
+//			jit_value_t jit_var = jit_value_create(c.F, LS_POINTER);
+//			jit_value_t jit_val = VM::create_ptr(c.F, value);
+//			jit_insn_store(c.F, jit_var, jit_val);
 
-			c.add_var(name, jit_var, Type(value->getRawType()), false);
+//			c.add_var(name, jit_var, Type(value->getRawType()), false);
 
-			value->refs++;
-		}
-	}
+//			value->refs++;
+//		}
+//	}
 
 	jit_value_t res = main->body->compile(c);
 	jit_insn_return(c.F, res);

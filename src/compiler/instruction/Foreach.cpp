@@ -51,10 +51,10 @@ void Foreach::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	if (container->type.raw_type == RawType::VEC || container->type.raw_type == RawType::SET) {
 		key_type = Type::I32; // If no key type in array key = 0, 1, 2...
-		value_type = container->type.getElementType(0);
+		value_type = container->type.element_type(0);
 	} else if (container->type.raw_type == RawType::MAP) {
-		key_type = container->type.getElementType(0);
-		value_type = container->type.getElementType(1);
+		key_type = container->type.element_type(0);
+		value_type = container->type.element_type(1);
 	} else {
 		analyser->add_error({ SemanticException::TYPE_MISMATCH });
 	}
@@ -69,10 +69,10 @@ void Foreach::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	if (type == Type::VOID) {
 		body->analyse(analyser, Type::VOID);
 	} else {
-		body->analyse(analyser, type.getElementType(0));
-		if (type.getElementType(0) == Type::UNKNOWN) {
-			type.setElementType(0, body->type);
-		} else if (type.getElementType(0) != body->type) {
+		body->analyse(analyser, type.element_type(0));
+		if (type.element_type(0) == Type::UNKNOWN) {
+			type.set_element_type(0, body->type);
+		} else if (type.element_type(0) != body->type) {
 			analyser->add_error({ SemanticException::TYPE_MISMATCH });
 		}
 	}
@@ -221,7 +221,7 @@ jit_value_t Foreach::compile(Compiler& c) const {
 	// Potential output [for ...]
 	jit_value_t output_v = nullptr;
 	if (type.raw_type == RawType::VEC) {
-		output_v = VM::create_vec(c.F, type.getElementType(0));
+		output_v = VM::create_vec(c.F, type.element_type(0));
 		VM::inc_refs(c.F, output_v);
 		c.add_var("{output}", output_v, type, false); // Why create variable ? in case of `break 2` the output must be deleted
 	}
@@ -343,7 +343,7 @@ void Foreach::compile_foreach(Compiler&c, jit_value_t container_v, jit_value_t o
 	// Body
 	jit_value_t body_v = body->compile(c);
 	if (output_v && body_v) {
-		VM::push_move_vec(c.F, type.getElementType(0), output_v, body_v);
+		VM::push_move_inc_vec(c.F, type.element_type(0), output_v, body_v);
 	}
 
 

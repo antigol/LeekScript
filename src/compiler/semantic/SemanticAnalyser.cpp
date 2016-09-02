@@ -7,7 +7,7 @@
 #include "../../vm/standard/NumberSTD.hpp"
 #include "../../vm/standard/BooleanSTD.hpp"
 #include "../../vm/standard/StringSTD.hpp"
-#include "../../vm/standard/ArraySTD.hpp"
+#include "../../vm/standard/VecSTD.hpp"
 #include "../../vm/standard/MapSTD.hpp"
 #include "../../vm/standard/SetSTD.hpp"
 #include "../../vm/standard/ObjectSTD.hpp"
@@ -33,23 +33,24 @@ SemanticAnalyser::SemanticAnalyser() {
 
 SemanticAnalyser::~SemanticAnalyser() {}
 
-void SemanticAnalyser::analyse(Program* program, Context* context, std::vector<Module*>& modules) {
+void SemanticAnalyser::analyse(Program* program, Context* context, const std::vector<Module*>& modules) {
 
 	this->program = program;
+	this->modules = modules;
 
 	enter_function(program->main);
 
 	// Add context variables
-	for (auto var : context->vars) {
-		add_var(new Token(var.first), Type(var.second->getRawType()), nullptr, nullptr);
-	}
+//	for (auto var : context->vars) {
+//		add_var(new Token(var.first), Type(var.second->getRawType()), nullptr, nullptr);
+//	}
 
-	Type op_type = Type::FUNCTION;
-	op_type.setArgumentType(0, Type::VAR);
-	op_type.setArgumentType(1, Type::VAR);
-	op_type.setReturnType(Type::VAR);
-	program->system_vars.emplace("+", (void*) &LSVar::ls_add);
-	add_var(new Token("+"), op_type, nullptr, nullptr);
+//	Type op_type = Type::FUNCTION;
+//	op_type.set_argument_type(0, Type::VAR);
+//	op_type.set_argument_type(1, Type::VAR);
+//	op_type.set_return_type(Type::VAR);
+//	program->system_vars.emplace("+", (void*) &LSVar::ls_add);
+//	add_var(new Token("+"), op_type, nullptr, nullptr);
 //	program->system_vars.insert(pair<string, LSValue*>("-", new LSFunction((void*) &jit_sub, 1, true)));
 //	add_var(new Token("-"), op_type, nullptr, nullptr);
 //	program->system_vars.insert(pair<string, LSValue*>("*", new LSFunction((void*) &jit_mul, 1, true)));
@@ -65,25 +66,25 @@ void SemanticAnalyser::analyse(Program* program, Context* context, std::vector<M
 //	program->system_vars.insert(pair<string, LSValue*>("%", new LSFunction((void*) &jit_mod, 1, true)));
 //	add_var(new Token("%"), op_type, nullptr, nullptr);
 
-	NullSTD().include(this, program);
-	BooleanSTD().include(this, program);
-	NumberSTD().include(this, program);
-	StringSTD().include(this, program);
-	ArraySTD().include(this, program);
-	MapSTD().include(this, program);
-	SetSTD().include(this, program);
-	ObjectSTD().include(this, program);
-	FunctionSTD().include(this, program);
-	ClassSTD().include(this, program);
-	SystemSTD().include(this, program);
+//	NullSTD().include(this, program);
+//	BooleanSTD().include(this, program);
+//	NumberSTD().include(this, program);
+//	StringSTD().include(this, program);
+//	VecSTD().include(this, program);
+//	MapSTD().include(this, program);
+//	SetSTD().include(this, program);
+//	ObjectSTD().include(this, program);
+//	FunctionSTD().include(this, program);
+//	ClassSTD().include(this, program);
+//	SystemSTD().include(this, program);
 
-	for (Module* module : modules) {
-		module->include(this, program);
-	}
+//	for (Module* module : modules) {
+//		module->include(this, program);
+//	}
 
 	in_program = true;
 
-	program->main->type.setReturnType(Type::UNKNOWN);
+	program->main->type.set_return_type(Type::UNKNOWN);
 	program->main->body->analyse(this, Type::UNKNOWN);
 	if (program->main->type.return_types.size() > 1) { // the body contains return instruction
 		bool any_void = false;
@@ -97,13 +98,13 @@ void SemanticAnalyser::analyse(Program* program, Context* context, std::vector<M
 			else all_void = false;
 		}
 		program->main->type.return_types.clear();
-		program->main->type.setReturnType(return_type);
+		program->main->type.set_return_type(return_type);
 		program->main->body->analyse(this, return_type); // second pass
 		if (any_void && !all_void) {
 			add_error({ SemanticException::TYPE_MISMATCH, program->main->body->line() });
 		}
 	} else {
-		program->main->type.setReturnType(program->main->body->type);
+		program->main->type.set_return_type(program->main->body->type);
 	}
 
 //	program->functions = functions;

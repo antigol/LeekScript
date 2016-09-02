@@ -3,7 +3,8 @@
 
 #include <vector>
 
-#include "../../compiler/value/Value.hpp"
+#include "Value.hpp"
+#include "../../vm/Module.hpp"
 
 namespace ls {
 
@@ -20,6 +21,7 @@ public:
 
 //	void* std_func;
 //	Value* this_ptr;
+	const Method* method;
 
 	FunctionCall();
 	virtual ~FunctionCall();

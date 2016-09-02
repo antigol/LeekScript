@@ -8,6 +8,7 @@
 #include "../../compiler/value/VariableValue.hpp"
 #include "../../vm/LSValue.hpp"
 #include "../../vm/value/LSVec.hpp"
+#include "../../vm/value/LSVar.hpp"
 
 using namespace std;
 
@@ -530,7 +531,7 @@ jit_value_t Expression::compile(Compiler& c) const
 				jit_type_t args_t[2] = { LS_POINTER, LS_POINTER };
 				jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_t, 2, 0);
 				jit_value_t args[2] = { x, y };
-				return jit_insn_call_native(c.F, "add", (void*) &LSVar::ls_add, sig, args, 2, JIT_CALL_NOTHROW);
+				return jit_insn_call_native(c.F, "add", (void*) LSVar::ls_add, sig, args, 2, JIT_CALL_NOTHROW);
 			} else {
 				return Compiler::compile_convert(c.F, jit_insn_add(c.F, x, y), v1->type, type);
 			}

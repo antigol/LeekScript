@@ -24,26 +24,17 @@ unsigned AbsoluteValue::line() const {
 	return 0;
 }
 
-void AbsoluteValue::analyse(SemanticAnalyser* analyser, const Type&) {
-
+void AbsoluteValue::analyse(SemanticAnalyser* analyser, const Type&)
+{
 	type = Type::VAR;
-
 	expression->analyse(analyser, Type::VAR);
-	if (expression->type != Type::VAR) {
-		analyser->add_error({ SemanticException::TYPE_MISMATCH });
-	}
-
 	constant = expression->constant;
 }
 
-jit_value_t AbsoluteValue::compile(Compiler& c) const {
-
+jit_value_t AbsoluteValue::compile(Compiler& c) const
+{
 	jit_value_t ex = expression->compile(c);
-
-	jit_type_t args_types[1] = {LS_POINTER};
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_types, 1, 0);
-
-	return jit_insn_call_native(c.F, "abso", (void*) &LSVar::ls_abso, sig, &ex, 1, JIT_CALL_NOTHROW);
+	return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_abso, { ex });
 }
 
 }

@@ -66,10 +66,10 @@ void For::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	if (type == Type::VOID) {
 		body->analyse(analyser, Type::VOID);
 	} else {
-		body->analyse(analyser, type.getElementType(0));
-		if (type.getElementType(0) == Type::UNKNOWN) {
-			type.setElementType(0, body->type);
-		} else if (type.getElementType(0) != body->type) {
+		body->analyse(analyser, type.element_type(0));
+		if (type.element_type(0) == Type::UNKNOWN) {
+			type.set_element_type(0, body->type);
+		} else if (type.element_type(0) != body->type) {
 			analyser->add_error({ SemanticException::TYPE_MISMATCH });
 		}
 	}
@@ -94,7 +94,7 @@ jit_value_t For::compile(Compiler& c) const {
 
 	jit_value_t output_v = nullptr;
 	if (type.raw_type == RawType::VEC) {
-		output_v = VM::create_vec(c.F, type.getElementType(0));
+		output_v = VM::create_vec(c.F, type.element_type(0));
 		VM::inc_refs(c.F, output_v);
 		c.add_var("{output}", output_v, type, false); // Why create variable ? in case of `break 2` the output must be deleted
 	}
@@ -133,7 +133,7 @@ jit_value_t For::compile(Compiler& c) const {
 	jit_value_t body_v = body->compile(c);
 	if (output_v && body_v) {
 		// transfer the ownership of the temporary variable `body_v`
-		VM::push_move_vec(c.F, type.getElementType(0), output_v, body_v);
+		VM::push_move_inc_vec(c.F, type.element_type(0), output_v, body_v);
 	}
 	c.leave_loop();
 	jit_insn_label(c.F, &label_inc);

@@ -60,29 +60,8 @@ unsigned FunctionCall::line() const {
 void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	constant = false;
+	method = nullptr;
 
-	function->analyse(analyser, Type::UNKNOWN);
-
-	if (function->type.raw_type != RawType::FUNCTION) {
-		std::ostringstream oss;
-		function->print(oss);
-		analyser->add_error({ SemanticException::CANNOT_CALL_VALUE, function->line(), oss.str() });
-	}
-	if (arguments.size() != function->type.arguments_types.size()) {
-		std::ostringstream oss;
-		function->print(oss);
-		analyser->add_error({ SemanticException::NUMBER_ARGUMENTS_MISMATCH, function->line(), oss.str() });
-	}
-
-	for (size_t i = 0; i < arguments.size(); ++i) {
-		arguments[i]->analyse(analyser, function->type.getArgumentType(i));
-	}
-
-	if (req_type != Type::UNKNOWN && function->type.getReturnType().can_be_convert_in(req_type)) {
-		type = req_type;
-	} else {
-		type = function->type.getReturnType();
-	}
 
 	/*
 	// Standard library constructors
@@ -94,13 +73,45 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		if (vv->name == "Array") type = Type::PTR_ARRAY;
 		if (vv->name == "Object") type = Type::OBJECT;
 	}
-
+	*/
 	// Detect standard library functions
 	ObjectAccess* oa = dynamic_cast<ObjectAccess*>(function);
 	if (oa != nullptr) {
 
-		string field_name = oa->field->content;
+		oa->object->analyse(analyser, Type::UNKNOWN);
 
+		vector<Type> args_types;
+		for (size_t i = 0; i < arguments.size(); ++i) {
+			arguments[i]->analyse(analyser, Type::UNKNOWN);
+			args_types.push_back(arguments[i]->type);
+		}
+
+		for (Module* module : analyser->modules) {
+			if (module->name == oa->object->type.clazz) {
+				const Method* method = module->get_method_implementation(oa->field->content, oa->object->type, req_type, args_types);
+				if (method) {
+					oa->object->analyse(analyser, method->type.argument_type(0));
+					for (size_t i = 0; i < arguments.size(); ++i) {
+						arguments[i]->analyse(analyser, method->type.argument_type(i + 1));
+					}
+					oa->type = method->type;
+					if (req_type != Type::UNKNOWN) {
+						type = req_type;
+					} else {
+						type = method->type.return_type();
+					}
+					this->method = method;
+					return;
+				}
+			}
+		}
+		stringstream oss;
+		oa->print(oss, 0, false);
+		analyser->add_error({ SemanticException::METHOD_NOT_FOUND, line(), oss.str() });
+		return;
+
+
+		/*
 		VariableValue* vv = dynamic_cast<VariableValue*>(oa->object);
 		if (vv != nullptr and vv->name == "Number") {
 
@@ -149,8 +160,9 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 				is_static_native = true;
 			}
 			native_func = field_name;
-		}
+		}*/
 
+		/*
 		if (!is_static_native) {
 
 			Type object_type = oa->object->type;
@@ -248,7 +260,7 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 					}
 				}
 			}
-			/*
+
 			if (object_type == Type::PTR_ARRAY) {
 				cout << "array" << endl;
 
@@ -269,10 +281,10 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 				}
 				cout << "type after: " << function->type << endl;
 			}
-			*//*
-		}
-	}
 
+		}*/
+	}
+/*
 	vv = dynamic_cast<VariableValue*>(function);
 	if (vv != nullptr) {
 		string name = vv->name;
@@ -342,7 +354,28 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	}
 	*/
 
-//	cout << "Function call function type : " << type << endl;
+	function->analyse(analyser, Type::UNKNOWN);
+
+	if (function->type.raw_type != RawType::FUNCTION) {
+		std::ostringstream oss;
+		function->print(oss);
+		analyser->add_error({ SemanticException::CANNOT_CALL_VALUE, function->line(), oss.str() });
+	}
+	if (arguments.size() != function->type.arguments_types.size()) {
+		std::ostringstream oss;
+		function->print(oss);
+		analyser->add_error({ SemanticException::NUMBER_ARGUMENTS_MISMATCH, function->line(), oss.str() });
+	}
+
+	for (size_t i = 0; i < arguments.size(); ++i) {
+		arguments[i]->analyse(analyser, function->type.argument_type(i));
+	}
+
+	if (req_type != Type::UNKNOWN && function->type.return_type().can_be_convert_in(req_type)) {
+		type = req_type;
+	} else {
+		type = function->type.return_type();
+	}
 }
 
 /*
@@ -580,20 +613,37 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 			}
 		}
 	}
+*/
+
+	if (method) {
+		ObjectAccess* oa = dynamic_cast<ObjectAccess*>(function);
+
+		vector<jit_value_t> args;
+		vector<jit_type_t> args_types;
+		args.push_back(oa->object->compile(c));
+		args_types.push_back(oa->object->type.raw_type.jit_type());
+		for (size_t i = 0; i < arguments.size(); ++i) {
+			args.push_back(arguments[i]->compile(c));
+			args_types.push_back(arguments[i]->type.raw_type.jit_type());
+		}
+		Type rt = method->type.return_type();
+		return Compiler::compile_convert(c.F, Compiler::call_native(c.F, rt.raw_type.jit_type(), args_types, method->addr, args), rt, type);
+	}
+
 
 	/*
 	 * Default function
 	 */
 	jit_value_t fun = function->compile(c);
-	jit_value_t res = function->type.getReturnType() != Type::VOID ? jit_value_create(c.F, VM::get_jit_type(function->type.getReturnType())) : nullptr;
+	jit_value_t res = function->type.return_type() != Type::VOID ? jit_value_create(c.F, VM::get_jit_type(function->type.return_type())) : nullptr;
 
 	jit_label_t label_ok= jit_label_undefined;
 	jit_label_t label_end = jit_label_undefined;
-	if (function->type.getReturnType() == Type::VOID) {
+	if (function->type.return_type() == Type::VOID) {
 		jit_insn_branch_if_not(c.F, fun, &label_end);
 	} else {
 		jit_insn_branch_if(c.F, fun, &label_ok);
-		jit_insn_store(c.F, res, VM::create_default(c.F, function->type.getReturnType()));
+		jit_insn_store(c.F, res, VM::create_default(c.F, function->type.return_type()));
 		jit_insn_branch(c.F, &label_end);
 		jit_insn_label(c.F, &label_ok);
 	}
@@ -604,18 +654,18 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 	for (size_t i = 0; i < arguments.size(); ++i) {
 
 		args.push_back(arguments[i]->compile(c));
-		args_types.push_back(VM::get_jit_type(function->type.getArgumentType(i)));
+		args_types.push_back(VM::get_jit_type(function->type.argument_type(i)));
 
-		if (function->type.getArgumentType(i).must_manage_memory()) {
+		if (function->type.argument_type(i).must_manage_memory()) {
 			args[i] = VM::move_inc_obj(c.F, args[i]);
 		}
 	}
 
-	jit_type_t jit_return_type = VM::get_jit_type(function->type.getReturnType());
+	jit_type_t jit_return_type = VM::get_jit_type(function->type.return_type());
 
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_return_type, args_types.data(), arguments.size(), 0);
 
-	if (function->type.getReturnType() == Type::VOID) {
+	if (function->type.return_type() == Type::VOID) {
 		jit_insn_call_indirect(c.F, fun, sig, args.data(), arguments.size(), 0);
 	} else {
 		jit_insn_store(c.F, res, jit_insn_call_indirect(c.F, fun, sig, args.data(), arguments.size(), 0));
@@ -623,7 +673,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 
 	// Destroy temporary arguments
 	for (size_t i = 0; i < arguments.size(); ++i) {
-		if (function->type.getArgumentType(i).must_manage_memory()) {
+		if (function->type.argument_type(i).must_manage_memory()) {
 			VM::delete_ref(c.F, args[i]);
 		}
 	}
@@ -633,7 +683,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 	// Custom function call : 1 op
 	VM::inc_ops(c.F, 1);
 
-	return Compiler::compile_convert(c.F, res, function->type.getReturnType(), type);
+	return Compiler::compile_convert(c.F, res, function->type.return_type(), type);
 }
 
 }

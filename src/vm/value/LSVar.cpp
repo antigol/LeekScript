@@ -55,16 +55,6 @@ LSVar* LSVar::clone() const
 	return new LSVar(*this);
 }
 
-int LSVar::typeID() const
-{
-	return 0;
-}
-
-RawType LSVar::getRawType() const
-{
-	return RawType::VAR;
-}
-
 bool LSVar::eq(const LSVar* var) const
 {
 	if (type != var->type) return false;

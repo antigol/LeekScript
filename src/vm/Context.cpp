@@ -22,11 +22,11 @@ std::vector<std::string> split(const std::string &s, std::string delim) {
 
 Context::Context(std::string ctx) {
 
-	Json value = Json::parse(ctx);
+//	Json value = Json::parse(ctx);
 
-	for (Json::iterator it = value.begin(); it != value.end(); ++it) {
-		vars.insert({it.key(), ls::LSValue::parse(it.value())});
-	}
+//	for (Json::iterator it = value.begin(); it != value.end(); ++it) {
+//		vars.insert({it.key(), ls::LSValue::parse(it.value())});
+//	}
 }
 
 Context::~Context() {}

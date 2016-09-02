@@ -4,7 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
-#include "../vm/standard/ArraySTD.hpp"
+#include "../vm/standard/VecSTD.hpp"
 #include "../vm/standard/MapSTD.hpp"
 #include "../vm/standard/BooleanSTD.hpp"
 #include "../vm/standard/NumberSTD.hpp"
@@ -23,7 +23,7 @@ void Documentation::generate(ostream& os) {
 	string lang = "fr";
 
 	vector<Module*> modules;
-	modules.push_back(new ArraySTD());
+	modules.push_back(new VecSTD());
 	modules.push_back(new MapSTD());
 	modules.push_back(new BooleanSTD());
 	modules.push_back(new NumberSTD());

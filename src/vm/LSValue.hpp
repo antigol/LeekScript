@@ -37,21 +37,12 @@ public:
 	virtual bool isTrue() const = 0;
 
 	virtual std::ostream& print(std::ostream&) const = 0;
-	static inline std::ostream& print(std::ostream& os, const LSValue* value) {
-		if (value == nullptr) return os << "null";
-		return value->print(os);
-	}
+	static std::ostream& print(std::ostream& os, const LSValue* value);
 
 	virtual std::string json() const = 0;
 	std::string to_json() const;
 
 	virtual LSValue* clone() const = 0;
-
-	virtual int typeID() const = 0;
-
-	virtual RawType getRawType() const = 0;
-
-	virtual std::string getClass() const;
 
 	static LSValue* parse(Json& json);
 
@@ -84,6 +75,8 @@ public:
 	virtual bool eq(const LSSet<float>*) const;
 	virtual bool eq(const LSSet<double>*) const;
 
+	virtual int typeID() const = 0;
+
 	bool operator < (const LSValue& value) const { return value.rlt(this); }
 	bool operator > (const LSValue& value) const { return !(*this == value) && !(*this < value); }
 	bool operator <=(const LSValue& value) const { return (*this == value) || (*this < value); }
@@ -106,6 +99,11 @@ public:
 	virtual bool lt(const LSSet<int>*) const;
 	virtual bool lt(const LSSet<double>*) const;
 };
+
+inline std::ostream& LSValue::print(std::ostream& os, const LSValue* value) {
+	if (value == nullptr) return os << "null";
+	return value->print(os);
+}
 
 inline LSValue* LSValue::clone_inc(LSValue* value) {
 	if (value == nullptr) return nullptr;
@@ -155,8 +153,9 @@ inline void LSValue::delete_temporary(LSValue* value) {
 	}
 }
 
-inline std::ostream& operator << (std::ostream& os, const LSValue& value) {
-	return value.print(os);
+inline std::ostream& operator << (std::ostream& os, const LSValue* value) {
+	if (value == nullptr) return os << "null";
+	return value->print(os);
 }
 
 }

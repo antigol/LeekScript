@@ -60,7 +60,7 @@ jit_value_t System_version(jit_function_t F) {
 }
 
 void System_print(LSValue* value) {
-	std::cout << *value;
+	std::cout << value;
 	LSValue::delete_temporary(value);
 	std::cout << std::endl;
 }

@@ -48,6 +48,8 @@ public:
 	Program* program;
 	bool in_program = false;
 
+	std::vector<Module*> modules;
+
 	std::map<std::string, SemanticVar*> internal_vars;
 	std::vector<std::vector<std::map<std::string, SemanticVar*>>> variables;
 	std::vector<std::map<std::string, SemanticVar*>> parameters;
@@ -61,7 +63,7 @@ public:
 	SemanticAnalyser();
 	virtual ~SemanticAnalyser();
 
-	void analyse(Program*, Context*, std::vector<Module*>&);
+	void analyse(Program*, Context*, const std::vector<Module*>&);
 
 	void enter_function(Function*);
 	void leave_function();

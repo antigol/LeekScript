@@ -41,6 +41,8 @@ public:
 	virtual bool eq(const LSMap<int,int>*) const override;
 	virtual bool eq(const LSMap<int,double>*) const override;
 
+	virtual int typeID() const override { return 6; }
+
 	virtual bool lt(const LSMap<LSValue*,LSValue*>*) const override;
 	virtual bool lt(const LSMap<LSValue*,int>*) const override;
 	virtual bool lt(const LSMap<LSValue*,double>*) const override;
@@ -53,8 +55,6 @@ public:
 	virtual std::ostream& print(std::ostream&) const override;
 	virtual std::string json() const override;
 	virtual LSValue* clone() const override;
-	virtual int typeID() const override { return 6; }
-	virtual RawType getRawType() const override;
 };
 
 }

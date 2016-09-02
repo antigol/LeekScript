@@ -48,11 +48,11 @@ void Array::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
 	}
 
-	Type element_type = req_type.getElementType(0);
+	Type element_type = req_type.element_type(0);
 
 	for (size_t i = 0; i < expressions.size(); ++i) {
 		Value* ex = expressions[i];
-		ex->analyse(analyser, req_type.getElementType(0));
+		ex->analyse(analyser, req_type.element_type(0));
 
 		if (ex->constant == false) {
 			constant = false;
@@ -80,18 +80,17 @@ void Array::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		}
 	}
 
-	type.setElementType(0, element_type);
+	type.set_element_type(0, element_type);
 
 }
 
 jit_value_t Array::compile(Compiler& c) const {
 
-	jit_value_t array = VM::create_vec(c.F, type.getElementType(0), expressions.size());
+	jit_value_t array = VM::create_vec(c.F, type.element_type(0), expressions.size());
 
 	for (Value* val : expressions) {
-
 		jit_value_t v = val->compile(c);
-		VM::push_move_vec(c.F, type.getElementType(0), array, v);
+		VM::push_move_inc_vec(c.F, type.element_type(0), array, v);
 	}
 
 	// size of the array + 1 operations
