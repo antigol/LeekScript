@@ -78,6 +78,7 @@ public:
 	Type mix(const Type& x) const;
 	bool can_be_convert_in(const Type& type) const;
 	bool is_primitive_number() const;
+	bool is_arithmetic() const;
 
 	void toJson(std::ostream&) const;
 

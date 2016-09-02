@@ -169,6 +169,9 @@ jit_value_t Compiler::compile_convert(jit_function_t F, jit_value_t v, const Typ
 	if (t_in == Type::I32 && t_out == Type::F64) {
 		return jit_insn_convert(F, v, VM::get_jit_type(t_out), 0);
 	}
+	if (t_in == Type::BOOLEAN && t_out == Type::I32) {
+		return v;
+	}
 	assert(0);
 	return nullptr;
 }

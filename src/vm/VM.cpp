@@ -409,6 +409,7 @@ jit_value_t VM::create_vec(jit_function_t F, const Type& element_type, int cap) 
 	if (element_type.raw_type == RawType::FUNCTION) {
 		return jit_insn_call_native(F, "create_vec", (void*) VM_create_vec_voidptr, sig, &s, 1, JIT_CALL_NOTHROW);
 	}
+	assert(0);
 }
 
 jit_value_t VM::create_default(jit_function_t F, const Type& type)

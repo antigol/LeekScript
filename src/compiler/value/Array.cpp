@@ -66,6 +66,11 @@ void Array::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		}
 	}
 
+	if (element_type == Type::UNKNOWN) {
+		// empty array
+		element_type = Type::VAR;
+	}
+
 	// Re-analyze expressions with the supported type
 	for (size_t i = 0; i < expressions.size(); ++i) {
 		Value* ex = expressions[i];

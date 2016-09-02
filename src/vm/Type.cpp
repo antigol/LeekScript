@@ -156,6 +156,11 @@ bool Type::is_primitive_number() const
 	return *this == Type::BOOLEAN || *this == Type::I32 || *this == Type::I64 || *this == Type::F32 || *this == Type::F64;
 }
 
+bool Type::is_arithmetic() const
+{
+	return *this == Type::VAR || *this == Type::BOOLEAN || *this == Type::I32 || *this == Type::I64 || *this == Type::F32 || *this == Type::F64;
+}
+
 bool Type::list_compatible(const std::vector<Type>& expected, const std::vector<Type>& actual) {
 
 	if (expected.size() != actual.size()) return false;
@@ -263,15 +268,16 @@ Type Type::get_compatible_type(const Type& t1, const Type& t2) {
 	if (t1.raw_type == RawType::SET || t2.raw_type == RawType::SET) return Type::VOID;
 
 	// BOOL, I32, I64, F32, F64
-	if (t1 == Type::I64 && t2 == Type::I32) return Type::I64;
-	if (t2 == Type::I64 && t1 == Type::I32) return Type::I64;
-	if (t1 == Type::I64 && t2 == Type::BOOLEAN) return Type::I64;
-	if (t2 == Type::I64 && t1 == Type::BOOLEAN) return Type::I64;
-	if (t1 == Type::I64 || t2 == Type::I64) return Type::VOID;
-	if (t1 == Type::F64 || t2 == Type::F64) return Type::F64;
 	if (t1 == Type::I32 && t2 == Type::BOOLEAN) return Type::I32;
 	if (t2 == Type::I32 && t1 == Type::BOOLEAN) return Type::I32;
-	if (t1 == Type::I32 || t2 == Type::I32) return Type::VOID;
+	if (t1 == Type::I64 && t2 == Type::BOOLEAN) return Type::I64;
+	if (t2 == Type::I64 && t1 == Type::BOOLEAN) return Type::I64;
+	if (t1 == Type::I64 && t2 == Type::I32) return Type::I64;
+	if (t2 == Type::I64 && t1 == Type::I32) return Type::I64;
+	if (t1 == Type::F64 && t2 == Type::I32) return Type::F64;
+	if (t2 == Type::F64 && t1 == Type::I32) return Type::F64;
+	if (t1 == Type::F64 && t2 == Type::F32) return Type::F64;
+	if (t2 == Type::F64 && t1 == Type::F32) return Type::F64;
 
 	return Type::VOID;
 }

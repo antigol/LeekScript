@@ -58,6 +58,7 @@ std::string SemanticException::type_to_string(Type type) {
 		case Type::VALUE_MUST_BE_A_LVALUE: return "VALUE_MUST_BE_A_LVALUE";
 		case Type::UNKNOWN_TYPE: return "UNKNOWN_TYPE";
 		case Type::TYPE_MISMATCH: return "TYPE_MISMATCH";
+		case Type::INCOMPATIBLE_TYPES: return "INCOMPATIBLE_TYPES";
 		case Type::NUMBER_ARGUMENTS_MISMATCH: return "NUMBER_ARGUMENTS_MISMATCH";
 
 		default:

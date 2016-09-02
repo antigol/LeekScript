@@ -112,7 +112,7 @@ int interval_access(const LSInterval* interval, int pos) {
 	return interval->atv(pos);
 }*/
 
-LSValue* IA_vec_lsptr(LSVec<LSValue*>* vec, int i) {
+LSValue* IA_vec_lsptr(LSVec<LSValue*>* vec, uint32_t i) {
 	VM::operations += 2;
 	if (i >= vec->size()) {
 		if (vec->refs == 0) delete vec;
@@ -125,15 +125,15 @@ LSValue* IA_vec_lsptr(LSVec<LSValue*>* vec, int i) {
 	}
 	return r;
 }
-int32_t IA_vec_32(LSVec<int32_t>* vec, int i) {
+int32_t IA_vec_32(LSVec<int32_t>* vec, uint32_t i) {
 	VM::operations += 2;
-	int32_t r = i < vec->size() ? (*vec)[i] : 0;
+	int32_t r = (i < vec->size()) ? (*vec)[i] : 0;
 	if (vec->refs == 0) delete vec;
 	return r;
 }
-int64_t IA_vec_64(LSVec<int64_t>* vec, int i) {
+double IA_vec_64(LSVec<double>* vec, uint32_t i) {
 	VM::operations += 2;
-	int64_t r = i < vec->size() ? (*vec)[i] : 0;
+	double r = (i < vec->size()) ? (*vec)[i] : 0.0;
 	if (vec->refs == 0) delete vec;
 	return r;
 }

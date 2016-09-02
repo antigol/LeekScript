@@ -61,6 +61,13 @@ bool LSVar::isTrue() const
 	}
 }
 
+string LSVar::to_string() const
+{
+	stringstream oss;
+	print(oss);
+	return oss.str();
+}
+
 std::ostream&LSVar::print(std::ostream& os) const
 {
 	switch (type) {
@@ -189,8 +196,8 @@ LSVar*LSVar::ls_add(LSVar* var)
 	LSVar* r;
 	if ((type == REAL || type == BOOLEAN) && (var->type == REAL || var->type == BOOLEAN)) r = new LSVar(real + var->real);
 	else if (type == TEXT && var->type == TEXT) r = new LSVar(text + var->text);
-	else if (type == TEXT && var->type == REAL) r = new LSVar(text + to_string(var->real));
-	else if (type == REAL && var->type == TEXT) r = new LSVar(to_string(real) + var->text);
+	else if (type == TEXT && var->type == REAL) r = new LSVar(text + var->to_string());
+	else if (type == REAL && var->type == TEXT) r = new LSVar(to_string() + var->text);
 	else if (type == TEXT && var->type == BOOLEAN) r = new LSVar(text + (var->real > 0.0 ? "true" : "false"));
 	else if (type == BOOLEAN && var->type == TEXT) r = new LSVar((real > 0.0 ? "true" : "false") + var->text);
 	else if (type == TEXT && var->type == NIL) r = new LSVar(text + "null");

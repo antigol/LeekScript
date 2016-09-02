@@ -32,6 +32,7 @@ public:
 	virtual ~LSVar();
 
 	bool isTrue() const override;
+	std::string to_string() const;
 	virtual std::ostream& print(std::ostream&) const override;
 	virtual std::string json() const override;
 	virtual LSVar* clone() const override;

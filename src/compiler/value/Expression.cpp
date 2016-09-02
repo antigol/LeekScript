@@ -114,6 +114,32 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		v2->analyse(analyser, v1->type);
 	}
 
+	if (op->type == TokenType::PLUS) {
+		v1->analyse(analyser, Type::UNKNOWN);
+		if (!v1->type.is_arithmetic()) {
+			analyser->add_error({ SemanticException::TYPE_MISMATCH, v1->line() });
+		}
+		v2->analyse(analyser, Type::UNKNOWN);
+		if (!v2->type.is_arithmetic()) {
+			analyser->add_error({ SemanticException::TYPE_MISMATCH, v2->line() });
+		}
+
+		type = Type::get_compatible_type(v1->type, v2->type);
+		if (type == Type::VOID) {
+			analyser->add_error({ SemanticException::INCOMPATIBLE_TYPES, line() });
+		}
+		v1->analyse(analyser, type);
+		v2->analyse(analyser, type);
+
+		if (req_type != Type::UNKNOWN) {
+			if (type.can_be_convert_in(req_type)) {
+				type = req_type;
+			} else {
+				analyser->add_error({ SemanticException::TYPE_MISMATCH, line() });
+			}
+		}
+	}
+
 	/*
 	operations = 1;
 	type = Type::VAR;
@@ -464,6 +490,8 @@ void EX_store_lsptr(LSValue** dest, LSValue* value) {
 jit_value_t Expression::compile(Compiler& c) const
 {
 	if (op->type == TokenType::EQUAL) {
+		// type = VOID
+		// v1.type = v2.type
 		LeftValue* left = (LeftValue*) v1;
 		jit_value_t l = left->compile_l(c);
 		jit_label_t label_end = jit_label_undefined;
@@ -480,6 +508,22 @@ jit_value_t Expression::compile(Compiler& c) const
 		jit_insn_label(c.F, &label_end);
 		return nullptr;
 	}
+
+	if (op->type == TokenType::PLUS) {
+		// type = req_type
+		// v1.type = v2.type
+		jit_value_t x = v1->compile(c);
+		jit_value_t y = v2->compile(c);
+		if (v1->type.raw_type.nature() == Nature::LSVALUE) {
+			jit_type_t args_t[2] = { LS_POINTER, LS_POINTER };
+			jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_t, 2, 0);
+			jit_value_t args[2] = { x, y };
+			return jit_insn_call_native(c.F, "add", (void*) &LSVar::ls_add, sig, args, 2, JIT_CALL_NOTHROW);
+		} else {
+			return Compiler::compile_convert(c.F, jit_insn_add(c.F, x, y), v1->type, type);
+		}
+	}
+
 	return nullptr;
 /*
 	// No operator : compile v1 and return
