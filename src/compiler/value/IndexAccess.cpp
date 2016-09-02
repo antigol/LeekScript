@@ -114,9 +114,10 @@ int interval_access(const LSInterval* interval, int pos) {
 
 LSValue* IA_vec_lsptr(LSVec<LSValue*>* vec, uint32_t i) {
 	VM::operations += 2;
+	if (vec == nullptr) return nullptr;
 	if (i >= vec->size()) {
 		if (vec->refs == 0) delete vec;
-		return new LSVar();
+		return nullptr;
 	}
 	LSValue* r = (*vec)[i];
 	if (vec->refs == 0) {
@@ -127,12 +128,14 @@ LSValue* IA_vec_lsptr(LSVec<LSValue*>* vec, uint32_t i) {
 }
 int32_t IA_vec_32(LSVec<int32_t>* vec, uint32_t i) {
 	VM::operations += 2;
+	if (vec == nullptr) return 0;
 	int32_t r = (i < vec->size()) ? (*vec)[i] : 0;
 	if (vec->refs == 0) delete vec;
 	return r;
 }
 double IA_vec_64(LSVec<double>* vec, uint32_t i) {
 	VM::operations += 2;
+	if (vec == nullptr) return 0.0;
 	double r = (i < vec->size()) ? (*vec)[i] : 0.0;
 	if (vec->refs == 0) delete vec;
 	return r;
