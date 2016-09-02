@@ -10,7 +10,6 @@ class LSVar : public LSValue
 {
 public:	
 	enum Type {
-		NIL = 0,
 		BOOLEAN = 1,
 		REAL = 2,
 		TEXT = 3
@@ -44,27 +43,27 @@ public:
 	bool eq(const LSVar*) const override;
 	bool lt(const LSVar*) const override;
 
-	LSVar* ls_minus();
-	LSVar* ls_not();
-	LSVar* ls_tilde();
-	LSVar* ls_preinc(); // ++x
-	LSVar* ls_postinc(); // x++
-	LSVar* ls_predec();
-	LSVar* ls_postdec();
-	LSVar* ls_abso();
+	static LSVar* ls_minus(LSVar*);
+	static LSVar* ls_not(LSVar*);
+	static LSVar* ls_tilde(LSVar*);
+	static LSVar* ls_preinc(LSVar*); // ++x
+	static LSVar* ls_postinc(LSVar*); // x++
+	static LSVar* ls_predec(LSVar*);
+	static LSVar* ls_postdec(LSVar*);
+	static LSVar* ls_abso(LSVar*);
 
-	LSVar* ls_add(LSVar*);
-	LSVar* ls_add_eq(LSVar*);
-	LSVar* ls_sub(LSVar*);
-	LSVar* ls_sub_eq(LSVar*);
-	LSVar* ls_mul(LSVar*);
-	LSVar* ls_mul_eq(LSVar*);
-	LSVar* ls_div(LSVar*);
-	LSVar* ls_div_eq(LSVar*);
-	LSVar* ls_pow(LSVar*);
-	LSVar* ls_pow_eq(LSVar*);
-	LSVar* ls_mod(LSVar*);
-	LSVar* ls_mod_eq(LSVar*);
+	static LSVar* ls_add(LSVar*, LSVar*);
+	static LSVar* ls_add_eq(LSVar*, LSVar*);
+	static LSVar* ls_sub(LSVar*, LSVar*);
+	static LSVar* ls_sub_eq(LSVar*, LSVar*);
+	static LSVar* ls_mul(LSVar*, LSVar*);
+	static LSVar* ls_mul_eq(LSVar*, LSVar*);
+	static LSVar* ls_div(LSVar*, LSVar*);
+	static LSVar* ls_div_eq(LSVar*, LSVar*);
+	static LSVar* ls_pow(LSVar*, LSVar*);
+	static LSVar* ls_pow_eq(LSVar*, LSVar*);
+	static LSVar* ls_mod(LSVar*, LSVar*);
+	static LSVar* ls_mod_eq(LSVar*, LSVar*);
 };
 
 }

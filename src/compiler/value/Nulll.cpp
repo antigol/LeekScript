@@ -21,10 +21,13 @@ unsigned Nulll::line() const {
 }
 
 void Nulll::analyse(SemanticAnalyser* analyser, const Type& req_type) {
-	type = Type::VAR;
 	constant = true;
 
-	if (req_type != Type::UNKNOWN && type != req_type) {
+	if (req_type == Type::UNKNOWN) {
+		type = Type::VAR;
+	} else if (req_type.raw_type.nature() == Nature::LSVALUE) {
+		type = req_type;
+	} else {
 		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), "null" });
 	}
 }

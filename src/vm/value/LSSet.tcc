@@ -26,7 +26,7 @@ inline LSSet<int>::LSSet() {}
 template <>
 inline LSSet<LSValue*>::LSSet(const LSSet<LSValue*>& other) : LSValue(other), std::set<LSValue*, lsset_less<LSValue*>>() {
 	for (LSValue* v : other) {
-		insert(end(), v->clone_inc());
+		insert(end(), LSValue::clone_inc(v));
 	}
 }
 template <typename T>
@@ -48,7 +48,7 @@ template <>
 inline bool LSSet<LSValue*>::ls_insert(LSValue* value) {
 	auto it = lower_bound(value);
 	if (it == end() || (**it != *value)) {
-		insert(it, value->move_inc());
+		insert(it, LSValue::move_inc(value));
 		if (refs == 0) delete this;
 		return true;
 	}

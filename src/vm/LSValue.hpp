@@ -37,13 +37,15 @@ public:
 	virtual bool isTrue() const = 0;
 
 	virtual std::ostream& print(std::ostream&) const = 0;
+	static inline std::ostream& print(std::ostream& os, const LSValue* value) {
+		if (value == nullptr) return os << "null";
+		return value->print(os);
+	}
+
 	virtual std::string json() const = 0;
 	std::string to_json() const;
 
 	virtual LSValue* clone() const = 0;
-	LSValue* clone_inc();
-	LSValue* move();
-	LSValue* move_inc();
 
 	virtual int typeID() const = 0;
 
@@ -53,6 +55,9 @@ public:
 
 	static LSValue* parse(Json& json);
 
+	static LSValue* clone_inc(LSValue* value);
+	static LSValue* move(LSValue* value);
+	static LSValue* move_inc(LSValue* value);
 	static void delete_ref(LSValue* value);
 	static void delete_temporary(LSValue* value);
 
@@ -102,25 +107,29 @@ public:
 	virtual bool lt(const LSSet<double>*) const;
 };
 
-inline LSValue* LSValue::clone_inc() {
-	LSValue* copy = clone();
+inline LSValue* LSValue::clone_inc(LSValue* value) {
+	if (value == nullptr) return nullptr;
+	LSValue* copy = value->clone();
 	copy->refs++;
 	return copy;
 }
 
-inline LSValue* LSValue::move() {
-	if (refs == 0) {
-		return this;
+inline LSValue* LSValue::move(LSValue* value) {
+	if (value == nullptr) return nullptr;
+	if (value->refs == 0) {
+		return value;
 	}
-	return clone();
+	return value->clone();
 }
 
-inline LSValue* LSValue::move_inc() {
-	if (refs == 0) {
-		refs++;
-		return this;
+inline LSValue* LSValue::move_inc(LSValue* value) {
+	if (value == nullptr) return nullptr;
+
+	if (value->refs == 0) {
+		value->refs++;
+		return value;
 	} else {
-		LSValue* copy = clone();
+		LSValue* copy = value->clone();
 		copy->refs++;
 		return copy;
 	}

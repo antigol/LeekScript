@@ -72,7 +72,7 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 	if (mode == ExecMode::COMMAND_JSON || mode == ExecMode::TOP_LEVEL) {
 
 		ostringstream oss;
-		res->print(oss);
+		LSValue::print(oss, res);
 		result = oss.str();
 
 		string ctx = "{";
@@ -119,7 +119,7 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 	} else if (mode == ExecMode::NORMAL) {
 
 		ostringstream oss;
-		res->print(oss);
+		LSValue::print(oss, res);
 		LSValue::delete_temporary(res);
 		string res_string = oss.str();
 
@@ -133,7 +133,7 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 	} else if (mode == ExecMode::TEST) {
 
 		ostringstream oss;
-		res->print(oss);
+		LSValue::print(oss, res);
 		result = oss.str();
 
 		LSValue::delete_temporary(res);
@@ -346,13 +346,14 @@ jit_value_t VM::create_ptr(jit_function_t F, void* value)
 	return jit_value_create_constant(F, &constant);
 }
 
-LSValue* VM_create_null() {
-	return new LSVar();
-}
+//LSValue* VM_create_null() {
+//	return new LSVar();
+//}
 
 jit_value_t VM::create_null(jit_function_t F) {
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, RawType::VAR.jit_type(), {}, 0, 0);
-	return jit_insn_call_native(F, "create_null", (void*) VM_create_null, sig, {}, 0, JIT_CALL_NOTHROW);
+	return create_ptr(F, nullptr);
+//	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, RawType::VAR.jit_type(), {}, 0, 0);
+//	return jit_insn_call_native(F, "create_null", (void*) VM_create_null, sig, {}, 0, JIT_CALL_NOTHROW);
 }
 
 LSValue* VM_create_bool(int value) {
@@ -465,24 +466,16 @@ void VM::push_move_vec(jit_function_t F, const Type& element_type, jit_value_t v
 	}
 }
 
-LSValue* VM_move(LSValue* val) {
-	return val->move();
-}
-
 jit_value_t VM::move_obj(jit_function_t F, jit_value_t ptr) {
 	jit_type_t args[1] = {LS_POINTER};
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args, 1, 0);
-	return jit_insn_call_native(F, "move", (void*) VM_move, sig, &ptr, 1, JIT_CALL_NOTHROW);
-}
-
-LSValue* VM_move_inc(LSValue* val) {
-	return val->move_inc();
+	return jit_insn_call_native(F, "move", (void*) LSValue::move, sig, &ptr, 1, JIT_CALL_NOTHROW);
 }
 
 jit_value_t VM::move_inc_obj(jit_function_t F, jit_value_t ptr) {
 	jit_type_t args[1] = {LS_POINTER};
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args, 1, 0);
-	return jit_insn_call_native(F, "move_inc", (void*) VM_move_inc, sig, &ptr, 1, JIT_CALL_NOTHROW);
+	return jit_insn_call_native(F, "move_inc", (void*) LSValue::move_inc, sig, &ptr, 1, JIT_CALL_NOTHROW);
 }
 
 LSValue* VM_clone(LSValue* val) {

@@ -484,7 +484,7 @@ bool jit_is_null(LSValue* v) {
 
 void EX_store_lsptr(LSValue** dest, LSValue* value) {
 	LSValue::delete_ref(*dest);
-	*dest = value->move_inc();
+	*dest = LSValue::move_inc(value);
 }
 
 jit_value_t Expression::compile(Compiler& c) const

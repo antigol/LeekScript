@@ -36,10 +36,6 @@ void AbsoluteValue::analyse(SemanticAnalyser* analyser, const Type&) {
 	constant = expression->constant;
 }
 
-LSVar* AV_abso(LSVar* v) {
-	return v->ls_abso();
-}
-
 jit_value_t AbsoluteValue::compile(Compiler& c) const {
 
 	jit_value_t ex = expression->compile(c);
@@ -47,7 +43,7 @@ jit_value_t AbsoluteValue::compile(Compiler& c) const {
 	jit_type_t args_types[1] = {LS_POINTER};
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_types, 1, 0);
 
-	return jit_insn_call_native(c.F, "abso", (void*) AV_abso, sig, &ex, 1, JIT_CALL_NOTHROW);
+	return jit_insn_call_native(c.F, "abso", (void*) &LSVar::ls_abso, sig, &ex, 1, JIT_CALL_NOTHROW);
 }
 
 }

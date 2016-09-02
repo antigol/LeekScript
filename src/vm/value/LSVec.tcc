@@ -19,7 +19,7 @@ LSVec<T>::~LSVec() {}
 
 template <>
 inline void LSVec<LSValue*>::push_clone(LSValue* value) {
-	this->push_back(value->clone_inc());
+	this->push_back(LSValue::clone_inc(value));
 }
 template <typename T>
 void LSVec<T>::push_clone(T value) {
@@ -28,7 +28,7 @@ void LSVec<T>::push_clone(T value) {
 
 template <>
 inline void LSVec<LSValue*>::push_move(LSValue* value) {
-	this->push_back(value->move_inc());
+	this->push_back(LSValue::move_inc(value));
 }
 template <typename T>
 void LSVec<T>::push_move(T value) {
@@ -66,7 +66,7 @@ template <>
 inline LSVec<LSValue*>::LSVec(const LSVec<LSValue*>& other) : LSValue(other), std::vector<LSValue*>() {
 	reserve(other.size());
 	for (LSValue* v : other) {
-		push_back(v->clone_inc());
+		push_back(LSValue::clone_inc(v));
 	}
 }
 template <typename T>
@@ -201,7 +201,7 @@ inline double LSVec<int>::ls_average() {
 	return (double) this->ls_sum() / size();
 }
 */
-
+/*
 template <>
 inline LSValue* LSVec<LSValue*>::ls_first() {
 	if (this->size() == 0) {
@@ -219,7 +219,7 @@ inline LSValue* LSVec<LSValue*>::ls_first() {
 		delete this;
 		// In that case `first` will survive
 	}
-	return first->move(); /* return temporary */
+	return first->move();
 }
 template <>
 inline LSValue* LSVec<double>::ls_first() {
@@ -359,7 +359,7 @@ inline int LSVec<T>::ls_size() {
 	}
 	return s;
 }
-
+*/
 /*
 template <>
 inline LSVec<LSValue*>* LSVec<LSValue*>::ls_map(const void* function) {
