@@ -135,42 +135,54 @@ void Program::compile_main(Context& context) {
 	closure = jit_function_to_closure(F);
 }
 
-LSValue* Program::execute() {
+string Program::execute() {
 
 	Type output_type = main->type.return_type();
 
 	if (output_type == Type::VOID) {
 		auto fun = (void (*)()) closure;
 		fun();
-		return new LSVar("<void>");
+		return "<void>";
 	}
 	if (output_type == Type::BOOLEAN) {
 		auto fun = (bool (*)()) closure;
-		return new LSVar((bool) fun());
+		return fun() ? "true" : "false";
 	}
 	if (output_type == Type::I32) {
 		auto fun = (int32_t (*)()) closure;
-		return new LSVar((int32_t) fun());
+		stringstream oss;
+		oss << fun();
+		return oss.str();
 	}
 	if (output_type == Type::I64) {
 		auto fun = (int64_t (*)()) closure;
-		return new LSVar((int64_t) fun());
+		stringstream oss;
+		oss << fun();
+		return oss.str();
 	}
 	if (output_type == Type::F32) {
 		auto fun = (float (*)()) closure;
-		return new LSVar((double) fun());
+		stringstream oss;
+		oss << fun();
+		return oss.str();
 	}
 	if (output_type == Type::F64) {
 		auto fun = (double (*)()) closure;
-		return new LSVar(fun());
+		stringstream oss;
+		oss << fun();
+		return oss.str();
 	}
 	if (output_type.raw_type == RawType::FUNCTION) {
 		auto fun = (void* (*)()) closure;
 		fun();
-		return new LSVar("<function>");
+		return "<function>";
 	}
 	auto fun = (LSValue* (*)()) closure;
-	return fun();
+	LSValue* value = fun();
+	stringstream oss;
+	LSValue::print(oss, value);
+	LSValue::delete_temporary(value);
+	return oss.str();
 }
 
 void Program::print(ostream& os, bool debug) const {

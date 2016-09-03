@@ -19,8 +19,10 @@ private:
 	size_t _bytes;
 	jit_type_t _jit_type;
 	Nature _nature;
+	int id;
 
-	RawType(const std::string& name, const std::string& classname, const std::string& jsonname, size_t bytes, jit_type_t jit_type, Nature nature);
+	RawType() = delete;
+	RawType(const std::string& name, const std::string& classname, const std::string& jsonname, size_t bytes, jit_type_t jit_type, Nature nature, int id);
 
 public:
 	const std::string name()      const { return _name; }
@@ -48,6 +50,7 @@ public:
 
 	bool operator ==(const RawType& type) const;
 	inline bool operator !=(const RawType& type) const { return !(*this == type); }
+	bool operator <(const RawType& type) const;
 };
 
 // null < bool,number < text < vec < map < set < function < tuple
@@ -57,7 +60,6 @@ class Type {
 public:
 
 	RawType raw_type;
-	std::string clazz;
 	std::vector<Type> elements_types;
 	std::vector<Type> return_types;
 	std::vector<Type> arguments_types;
@@ -84,22 +86,26 @@ public:
 	bool is_primitive_number() const;
 	bool is_arithmetic() const;
 	bool is_complete() const;
+	void make_it_complete();
 
 	void replace_place_holder(int id, const Type& type);
-	Type match_with_generic(const Type& generic) const;
+	bool match_with_generic(const Type& generic, Type* completed = nullptr) const;
 private:
-	bool match_with_generic_private(const Type& generic, Type& complete) const;
+	bool match_with_generic_private(Type& generic, Type& complete) const;
 public:
 
 	void toJson(std::ostream&) const;
 
+	static Type get_compatible_type(const Type& t1, const Type& t2);
+
+	static std::string get_nature_name(const Nature& nature);
+	static std::string get_nature_symbol(const Nature& nature);
+
 	bool operator ==(const Type& type) const;
 	inline bool operator !=(const Type& type) const { return !(*this == type); }
+	bool operator <(const Type& type) const;
 
 
-	/*
-	 * Static part
-	 */
 	static const Type UNKNOWN; // generic for any type if elements_types is empty, otherwise any of the elements_types
 	static const Type LSVALUE; // generic for any lsvalue type
 
@@ -119,13 +125,6 @@ public:
 	static const Type SET; // LSVALUE
 	static const Type FUNCTION;
 	static const Type TUPLE;
-
-	static bool list_compatible(const std::vector<Type>& expected, const std::vector<Type>& actual);
-	static bool list_more_specific(const std::vector<Type>& old, const std::vector<Type>& neww);
-	static bool more_specific(const Type& old, const Type& neww);
-	static Type get_compatible_type(const Type& t1, const Type& t2);
-	static std::string get_nature_name(const Nature& nature);
-	static std::string get_nature_symbol(const Nature& nature);
 };
 
 std::ostream& operator << (std::ostream&, const Type&);

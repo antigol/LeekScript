@@ -18,20 +18,20 @@ int Test::all() {
 	exeTime = 0;
 
 	test_general();
-	test_booleans();
-	test_numbers();
-	test_strings();
-	test_arrays();
-	test_map();
-	test_set();
-	test_objects();
-	test_functions();
-	test_classes();
-	test_loops();
-	test_operators();
-	test_references();
-	test_operations();
-	test_system();
+//	test_booleans();
+//	test_numbers();
+//	test_strings();
+//	test_arrays();
+//	test_map();
+//	test_set();
+//	test_objects();
+//	test_functions();
+//	test_classes();
+//	test_loops();
+//	test_operators();
+//	test_references();
+//	test_operations();
+//	test_system();
 
 	double elapsed_secs = double(clock() - begin) / CLOCKS_PER_SEC;
 	int errors = (total - success_count);

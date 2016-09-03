@@ -38,66 +38,34 @@ unsigned Array::line() const {
 
 void Array::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
-	constant = true;
-	type = Type::VEC;
+	preanalyse(analyser);
 
-	if (req_type != Type::UNKNOWN && req_type.raw_type != RawType::VEC) {
-		std::ostringstream oss;
+	if (!type.match_with_generic(req_type, &type)) {
+		stringstream oss;
 		print(oss, 0, false);
 		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
 	}
-
-	Type element_type = req_type.element_type(0);
+	type.make_it_complete();
 
 	for (Value* ex : expressions) {
-		ex->preanalyse(analyser, req_type.element_type(0));
-
-		constant = constant && ex->constant;
-		element_type = Type::get_compatible_type(element_type, ex->type);
-		if (element_type == Type::VOID) {
-			std::ostringstream oss;
-			ex->print(oss);
-			analyser->add_error({ SemanticException::TYPE_MISMATCH, ex->line(), oss.str() });
-			break;
-		}
+		ex->analyse(analyser, type.element_type(0));
 	}
-
-	if (element_type == Type::UNKNOWN) {
-		// empty array
-		element_type = Type::VAR;
-	}
-
-	// Re-analyze expressions with the supported type
-	for (Value* ex : expressions) {
-		ex->analyse(analyser, element_type);
-		if (ex->type != element_type) {
-			analyser->add_error({ SemanticException::TYPE_MISMATCH });
-		}
-	}
-
-	type.set_element_type(0, element_type);
-	assert(type.is_complete());
+	assert(type.is_complete() || !analyser->errors.empty());
 }
 
-void Array::preanalyse(SemanticAnalyser* analyser, const Type& req_type)
+void Array::preanalyse(SemanticAnalyser* analyser)
 {
 	constant = true;
-	type = Type::VEC;
 
-	Type element_type = req_type.element_type(0);
+	Type element_type = Type::UNKNOWN;
 
 	for (Value* ex : expressions) {
-		ex->preanalyse(analyser, req_type.element_type(0));
+		ex->preanalyse(analyser);
 		constant = constant && ex->constant;
 		element_type = Type::get_compatible_type(element_type, ex->type);
 	}
 
-	// Re-analyze expressions with the supported type
-	for (Value* ex : expressions) {
-		ex->preanalyse(analyser, element_type);
-	}
-
-	type.set_element_type(0, element_type);
+	type = Type(RawType::VEC, { element_type });
 }
 
 jit_value_t Array::compile(Compiler& c) const {

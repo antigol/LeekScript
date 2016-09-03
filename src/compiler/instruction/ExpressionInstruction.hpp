@@ -17,6 +17,7 @@ public:
 	virtual void print(std::ostream&, int indent, bool debug) const override;
 
 	virtual void analyse(SemanticAnalyser*, const Type& type) override;
+	virtual void preanalyse(SemanticAnalyser*) override;
 
 	virtual jit_value_t compile(Compiler&) const override;
 };

@@ -101,18 +101,12 @@ void Function::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		}
 	}
 
+	Type req_return_type = Type::UNKNOWN;
 	if (returnType) {
-		analyse_body(analyser, returnType->getInternalType(analyser));
+		req_return_type = returnType->getInternalType(analyser);
 	} else if (req_type.return_type() != Type::UNKNOWN) {
-		analyse_body(analyser, req_type.return_types[0]);
-	} else {
-		analyse_body(analyser, Type::UNKNOWN);
+		req_return_type = req_type.return_types[0];
 	}
-
-	assert(type.is_complete() || !analyser->errors.empty());
-}
-
-void Function::analyse_body(SemanticAnalyser* analyser, const Type& req_type) {
 
 	analyser->enter_function(this);
 
@@ -120,34 +114,37 @@ void Function::analyse_body(SemanticAnalyser* analyser, const Type& req_type) {
 		analyser->add_parameter(arguments[i], type.argument_type(i));
 	}
 
-	type.set_return_type(req_type); // type requested to return instructions
-	body->analyse(analyser, type.return_type()); // type requested to body
-	if (type.return_types.size() > 1) { // the body contains return instruction
-		bool any_void = false;
-		bool all_void = true;
-		Type return_type = Type::UNKNOWN;
-		type.return_types[0] = body->type;
-		for (size_t i = 0; i < type.return_types.size(); ++i) {
-			if (type.return_types[i] == Type::UNREACHABLE) continue;
-			return_type = Type::get_compatible_type(return_type, type.return_types[i]);
-			if (type.return_types[i] == Type::VOID) any_void = true;
-			else all_void = false;
-		}
-		type.return_types.clear();
-		type.set_return_type(return_type);
-		body->analyse(analyser, return_type); // second pass
-		if (any_void && !all_void) {
-			analyser->add_error({ SemanticException::TYPE_MISMATCH, body->line() });
-		}
-	} else {
-		if (type.return_type() == Type::UNKNOWN) {
-			type.set_return_type(body->type); // in this case there is no return instruction
-		}
+	type.set_return_type(Type::UNKNOWN); // type requested to return instructions
+	body->preanalyse(analyser);
+	bool any_void = false;
+	bool all_void = true;
+	Type return_type = Type::UNKNOWN;
+	type.return_types[0] = body->type;
+	for (size_t i = 0; i < type.return_types.size(); ++i) { // body.type, return[0].type, return[1].type, ...
+		if (type.return_types[i] == Type::UNREACHABLE) continue;
+		cout << return_type << " + " << type.return_types[i] << " = ";
+		return_type = Type::get_compatible_type(return_type, type.return_types[i]);
+		cout << return_type << endl;
+		if (type.return_types[i] == Type::VOID) any_void = true;
+		else all_void = false;
 	}
+	// fix return type
+	if ((any_void && !all_void) || !return_type.match_with_generic(req_type, &return_type)) {
+		stringstream oss;
+		print(oss, 0, false);
+		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
+	}
+	return_type.make_it_complete();
+
+	type.return_types.clear();
+	type.set_return_type(return_type);
+	body->analyse(analyser, return_type);
 
 //	vars = analyser->get_local_vars();
 
 	analyser->leave_function();
+
+	assert(type.is_complete() || !analyser->errors.empty());
 }
 
 void Function::capture(SemanticVar* var) {

@@ -114,11 +114,11 @@ bool SyntaxicAnalyser::isObject() {
 }
 
 Value* SyntaxicAnalyser::eatBlockOrObject() {
-	if (isObject()) {
-		return eatObject();
-	} else {
+//	if (isObject()) {
+//		return eatObject();
+//	} else {
 		return eatBlock();
-	}
+//	}
 }
 
 Block* SyntaxicAnalyser::eatBlock() {

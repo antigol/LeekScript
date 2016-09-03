@@ -35,7 +35,7 @@ public:
 	/*
 	 * Execute the program and get a LSValue* result
 	 */
-	LSValue* execute();
+	std::string execute();
 
 	void print(std::ostream& os, bool debug = false) const;
 };

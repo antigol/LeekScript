@@ -41,7 +41,7 @@ std::ostream&LSVar::print(std::ostream& os) const
 	switch (type) {
 		case BOOLEAN: return os << (real > 0.0 ? "true" : "false");
 		case REAL: return os << real;
-		case TEXT: return os << text;
+		case TEXT: return os << '\'' << text << '\'';
 	}
 }
 

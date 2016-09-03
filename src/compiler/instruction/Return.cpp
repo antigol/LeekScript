@@ -21,26 +21,40 @@ void Return::print(ostream& os, int indent, bool debug) const {
 	if (expression) expression->print(os, indent, debug);
 }
 
-void Return::analyse(SemanticAnalyser* analyser, const Type& ) {
-
+void Return::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
 	Function* f = analyser->current_function();
-	if (!f) {
-		analyser->add_error({ SemanticException::CONTINUE_MUST_BE_IN_LOOP });
-		return;
-	}
-	if (f->type.return_type() == Type::UNKNOWN) {
-		if (expression) expression->analyse(analyser, Type::UNKNOWN);
 
-		f->type.set_return_type(Type::UNKNOWN); // ensure that the vector is not empty
-		f->type.return_types.push_back(expression ? expression->type : Type::VOID);
+	if (expression) {
+		if (f->type.return_type() == Type::UNKNOWN) { // Actually in PREanalyse
+			expression->preanalyse(analyser);
+
+			f->type.set_return_type(Type::UNKNOWN); // ensure that the vector is not empty
+			f->type.return_types.push_back(expression->type);
+		} else {
+			expression->analyse(analyser, f->type.return_type());
+			if (expression->type != f->type.return_type()) {
+				analyser->add_error({ SemanticException::TYPE_MISMATCH, expression->line() });
+			}
+		}
 	} else {
-		if (expression) expression->analyse(analyser, f->type.return_type());
-		if ((!expression && f->type.return_type() != Type::VOID) || (expression && expression->type != f->type.return_type())) {
-			analyser->add_error({ SemanticException::TYPE_MISMATCH, expression->line() });
+		if (f->type.return_type() == Type::UNKNOWN) {
+			f->type.set_return_type(Type::UNKNOWN);
+			f->type.return_types.push_back(Type::VOID);
+		} else {
+			if (f->type.return_type() != Type::VOID) {
+				analyser->add_error({ SemanticException::TYPE_MISMATCH, expression->line() });
+			}
 		}
 	}
 
+
 	type = Type::VOID;
+	if (!type.match_with_generic(req_type)) {
+		stringstream oss;
+		print(oss, 0, false);
+		analyser->add_error({ SemanticException::TYPE_MISMATCH, 0, oss.str() });
+	}
 	assert(type.is_complete());
 }
 

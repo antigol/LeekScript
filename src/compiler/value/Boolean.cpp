@@ -24,31 +24,22 @@ unsigned Boolean::line() const {
 	return 0;
 }
 
-void Boolean::analyse(SemanticAnalyser* analyser, const Type& req_type) {
-
-	constant = true;
-
-	type = Type::BOOLEAN;
-	if (req_type != Type::UNKNOWN && type.can_be_convert_in(req_type)) {
-		type = req_type;
-	}
-
-	if (req_type != Type::UNKNOWN && type != req_type) {
+void Boolean::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	preanalyse(analyser);
+	if (!type.match_with_generic(req_type, &type)) {
 		stringstream oss;
 		print(oss, 0, false);
 		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
 	}
-	assert(type.is_complete());
+	type.make_it_complete();
+	assert(type.is_complete() || !analyser->errors.empty());
 }
 
-void Boolean::preanalyse(SemanticAnalyser* analyser, const Type& req_type)
+void Boolean::preanalyse(SemanticAnalyser*)
 {
 	constant = true;
-	if (req_type == Type::BOOLEAN || req_type == Type::VAR) {
-		type = req_type;
-	} else {
-		type = Type(RawType::UNKNOWN, { Type::BOOLEAN, Type::VAR });
-	}
+	type = Type(RawType::UNKNOWN, { Type::BOOLEAN, Type::VAR });
 }
 
 jit_value_t Boolean::compile(Compiler& c) const {

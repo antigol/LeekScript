@@ -44,8 +44,8 @@ Method Module::get_method_implementation(const string& name, const Type& obj_typ
 	for (const ModuleMethod& method : methods) {
 		if (method.name == name) {
 			for (const Method& method_impl : method.impl) {
-				Type completed_type = proposal_type.match_with_generic(method_impl.type);
-				if (completed_type != Type::VOID) {
+				Type completed_type;
+				if (proposal_type.match_with_generic(method_impl.type, &completed_type)) {
 					return Method(completed_type, method_impl.addr);
 				}
 			}

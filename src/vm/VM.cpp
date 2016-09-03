@@ -47,6 +47,14 @@ extern std::map<LSValue*, LSValue*> objs;
 
 string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 
+//	Type t1(RawType::UNKNOWN, { Type(RawType::MAP, { Type::I32, Type::F64 }), Type(RawType::MAP, { Type::BOOLEAN, Type::LSVALUE }) });
+//	Type t2(RawType::UNKNOWN, { Type::I32, Type::F64, Type::LSVALUE });
+//	t2 = Type(RawType::MAP, { Type::UNKNOWN.place_holder(1), Type::UNKNOWN.place_holder(1) });
+//	Type t3;
+//	cout << Type::get_compatible_type(t1, t2) << endl;
+//	cout << t1.match_with_generic(t2, &t3) << endl;
+//	cout << t3 << endl;
+
 	// Reset
 	LSValue::obj_count = 0;
 	LSValue::obj_deleted = 0;
@@ -67,7 +75,7 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 	VM::operations = 0;
 
 	auto exe_start = chrono::high_resolution_clock::now();
-	LSValue* res = program->execute();
+	string result = program->execute();
 	auto exe_end = chrono::high_resolution_clock::now();
 
 	long exe_time_ns = chrono::duration_cast<chrono::nanoseconds>(exe_end - exe_start).count();
@@ -77,13 +85,7 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 	/*
 	 * Return results
 	 */
-	string result;
-
 	if (mode == ExecMode::COMMAND_JSON || mode == ExecMode::TOP_LEVEL) {
-
-		ostringstream oss;
-		LSValue::print(oss, res);
-		result = oss.str();
 
 		string ctx = "{";
 
@@ -98,7 +100,6 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 		}
 		*/
 		ctx += "}";
-		LSValue::delete_temporary(res);
 
 		if (mode == ExecMode::TOP_LEVEL) {
 			cout << result << endl;
@@ -112,13 +113,13 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 
 	} else if (mode == ExecMode::FILE_JSON) {
 
-		LSVec<LSValue*>* res_vec = (LSVec<LSValue*>*) res;
+//		LSVec<LSValue*>* res_vec = (LSVec<LSValue*>*) res;
 
-		ostringstream oss;
-		res_vec->operator[] (0)->print(oss);
-		result = oss.str();
+//		ostringstream oss;
+//		res_vec->operator[] (0)->print(oss);
+//		result = oss.str();
 
-		LSValue::delete_temporary(res);
+//		LSValue::delete_temporary(res);
 
 		string ctx;
 
@@ -128,29 +129,11 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 
 	} else if (mode == ExecMode::NORMAL) {
 
-		ostringstream oss;
-		LSValue::print(oss, res);
-		LSValue::delete_temporary(res);
-		string res_string = oss.str();
-
-		string ctx;
-
-		cout << res_string << endl;
+		cout << result << endl;
 		cout << "(" << VM::operations << " ops, " << compile_time << "ms + " << exe_time_ms << " ms)" << endl;
 
-		result = ctx;
-
 	} else if (mode == ExecMode::TEST) {
-
-		ostringstream oss;
-		LSValue::print(oss, res);
-		result = oss.str();
-
-		LSValue::delete_temporary(res);
-
 	} else if (mode == ExecMode::TEST_OPS) {
-
-		LSValue::delete_temporary(res);
 		result = to_string(VM::operations);
 	}
 

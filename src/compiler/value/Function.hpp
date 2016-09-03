@@ -40,8 +40,6 @@ public:
 
 	virtual void analyse(SemanticAnalyser*, const Type&) override;
 
-	void analyse_body(SemanticAnalyser*, const Type& req_type);
-
 	virtual jit_value_t compile(Compiler&) const override;
 };
 

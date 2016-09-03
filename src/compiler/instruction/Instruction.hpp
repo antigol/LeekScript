@@ -24,6 +24,8 @@ public:
 	//  otherwise it must generate an error
 	virtual void analyse(SemanticAnalyser* analyser, const Type& req_type) = 0;
 
+	virtual void preanalyse(SemanticAnalyser* analyser);
+
  	virtual jit_value_t compile(Compiler&) const = 0;
 
  	static std::string tabs(int indent);

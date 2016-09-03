@@ -34,9 +34,9 @@ public:
 	virtual void analyse(SemanticAnalyser* analyser, const Type& req_type) = 0;
 
 	// this method is a relaxation of the last one
-	// `type` can be leave un a generic form (like Type::UNKNOWN or Type(RawType::VEC, { Type::UNKNOWN }) )
+	// `type` can be leave in a generic form (like Type::UNKNOWN or Type(RawType::VEC, { Type::UNKNOWN }) )
 	// it is not mandatory to generate errors
-	virtual void preanalyse(SemanticAnalyser* analyser, const Type& req_type);
+	virtual void preanalyse(SemanticAnalyser* analyser);
 
 	virtual jit_value_t compile(Compiler&) const = 0;
 

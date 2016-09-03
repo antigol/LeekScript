@@ -22,18 +22,15 @@ unsigned Nulll::line() const {
 
 void Nulll::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	constant = true;
-
-	if (req_type == Type::UNKNOWN) {
-		type = Type::VAR;
-	} else if (req_type.raw_type.nature() == Nature::LSVALUE) {
-		type = req_type;
-	} else {
+	type = Type::LSVALUE;
+	if (!type.match_with_generic(req_type, &type)) {
 		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), "null" });
 	}
+	type.make_it_complete();
 	assert(type.is_complete() || !analyser->errors.empty());
 }
 
-void Nulll::preanalyse(SemanticAnalyser*, const Type&)
+void Nulll::preanalyse(SemanticAnalyser*)
 {
 	constant = true;
 	type = Type::LSVALUE;

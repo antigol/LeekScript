@@ -26,34 +26,23 @@ unsigned Number::line() const {
 	return token->line;
 }
 
-void Number::analyse(SemanticAnalyser* analyser, const Type& req_type) {
-
-	constant = true;
-
-	if (value != (int) value) {
-		type = Type::F64;
-	} else {
-		type = Type::I32;
-	}
-
-	if (req_type != Type::UNKNOWN && type.can_be_convert_in(req_type)) {
-		type = req_type;
-	}
-
-	if (req_type != Type::UNKNOWN && type != req_type) {
+void Number::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	preanalyse(analyser);
+	if (!type.match_with_generic(req_type, &type)) {
 		stringstream oss;
 		print(oss, 0, false);
 		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
 	}
+	type.make_it_complete();
 	assert(type.is_complete() || !analyser->errors.empty());
 }
 
-void Number::preanalyse(SemanticAnalyser* analyser, const Type& req_type)
+void Number::preanalyse(SemanticAnalyser* analyser)
 {
 	constant = true;
-
 	if (value != (int) value) {
-		type = Type(RawType::UNKNOWN, { Type::F64, Type::VAR });
+		type = Type(RawType::UNKNOWN, { Type::F64, Type::VAR }); // in preference order
 	} else {
 		type = Type(RawType::UNKNOWN, { Type::I32, Type::F64, Type::VAR });
 	}

@@ -1,7 +1,5 @@
 #include "../../compiler/lexical/Ident.hpp"
 
-#include "../../vm/value/LSNull.hpp"
-
 namespace ls {
 
 Ident::Ident(Token* token) {

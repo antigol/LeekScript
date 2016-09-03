@@ -111,38 +111,53 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	}
 
 	if (op->type == TokenType::EQUAL) {
-		type = Type::VOID;
-		if (req_type != Type::UNKNOWN && req_type != Type::VOID) {
-			analyser->add_error({ SemanticException::TYPE_MISMATCH, line() });
-		}
 		v1->analyse(analyser, Type::UNKNOWN);
 		if (!v1->isLeftValue()) {
-			analyser->add_error({ SemanticException::VALUE_MUST_BE_A_LVALUE });
+			stringstream oss;
+			v1->print(oss, 0, false);
+			analyser->add_error({ SemanticException::VALUE_MUST_BE_A_LVALUE, v1->line(), oss.str() });
 		}
 		v2->analyse(analyser, v1->type);
 
-	} else if (op->type == TokenType::PLUS) {
-		v1->analyse(analyser, Type::UNKNOWN);
-		if (!v1->type.is_arithmetic()) {
-			analyser->add_error({ SemanticException::TYPE_MISMATCH, v1->line() });
+		type = v1->type;
+		if (!type.match_with_generic(req_type)) {
+			stringstream oss;
+			print(oss, 0, false);
+			analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
 		}
-		v2->analyse(analyser, Type::UNKNOWN);
+
+	} else if (op->type == TokenType::PLUS) {
+		v1->preanalyse(analyser);
+		if (!v1->type.is_arithmetic()) {
+			stringstream oss;
+			v1->print(oss, 0, false);
+			analyser->add_error({ SemanticException::MUST_BE_ARITHMETIC_TYPE, v1->line(), oss.str() });
+		}
+		v2->preanalyse(analyser);
 		if (!v2->type.is_arithmetic()) {
-			analyser->add_error({ SemanticException::TYPE_MISMATCH, v2->line() });
+			stringstream oss;
+			v2->print(oss, 0, false);
+			analyser->add_error({ SemanticException::MUST_BE_ARITHMETIC_TYPE, v2->line(), oss.str() });
 		}
 
 		type = Type::get_compatible_type(v1->type, v2->type);
 		if (type == Type::VOID) {
-			analyser->add_error({ SemanticException::INCOMPATIBLE_TYPES, line() });
+			stringstream oss;
+			print(oss, 0, false);
+			analyser->add_error({ SemanticException::INCOMPATIBLE_TYPES, line(), oss.str() });
 		}
+		type.make_it_complete(); // because we need v1 and v2 to have the same type
 		v1->analyse(analyser, type);
 		v2->analyse(analyser, type);
 
-		if (req_type != Type::UNKNOWN) {
+		if (!type.match_with_generic(req_type)) {
 			if (type.can_be_convert_in(req_type)) {
 				type = req_type;
+				type.make_it_complete();
 			} else {
-				analyser->add_error({ SemanticException::TYPE_MISMATCH, line() });
+				stringstream oss;
+				print(oss, 0, false);
+				analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
 			}
 		}
 	}
@@ -296,28 +311,22 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	assert(type.is_complete() || !analyser->errors.empty());
 }
 
-void Expression::preanalyse(SemanticAnalyser* analyser, const Type& req_type)
+void Expression::preanalyse(SemanticAnalyser* analyser)
 {
 	// No operator : just analyse v1 and return
 	if (op == nullptr) {
-		v1->preanalyse(analyser, req_type);
+		v1->preanalyse(analyser);
 		type = v1->type;
 		return;
 	}
 
 	if (op->type == TokenType::EQUAL) {
-		type = Type::VOID;
-
+		v1->preanalyse(analyser);
+		v2->preanalyse(analyser);
+		type = v1->type;
 	} else if (op->type == TokenType::PLUS) {
-		v1->preanalyse(analyser, Type::UNKNOWN);
-		if (!v1->type.is_arithmetic()) {
-			analyser->add_error({ SemanticException::TYPE_MISMATCH, v1->line() });
-		}
-		v2->preanalyse(analyser, Type::UNKNOWN);
-		if (!v2->type.is_arithmetic()) {
-			analyser->add_error({ SemanticException::TYPE_MISMATCH, v2->line() });
-		}
-
+		v1->preanalyse(analyser);
+		v2->preanalyse(analyser);
 		type = Type::get_compatible_type(v1->type, v2->type);
 	}
 }
@@ -530,8 +539,7 @@ jit_value_t Expression::compile(Compiler& c) const
 
 	switch (op->type) {
 		case TokenType::EQUAL: {
-			// type = VOID
-			// v1.type = v2.type
+			// type = v1.type = v2.type
 			LeftValue* left = (LeftValue*) v1;
 			jit_value_t l = left->compile_l(c);
 			jit_label_t label_end = jit_label_undefined;
@@ -546,7 +554,7 @@ jit_value_t Expression::compile(Compiler& c) const
 				jit_insn_store_relative(c.F, l, 0, v);
 			}
 			jit_insn_label(c.F, &label_end);
-			return nullptr;
+			return left->compile(c);
 		}
 
 		case TokenType::PLUS: {

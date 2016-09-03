@@ -49,8 +49,8 @@ void If::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	}
 
 	if (elze) {
-		then->analyse(analyser, req_type);
-		elze->analyse(analyser, req_type);
+		then->preanalyse(analyser);
+		elze->preanalyse(analyser);
 
 		if (then->type == Type::UNREACHABLE) { // then contains return instruction
 			type = elze->type;
@@ -59,20 +59,28 @@ void If::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		} else {
 			type = Type::get_compatible_type(then->type, elze->type);
 		}
-		if (then->type != type) {
-			then->analyse(analyser, type);
+		cout << then->type << " + " << elze->type << " = " << type << endl;
+
+		if (!type.match_with_generic(req_type, &type)) {
+			stringstream oss;
+			print(oss, 0, false);
+			analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
 		}
-		if (elze->type != type) {
-			elze->analyse(analyser, type);
-		}
+		type.make_it_complete();
+
+		then->analyse(analyser, type);
+		elze->analyse(analyser, type);
 	} else {
 		then->analyse(analyser, Type::VOID);
 		type = Type::VOID;
 
-		if (req_type != Type::UNKNOWN && req_type != Type::VOID) {
-			analyser->add_error({ SemanticException::TYPE_MISMATCH, then->line() });
+		if (!type.match_with_generic(req_type)) {
+			stringstream oss;
+			print(oss, 0, false);
+			analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
 		}
 	}
+	assert(type.is_complete() || !analyser->errors.empty());
 }
 
 jit_value_t If::compile(Compiler& c) const {

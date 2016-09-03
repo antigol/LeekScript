@@ -27,6 +27,12 @@ void ExpressionInstruction::analyse(SemanticAnalyser* analyser, const Type& req_
 	assert(type.is_complete() || !analyser->errors.empty());
 }
 
+void ExpressionInstruction::preanalyse(SemanticAnalyser* analyser)
+{
+	value->preanalyse(analyser);
+	type = value->type;
+}
+
 jit_value_t ExpressionInstruction::compile(Compiler& c) const {
 
 	jit_value_t v = value->compile(c);

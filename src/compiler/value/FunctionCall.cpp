@@ -79,7 +79,7 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	if (oa != nullptr) {
 
 		oa->object->analyse(analyser, Type::UNKNOWN);
-		Module* module = analyser->module_by_name(oa->object->type.clazz);
+		Module* module = analyser->module_by_name(oa->object->type.raw_type.clazz());
 
 		if (module == nullptr) {
 			analyser->add_error({ SemanticException::METHOD_NOT_FOUND, line() });
@@ -88,7 +88,7 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 		vector<Type> args_types;
 		for (size_t i = 0; i < arguments.size(); ++i) {
-			arguments[i]->preanalyse(analyser, Type::UNKNOWN); // preanalyse [] will give [].type = vec<??>
+			arguments[i]->preanalyse(analyser); // preanalyse [] will give [].type = vec<??>
 			args_types.push_back(arguments[i]->type);
 		}
 

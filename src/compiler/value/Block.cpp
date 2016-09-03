@@ -35,34 +35,71 @@ unsigned Block::line() const {
 	return 0;
 }
 
-void Block::analyse(SemanticAnalyser* analyser, const Type& req_type) {
-
+void Block::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
 	analyser->enter_block();
 
-	type = Type::VOID;
-
 	for (size_t i = 0; i < instructions.size(); ++i) {
-		if (i < instructions.size() - 1 || req_type == Type::VOID) {
-			instructions[i]->analyse(analyser, Type::VOID);
-		} else {
-			instructions[i]->analyse(analyser, req_type);
-			type = instructions[i]->type;
-		}
-		if (dynamic_cast<Return*>(instructions[i])) {
+		Instruction* ins = instructions[i];
+
+		if (dynamic_cast<Return*>(ins)) {
+			ins->analyse(analyser, Type::UNKNOWN);
 			type = Type::UNREACHABLE;
 			analyser->leave_block();
 			return; // no need to compile after a return
 		}
+
+		if (i == instructions.size() - 1) {
+			// last instruction
+			ins->analyse(analyser, req_type);
+			type = ins->type;
+			analyser->leave_block();
+			return;
+		} else {
+			ins->analyse(analyser, Type::VOID);
+		}
+	}
+
+	// empty block
+	type = Type::VOID;
+	if (!type.match_with_generic(req_type)) {
+		stringstream oss;
+		print(oss, 0, false);
+		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
 	}
 
 	analyser->leave_block();
+	assert(type.is_complete() || !analyser->errors.empty());
+}
 
-	if (type == Type::VOID) { // empty block or last instruction type is VOID
-		if (req_type != Type::VOID && req_type != Type::UNKNOWN) {
-			type = Type::VAR; // we can only offer a null
+void Block::preanalyse(SemanticAnalyser* analyser)
+{
+	analyser->enter_block();
+
+	for (size_t i = 0; i < instructions.size(); ++i) {
+		Instruction* ins = instructions[i];
+
+		if (dynamic_cast<Return*>(ins)) {
+			ins->preanalyse(analyser);
+			type = Type::UNREACHABLE;
+			analyser->leave_block();
+			return; // no need to compile after a return
+		}
+
+		if (i == instructions.size() - 1) {
+			// last instruction
+			ins->preanalyse(analyser);
+			type = ins->type;
+			analyser->leave_block();
+			return;
+		} else {
+			ins->preanalyse(analyser);
 		}
 	}
-	assert(type.is_complete() || !analyser->errors.empty());
+
+	// empty block
+	type = Type::VOID;
+	analyser->leave_block();
 }
 
 LSValue* Block_move(LSValue* value) {

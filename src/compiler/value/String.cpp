@@ -28,7 +28,7 @@ void String::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	type = Type::VAR;
 	constant = true;
 
-	if (req_type != Type::UNKNOWN && req_type != Type::VAR) {
+	if (!type.match_with_generic(req_type)) {
 		stringstream oss;
 		print(oss, 0, false);
 		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
