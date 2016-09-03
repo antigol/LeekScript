@@ -29,9 +29,9 @@ const RawType RawType::FUNCTION   ("fn",          "?",        "fn",       sizeof
 const RawType RawType::TUPLE      ("tuple",       "Tuple",    "tuple",    0,                nullptr,           Nature::VALUE);
 
 const Type Type::UNKNOWN    (RawType::UNKNOWN);
+const Type Type::LSVALUE    (RawType::LSVALUE);
 const Type Type::VOID       (RawType::VOID);
 const Type Type::UNREACHABLE(RawType::UNREACHABLE);
-const Type Type::LSVALUE    (RawType::LSVALUE);
 const Type Type::VAR        (RawType::VAR);
 const Type Type::BOOLEAN    (RawType::BOOLEAN);
 const Type Type::I32        (RawType::I32);
@@ -274,6 +274,18 @@ Type Type::get_compatible_type(const Type& t1, const Type& t2) {
 
 	if (t1 == Type::UNKNOWN) return t2;
 	if (t2 == Type::UNKNOWN) return t1;
+
+	if (t1.raw_type == RawType::UNKNOWN) {
+		vector<Type> compatibles;
+		for (const Type& type : t1.elements_types) {
+			Type compatible = get_compatible_type(type, t2);
+			if (compatible != Type::VOID) compatibles.push_back(compatible);
+		}
+		if (compatibles.empty()) return Type::VOID;
+		if (compatibles.size() == 1) return compatibles[0];
+		return Type(RawType::UNKNOWN, compatibles);
+	}
+	if (t2.raw_type == RawType::UNKNOWN) get_compatible_type(t2, t1);
 
 	// FUNCTION
 	if (t1.raw_type == RawType::FUNCTION && t2.raw_type == RawType::FUNCTION) {

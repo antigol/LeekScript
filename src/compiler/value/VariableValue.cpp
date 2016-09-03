@@ -47,6 +47,7 @@ void VariableValue::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		print(oss, 0, false);
 		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
 	}
+	assert(type.is_complete() || !analyser->errors.empty());
 }
 
 extern map<string, jit_value_t> internals;

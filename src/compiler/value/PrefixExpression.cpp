@@ -58,6 +58,7 @@ void PrefixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 			analyser->add_error({ SemanticException::TYPE_MISMATCH });
 		}
 	}
+	assert(type.is_complete() || !analyser->errors.empty());
 
 	/*
 	expression->analyse(analyser, Type::UNKNOWN);

@@ -30,6 +30,13 @@ void Nulll::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	} else {
 		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), "null" });
 	}
+	assert(type.is_complete() || !analyser->errors.empty());
+}
+
+void Nulll::preanalyse(SemanticAnalyser*, const Type&)
+{
+	constant = true;
+	type = Type::LSVALUE;
 }
 
 jit_value_t Nulll::compile(Compiler& c) const {

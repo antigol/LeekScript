@@ -45,6 +45,18 @@ void Number::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		print(oss, 0, false);
 		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
 	}
+	assert(type.is_complete() || !analyser->errors.empty());
+}
+
+void Number::preanalyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	constant = true;
+
+	if (value != (int) value) {
+		type = Type(RawType::UNKNOWN, { Type::F64, Type::VAR });
+	} else {
+		type = Type(RawType::UNKNOWN, { Type::I32, Type::F64, Type::VAR });
+	}
 }
 
 jit_value_t Number::compile(Compiler& c) const {

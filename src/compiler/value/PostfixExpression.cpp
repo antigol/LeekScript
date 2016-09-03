@@ -34,6 +34,7 @@ void PostfixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type
 	}
 
 	type = expression->type;
+	assert(type.is_complete() || !analyser->errors.empty());
 }
 
 jit_value_t PostfixExpression::compile(Compiler& c) const {

@@ -100,12 +100,11 @@ public:
 	/*
 	 * Static part
 	 */
-	static const Type UNKNOWN;
+	static const Type UNKNOWN; // generic for any type if elements_types is empty, otherwise any of the elements_types
+	static const Type LSVALUE; // generic for any lsvalue type
+
 	static const Type VOID; // for part of code that returns nothing
 	static const Type UNREACHABLE; // for part of code that can't be reached
-
-	static const Type LSVALUE; // UNKNOWN LSVALUE
-
 	static const Type VAR; // LSVALUE
 	static const Type BOOLEAN;
 	static const Type I32;

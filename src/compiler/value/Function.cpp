@@ -79,7 +79,8 @@ unsigned Function::line() const {
 	return 0;
 }
 
-void Function::analyse(SemanticAnalyser* analyser, const Type& req_type) {
+void Function::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
 
 //	parent = analyser->current_function();
 
@@ -108,6 +109,7 @@ void Function::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		analyse_body(analyser, Type::UNKNOWN);
 	}
 
+	assert(type.is_complete() || !analyser->errors.empty());
 }
 
 void Function::analyse_body(SemanticAnalyser* analyser, const Type& req_type) {

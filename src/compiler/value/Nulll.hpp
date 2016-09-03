@@ -15,6 +15,7 @@ public:
 	virtual unsigned line() const override;
 
 	virtual void analyse(SemanticAnalyser*, const Type&) override;
+	virtual void preanalyse(SemanticAnalyser*, const Type&) override;
 
 	virtual jit_value_t compile(Compiler&) const override;
 };

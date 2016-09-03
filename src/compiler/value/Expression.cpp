@@ -293,6 +293,33 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		type.raw_type.nature() = req_type.raw_type.nature();
 	}
 	*/
+	assert(type.is_complete() || !analyser->errors.empty());
+}
+
+void Expression::preanalyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	// No operator : just analyse v1 and return
+	if (op == nullptr) {
+		v1->preanalyse(analyser, req_type);
+		type = v1->type;
+		return;
+	}
+
+	if (op->type == TokenType::EQUAL) {
+		type = Type::VOID;
+
+	} else if (op->type == TokenType::PLUS) {
+		v1->preanalyse(analyser, Type::UNKNOWN);
+		if (!v1->type.is_arithmetic()) {
+			analyser->add_error({ SemanticException::TYPE_MISMATCH, v1->line() });
+		}
+		v2->preanalyse(analyser, Type::UNKNOWN);
+		if (!v2->type.is_arithmetic()) {
+			analyser->add_error({ SemanticException::TYPE_MISMATCH, v2->line() });
+		}
+
+		type = Type::get_compatible_type(v1->type, v2->type);
+	}
 }
 
 /*
