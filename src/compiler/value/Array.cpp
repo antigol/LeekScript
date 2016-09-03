@@ -36,9 +36,8 @@ unsigned Array::line() const {
 	return 0;
 }
 
-void Array::analyse(SemanticAnalyser* analyser, const Type& req_type) {
-
-
+void Array::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
 	constant = true;
 	type = Type::VEC;
 
@@ -50,18 +49,15 @@ void Array::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	Type element_type = req_type.element_type(0);
 
-	for (size_t i = 0; i < expressions.size(); ++i) {
-		Value* ex = expressions[i];
-		ex->analyse(analyser, req_type.element_type(0));
+	for (Value* ex : expressions) {
+		ex->preanalyse(analyser, req_type.element_type(0));
 
-		if (ex->constant == false) {
-			constant = false;
-		}
+		constant = constant && ex->constant;
 		element_type = Type::get_compatible_type(element_type, ex->type);
 		if (element_type == Type::VOID) {
 			std::ostringstream oss;
-			expressions[i]->print(oss);
-			analyser->add_error({ SemanticException::TYPE_MISMATCH, expressions[i]->line(), oss.str() });
+			ex->print(oss);
+			analyser->add_error({ SemanticException::TYPE_MISMATCH, ex->line(), oss.str() });
 			break;
 		}
 	}
@@ -72,8 +68,7 @@ void Array::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	}
 
 	// Re-analyze expressions with the supported type
-	for (size_t i = 0; i < expressions.size(); ++i) {
-		Value* ex = expressions[i];
+	for (Value* ex : expressions) {
 		ex->analyse(analyser, element_type);
 		if (ex->type != element_type) {
 			analyser->add_error({ SemanticException::TYPE_MISMATCH });
@@ -82,6 +77,27 @@ void Array::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	type.set_element_type(0, element_type);
 
+}
+
+void Array::preanalyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	constant = true;
+	type = Type::VEC;
+
+	Type element_type = req_type.element_type(0);
+
+	for (Value* ex : expressions) {
+		ex->preanalyse(analyser, req_type.element_type(0));
+		constant = constant && ex->constant;
+		element_type = Type::get_compatible_type(element_type, ex->type);
+	}
+
+	// Re-analyze expressions with the supported type
+	for (Value* ex : expressions) {
+		ex->preanalyse(analyser, element_type);
+	}
+
+	type.set_element_type(0, element_type);
 }
 
 jit_value_t Array::compile(Compiler& c) const {

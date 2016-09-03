@@ -24,7 +24,7 @@ using namespace std;
 
 namespace ls {
 
-FunctionCall::FunctionCall() {
+FunctionCall::FunctionCall() : method(Type::VOID, nullptr) {
 	function = nullptr;
 //	std_func = nullptr;
 //	this_ptr = nullptr;
@@ -60,7 +60,7 @@ unsigned FunctionCall::line() const {
 void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	constant = false;
-	method = nullptr;
+	method = Method(Type::VOID, nullptr);
 
 
 	/*
@@ -79,36 +79,48 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	if (oa != nullptr) {
 
 		oa->object->analyse(analyser, Type::UNKNOWN);
+		Module* module = analyser->module_by_name(oa->object->type.clazz);
+
+		if (module == nullptr) {
+			analyser->add_error({ SemanticException::METHOD_NOT_FOUND, line() });
+			return;
+		}
 
 		vector<Type> args_types;
 		for (size_t i = 0; i < arguments.size(); ++i) {
-			arguments[i]->analyse(analyser, Type::UNKNOWN);
+			arguments[i]->preanalyse(analyser, Type::UNKNOWN); // preanalyse [] will give [].type = vec<??>
 			args_types.push_back(arguments[i]->type);
 		}
 
-		for (Module* module : analyser->modules) {
-			if (module->name == oa->object->type.clazz) {
-				const Method* method = module->get_method_implementation(oa->field->content, oa->object->type, req_type, args_types);
-				if (method) {
-					oa->object->analyse(analyser, method->type.argument_type(0));
-					for (size_t i = 0; i < arguments.size(); ++i) {
-						arguments[i]->analyse(analyser, method->type.argument_type(i + 1));
-					}
-					oa->type = method->type;
-					if (req_type != Type::UNKNOWN) {
-						type = req_type;
-					} else {
-						type = method->type.return_type();
-					}
-					this->method = method;
-					return;
-				}
-			}
+		Method method = module->get_method_implementation(oa->field->content, oa->object->type, req_type, args_types);
+
+		if (method.addr == nullptr) {
+			stringstream oss;
+			oa->print(oss, 0, false);
+			analyser->add_error({ SemanticException::METHOD_NOT_FOUND, line(), oss.str() });
+			return;
 		}
-		stringstream oss;
-		oa->print(oss, 0, false);
-		analyser->add_error({ SemanticException::METHOD_NOT_FOUND, line(), oss.str() });
+
+		this->method = method;
+		oa->type = method.type;
+
+		for (size_t i = 0; i < arguments.size(); ++i) {
+			arguments[i]->analyse(analyser, method.type.argument_type(i + 1));
+		}
+
+		if (req_type != Type::UNKNOWN) {
+			type = req_type;
+
+			if (!method.type.return_type().can_be_convert_in(req_type)) {
+				analyser->add_error({ SemanticException::TYPE_MISMATCH, line() });
+			}
+		} else {
+			type = method.type.return_type();
+		}
+
 		return;
+
+
 
 
 		/*
@@ -615,7 +627,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 	}
 */
 
-	if (method) {
+	if (method.addr) {
 		ObjectAccess* oa = dynamic_cast<ObjectAccess*>(function);
 
 		vector<jit_value_t> args;
@@ -626,8 +638,8 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 			args.push_back(arguments[i]->compile(c));
 			args_types.push_back(arguments[i]->type.raw_type.jit_type());
 		}
-		Type rt = method->type.return_type();
-		return Compiler::compile_convert(c.F, Compiler::call_native(c.F, rt.raw_type.jit_type(), args_types, method->addr, args), rt, type);
+		Type rt = method.type.return_type();
+		return Compiler::compile_convert(c.F, Compiler::call_native(c.F, rt.raw_type.jit_type(), args_types, method.addr, args), rt, type);
 	}
 
 

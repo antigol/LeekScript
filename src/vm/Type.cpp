@@ -12,51 +12,62 @@ bool RawType::operator ==(const RawType& type) const {
 	return _name == type._name && _clazz == type._clazz && _json_name == type._json_name && _bytes == type._bytes && _jit_type == type._jit_type && _nature == type._nature;
 }
 
-const RawType RawType::UNKNOWN(    "?",           "?",        "?",        0,                nullptr,           Nature::UNKNOWN);
-const RawType RawType::VOID(       "void",        "?",        "void",     0,                jit_type_void,     Nature::VOID);
+const RawType RawType::UNKNOWN    ("?",           "?",        "?",        0,                nullptr,           Nature::UNKNOWN);
+const RawType RawType::VOID       ("void",        "?",        "void",     0,                jit_type_void,     Nature::VOID);
 const RawType RawType::UNREACHABLE("unreachable", "?",        "",         0,                nullptr,           Nature::VOID);
-const RawType RawType::VAR(        "var",         "Variable", "variable", sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE);
-const RawType RawType::BOOLEAN(    "bool",        "Boolean",  "boolean",  sizeof (int32_t), jit_type_int,      Nature::VALUE);
-const RawType RawType::I32(        "i32",         "Number",   "number",   sizeof (int32_t), jit_type_int,      Nature::VALUE);
-const RawType RawType::I64(        "i64",         "Number",   "number",   sizeof (int64_t), jit_type_long,     Nature::VALUE);
-const RawType RawType::F32(        "f32",         "Number",   "number",   sizeof (float),   jit_type_float32,  Nature::VALUE);
-const RawType RawType::F64(        "f64",         "Number",   "number",   sizeof (double),  jit_type_float64,  Nature::VALUE);
-const RawType RawType::VEC(        "vec",         "Vec",      "vec",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE);
-const RawType RawType::MAP(        "map",         "Map",      "map",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE);
-const RawType RawType::SET(        "set",         "Set",      "set",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE);
-const RawType RawType::FUNCTION(   "fn",          "?",        "fn",       sizeof (void*),   jit_type_void_ptr, Nature::VALUE);
-const RawType RawType::TUPLE(      "tuple",       "Tuple",    "tuple",    0,                nullptr,           Nature::VALUE);
+const RawType RawType::LSVALUE    ("lsvalue",     "?",        "",         sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE);
+const RawType RawType::VAR        ("var",         "Variable", "variable", sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE);
+const RawType RawType::BOOLEAN    ("bool",        "Boolean",  "boolean",  sizeof (int32_t), jit_type_int,      Nature::VALUE);
+const RawType RawType::I32        ("i32",         "Number",   "number",   sizeof (int32_t), jit_type_int,      Nature::VALUE);
+const RawType RawType::I64        ("i64",         "Number",   "number",   sizeof (int64_t), jit_type_long,     Nature::VALUE);
+const RawType RawType::F32        ("f32",         "Number",   "number",   sizeof (float),   jit_type_float32,  Nature::VALUE);
+const RawType RawType::F64        ("f64",         "Number",   "number",   sizeof (double),  jit_type_float64,  Nature::VALUE);
+const RawType RawType::VEC        ("vec",         "Vec",      "vec",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE);
+const RawType RawType::MAP        ("map",         "Map",      "map",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE);
+const RawType RawType::SET        ("set",         "Set",      "set",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE);
+const RawType RawType::FUNCTION   ("fn",          "?",        "fn",       sizeof (void*),   jit_type_void_ptr, Nature::VALUE);
+const RawType RawType::TUPLE      ("tuple",       "Tuple",    "tuple",    0,                nullptr,           Nature::VALUE);
 
-const Type Type::UNKNOWN(    RawType::UNKNOWN);
-const Type Type::VOID(       RawType::VOID);
+const Type Type::UNKNOWN    (RawType::UNKNOWN);
+const Type Type::VOID       (RawType::VOID);
 const Type Type::UNREACHABLE(RawType::UNREACHABLE);
-const Type Type::VAR(        RawType::VAR);
-const Type Type::BOOLEAN(    RawType::BOOLEAN);
-const Type Type::I32(        RawType::I32);
-const Type Type::I64(        RawType::I64);
-const Type Type::F32(        RawType::F32);
-const Type Type::F64(        RawType::F64);
-const Type Type::VEC(        RawType::VEC, { Type::UNKNOWN });
-const Type Type::MAP(        RawType::VEC, { Type::UNKNOWN, Type::UNKNOWN });
-const Type Type::SET(        RawType::VEC, { Type::UNKNOWN });
-const Type Type::FUNCTION(   RawType::FUNCTION);
-const Type Type::TUPLE(      RawType::TUPLE);
+const Type Type::LSVALUE    (RawType::LSVALUE);
+const Type Type::VAR        (RawType::VAR);
+const Type Type::BOOLEAN    (RawType::BOOLEAN);
+const Type Type::I32        (RawType::I32);
+const Type Type::I64        (RawType::I64);
+const Type Type::F32        (RawType::F32);
+const Type Type::F64        (RawType::F64);
+const Type Type::VEC        (RawType::VEC, { Type::UNKNOWN });
+const Type Type::VEC_VAR    (RawType::VEC, { Type::VAR });
+const Type Type::VEC_I32    (RawType::VEC, { Type::I32 });
+const Type Type::VEC_F64    (RawType::VEC, { Type::F64 });
+const Type Type::MAP        (RawType::VEC, { Type::UNKNOWN, Type::UNKNOWN });
+const Type Type::SET        (RawType::VEC, { Type::UNKNOWN });
+const Type Type::FUNCTION   (RawType::FUNCTION);
+const Type Type::TUPLE      (RawType::TUPLE);
 
 Type::Type() :
-	raw_type(RawType::UNKNOWN)
+	raw_type(RawType::UNKNOWN), ph(0)
 {}
 
 Type::Type(const RawType& raw_type) :
-	raw_type(raw_type)
+	raw_type(raw_type), ph(0)
 {
-	this->clazz = raw_type.clazz();
+	clazz = raw_type.clazz();
 }
 
-Type::Type(const RawType& raw_type, const vector<Type>& element_type) :
-	raw_type(raw_type)
+Type::Type(const RawType& raw_type, const vector<Type>& elements_types) :
+	raw_type(raw_type), elements_types(elements_types), ph(0)
 {
-	this->clazz = raw_type.clazz();
-	this->element_types = element_type;
+	clazz = raw_type.clazz();
+}
+
+Type Type::place_holder(int id) const
+{
+	Type type = *this;
+	type.ph = id;
+	return type;
 }
 
 bool Type::must_manage_memory() const {
@@ -96,17 +107,17 @@ const Type& Type::argument_type(size_t index) const {
 }
 
 const Type& Type::element_type(size_t i) const {
-	if (i < element_types.size()) {
-		return element_types[i];
+	if (i < elements_types.size()) {
+		return elements_types[i];
 	}
 	return Type::UNKNOWN;
 }
 
 void Type::set_element_type(size_t index, const Type& type) {
-	while (element_types.size() <= index) {
-		element_types.push_back(Type::UNKNOWN);
+	while (elements_types.size() <= index) {
+		elements_types.push_back(Type::UNKNOWN);
 	}
-	element_types[index] = type;
+	elements_types[index] = type;
 }
 
 void Type::toJson(ostream& os) const {
@@ -128,7 +139,7 @@ void Type::toJson(ostream& os) const {
 bool Type::operator ==(const Type& type) const {
 	return raw_type == type.raw_type &&
 			clazz == type.clazz &&
-			element_types == type.element_types &&
+			elements_types == type.elements_types &&
 			return_types == type.return_types &&
 			arguments_types == type.arguments_types;
 }
@@ -145,6 +156,67 @@ bool Type::is_primitive_number() const
 bool Type::is_arithmetic() const
 {
 	return *this == Type::VAR || *this == Type::BOOLEAN || *this == Type::I32 || *this == Type::I64 || *this == Type::F32 || *this == Type::F64;
+}
+
+void Type::replace_place_holder(int id, const Type& type)
+{
+	if (ph == id) {
+		*this = type;
+	}
+	for (Type& x : elements_types) x.replace_place_holder(id, type);
+	for (Type& x : return_types) x.replace_place_holder(id, type);
+	for (Type& x : arguments_types) x.replace_place_holder(id, type);
+}
+
+Type Type::match_with_generic(const Type& generic) const
+{
+	Type copy = generic;
+	if (match_with_generic_private(copy, copy)) {
+		return copy;
+	}
+	return Type::VOID;
+}
+
+bool Type::match_with_generic_private(const Type& generic, Type& complete) const
+{
+	if (*this == Type::UNKNOWN) return true;
+	if (*this == Type::LSVALUE && generic.raw_type.nature() == Nature::LSVALUE) return true;
+	if (generic == Type::UNKNOWN) {
+		if (generic.ph > 0) complete.replace_place_holder(generic.ph, *this);
+		return true;
+	}
+	if (generic == Type::LSVALUE) {
+		if (generic.ph > 0) complete.replace_place_holder(generic.ph, *this);
+		return raw_type.nature() == Nature::LSVALUE;
+	}
+
+	if (generic.raw_type == raw_type) {
+		if (raw_type == RawType::VEC) {
+			return element_type(0).match_with_generic_private(generic.element_type(0), complete);
+		}
+		if (raw_type == RawType::MAP) {
+			return element_type(0).match_with_generic_private(generic.element_type(0), complete) && element_type(1).match_with_generic_private(generic.element_type(1), complete);
+		}
+		if (raw_type == RawType::SET) {
+			return element_type(0).match_with_generic_private(generic.element_type(0), complete);
+		}
+		if (raw_type == RawType::FUNCTION) {
+			if (arguments_types.size() != generic.arguments_types.size()) return false;
+			for (size_t i = 0; i < arguments_types.size(); ++i) {
+				if (!argument_type(i).match_with_generic_private(generic.argument_type(i), complete)) return false;
+			}
+			return generic.return_type().match_with_generic_private(return_type(), complete);
+		}
+		if (raw_type == RawType::TUPLE) {
+			if (elements_types.size() != generic.elements_types.size()) return false;
+			for (size_t i = 0; i < elements_types.size(); ++i) {
+				if (!element_type(i).match_with_generic_private(generic.element_type(i), complete)) return false;
+			}
+			return true;
+		}
+	}
+
+	return *this == generic;
 }
 
 bool Type::list_compatible(const std::vector<Type>& expected, const std::vector<Type>& actual) {
@@ -243,10 +315,10 @@ Type Type::get_compatible_type(const Type& t1, const Type& t2) {
 
 	// TUPLE
 	if (t1.raw_type == RawType::TUPLE && t2.raw_type == RawType::TUPLE) {
-		if (t1.element_types.size() != t2.element_types.size()) return Type::VOID;
+		if (t1.elements_types.size() != t2.elements_types.size()) return Type::VOID;
 		vector<Type> compatible_elements;
-		for (size_t i = 0; i < t1.element_types.size(); ++i) {
-			compatible_elements.push_back(get_compatible_type(t1.element_types[i], t2.element_types[i]));
+		for (size_t i = 0; i < t1.elements_types.size(); ++i) {
+			compatible_elements.push_back(get_compatible_type(t1.elements_types[i], t2.elements_types[i]));
 			if (compatible_elements[i] == Type::VOID) return Type::VOID;
 		}
 		return Type(RawType::TUPLE, compatible_elements);

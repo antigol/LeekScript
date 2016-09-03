@@ -33,6 +33,7 @@ public:
 	static const RawType UNKNOWN;
 	static const RawType VOID;
 	static const RawType UNREACHABLE;
+	static const RawType LSVALUE;
 	static const RawType VAR;
 	static const RawType BOOLEAN;
 	static const RawType I32;
@@ -57,14 +58,16 @@ public:
 
 	RawType raw_type;
 	std::string clazz;
-	std::vector<Type> element_types;
+	std::vector<Type> elements_types;
 	std::vector<Type> return_types;
 	std::vector<Type> arguments_types;
+	int ph; // not compared in ==
 
 	Type();
 	Type(const RawType& raw_type);
-	Type(const RawType& raw_type, const std::vector<Type>& element_types);
+	Type(const RawType& raw_type, const std::vector<Type>& elements_types);
 
+	Type place_holder(int id) const;
 	bool must_manage_memory() const;
 
 	Type return_type() const;
@@ -81,6 +84,12 @@ public:
 	bool is_primitive_number() const;
 	bool is_arithmetic() const;
 
+	void replace_place_holder(int id, const Type& type);
+	Type match_with_generic(const Type& generic) const;
+private:
+	bool match_with_generic_private(const Type& generic, Type& complete) const;
+public:
+
 	void toJson(std::ostream&) const;
 
 	bool operator ==(const Type& type) const;
@@ -94,6 +103,8 @@ public:
 	static const Type VOID; // for part of code that returns nothing
 	static const Type UNREACHABLE; // for part of code that can't be reached
 
+	static const Type LSVALUE; // UNKNOWN LSVALUE
+
 	static const Type VAR; // LSVALUE
 	static const Type BOOLEAN;
 	static const Type I32;
@@ -101,6 +112,9 @@ public:
 	static const Type F32;
 	static const Type F64;
 	static const Type VEC; // LSVALUE
+	static const Type VEC_VAR; // LSVALUE
+	static const Type VEC_I32; // LSVALUE
+	static const Type VEC_F64; // LSVALUE
 	static const Type MAP; // LSVALUE
 	static const Type SET; // LSVALUE
 	static const Type FUNCTION;

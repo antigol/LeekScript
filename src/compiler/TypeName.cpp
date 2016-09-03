@@ -56,7 +56,7 @@ Type TypeName::getInternalType(SemanticAnalyser* analyser) const {
 	if (name->content == Type::TUPLE.raw_type.name()) {
 		Type type(RawType::TUPLE);
 		for (size_t i = 0; i < elements.size(); ++i) {
-			type.element_types.push_back(elements[i]->getInternalType(analyser));
+			type.elements_types.push_back(elements[i]->getInternalType(analyser));
 		}
 		return type;
 	}

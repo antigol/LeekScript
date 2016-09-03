@@ -158,6 +158,14 @@ bool SemanticAnalyser::in_loop(int deepness) const {
 	return loops.top() >= deepness;
 }
 
+Module*SemanticAnalyser::module_by_name(const string& name) const
+{
+	for (size_t i = 0; i < modules.size(); ++i) {
+		if (modules[i]->name == name) return modules[i];
+	}
+	return nullptr;
+}
+
 SemanticVar* SemanticAnalyser::add_parameter(Token* v, Type type) {
 
 	SemanticVar* arg = new SemanticVar(v->content, VarScope::PARAMETER, type, parameters.back().size(), nullptr, nullptr, current_function());

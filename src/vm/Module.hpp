@@ -28,6 +28,7 @@ class Method {
 public:
 	Type type;
 	void* addr;
+	Method(const Type &type, void *addr) : type(type), addr(addr) {}
 	Method(const Type& obj_type, const Type& return_type, std::initializer_list<Type> args, void* addr) {
 		this->addr = addr;
 		type = Type::FUNCTION;
@@ -91,7 +92,7 @@ public:
 	virtual ~Module();
 
 	void method(const std::string& name, std::initializer_list<Method>);
-	const Method* get_method_implementation(const std::string& name, const Type& obj_type, const Type& return_type, const std::vector<Type> args) const;
+	Method get_method_implementation(const std::string& name, const Type& obj_type, const Type& return_type, const std::vector<Type> args) const;
 
 //	void static_method(std::string name, std::initializer_list<StaticMethod>);
 //	void static_method(std::string name, Type return_type, std::initializer_list<Type> args, void* addr);

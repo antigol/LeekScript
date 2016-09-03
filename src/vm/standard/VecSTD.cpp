@@ -32,13 +32,12 @@ LSValue* array_sub(LSVec<LSValue*>* array, int begin, int end) {
 #endif
 VecSTD::VecSTD() : Module(RawType::VEC.clazz())
 {
-	Type vec_var = Type::VEC;
-	vec_var.set_element_type(0, Type::VAR);
+	Type vec_ls = Type(RawType::VEC, { Type::LSVALUE.place_holder(1) });
 
 	method("push", {
-		{vec_var, vec_var, { Type::VAR }, (void*) &LSVec<LSValue*>::ls_push},
-//		{Type::FLOAT_ARRAY, Type::FLOAT_ARRAY, {Type::FLOAT}, (void*) &LSVec<double>::ls_push},
-//		{Type::INT_ARRAY, Type::INT_ARRAY, {Type::INTEGER}, (void*) &LSVec<int>::ls_push},
+		{vec_ls, vec_ls, { Type::LSVALUE.place_holder(1) }, (void*) LSVec<LSValue*>::ls_push},
+		{Type::VEC_I32, Type::VEC_I32, { Type::I32 }, (void*) LSVec<int32_t>::ls_push},
+		{Type::VEC_F64, Type::VEC_F64, { Type::F64 }, (void*) LSVec<double>::ls_push},
 	});
 
 /*

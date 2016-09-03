@@ -76,6 +76,8 @@ public:
 	void leave_loop();
 	bool in_loop(int deepness) const;
 
+	Module* module_by_name(const std::string& name) const;
+
 	SemanticVar* add_var(Token*, Type, Value*, VariableDeclaration*);
 	SemanticVar* add_parameter(Token*, Type);
 

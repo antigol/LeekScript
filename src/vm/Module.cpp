@@ -34,21 +34,24 @@ void Module::method(const string& name, initializer_list<Method> impl) {
 	methods.push_back(ModuleMethod(name, impl));
 }
 
-const Method* Module::get_method_implementation(const string& name, const Type& obj_type, const Type& return_type, const std::vector<Type> args) const
+Method Module::get_method_implementation(const string& name, const Type& obj_type, const Type& return_type, const std::vector<Type> args) const
 {
-	for (const ModuleMethod& mm : methods) {
-		if (mm.name == name) {
-			for (const Method& m : mm.impl) {
-				if (obj_type != m.type.argument_type(0)) continue;
-				for (size_t i = 0; i < args.size(); ++i) {
-					if (!args[i].can_be_convert_in(m.type.argument_type(i + 1))) continue;
+	Type proposal_type = Type::FUNCTION;
+	proposal_type.set_return_type(return_type);
+	proposal_type.set_argument_type(0, obj_type);
+	for (const Type& a : args) proposal_type.add_argument_type(a);
+
+	for (const ModuleMethod& method : methods) {
+		if (method.name == name) {
+			for (const Method& method_impl : method.impl) {
+				Type completed_type = proposal_type.match_with_generic(method_impl.type);
+				if (completed_type != Type::VOID) {
+					return Method(completed_type, method_impl.addr);
 				}
-				if (return_type != Type::UNKNOWN && !m.type.return_type().can_be_convert_in(return_type)) continue;
-				return &m; // return first match !
 			}
 		}
 	}
-	return nullptr;
+	return Method(Type::VOID, nullptr);
 }
 
 //void Module::static_method(string name, initializer_list<StaticMethod> impl) {

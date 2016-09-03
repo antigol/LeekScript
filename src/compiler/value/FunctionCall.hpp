@@ -21,7 +21,7 @@ public:
 
 //	void* std_func;
 //	Value* this_ptr;
-	const Method* method;
+	Method method;
 
 	FunctionCall();
 	virtual ~FunctionCall();

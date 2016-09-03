@@ -27,7 +27,16 @@ public:
 
 	virtual unsigned line() const = 0;
 
-	virtual void analyse(SemanticAnalyser*, const Type&) = 0;
+
+	// this method must leave `type` in a complete state(i.e. no UNKNOWN no place holders)
+	// this method must respect `req_type` (i.e. type.match_with_generic(req_type) != Type::VOID)
+	//  otherwise it must generate an error
+	virtual void analyse(SemanticAnalyser* analyser, const Type& req_type) = 0;
+
+	// this method is a relaxation of the last one
+	// `type` can be leave un a generic form (like Type::UNKNOWN or Type(RawType::VEC, { Type::UNKNOWN }) )
+	// it is not mandatory to generate errors
+	virtual void preanalyse(SemanticAnalyser* analyser, const Type& req_type);
 
 	virtual jit_value_t compile(Compiler&) const = 0;
 
