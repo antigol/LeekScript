@@ -37,6 +37,11 @@ void Foreach::print(ostream& os, int indent, bool debug) const {
 	body->print(os, indent, debug);
 }
 
+unsigned Foreach::line() const
+{
+	return 0;
+}
+
 void Foreach::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	if (req_type.raw_type == RawType::VEC) {

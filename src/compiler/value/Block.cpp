@@ -12,7 +12,7 @@ Block::Block() {
 }
 
 Block::~Block() {
-	for (Instruction* instruction : instructions) {
+	for (Value* instruction : instructions) {
 		delete instruction;
 	}
 }
@@ -20,7 +20,7 @@ Block::~Block() {
 void Block::print(ostream& os, int indent, bool debug) const {
 	os << "{";
 	os << endl;
-	for (Instruction* instruction : instructions) {
+	for (Value* instruction : instructions) {
 		os << tabs(indent + 1);
 		instruction->print(os, indent + 1, debug);
 		os << endl;
@@ -40,7 +40,7 @@ void Block::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	analyser->enter_block();
 
 	for (size_t i = 0; i < instructions.size(); ++i) {
-		Instruction* ins = instructions[i];
+		Value* ins = instructions[i];
 
 		if (dynamic_cast<Return*>(ins)) {
 			ins->analyse(analyser, Type::UNKNOWN);
@@ -77,7 +77,7 @@ void Block::preanalyse(SemanticAnalyser* analyser)
 	analyser->enter_block();
 
 	for (size_t i = 0; i < instructions.size(); ++i) {
-		Instruction* ins = instructions[i];
+		Value* ins = instructions[i];
 
 		if (dynamic_cast<Return*>(ins)) {
 			ins->preanalyse(analyser);

@@ -1,5 +1,4 @@
-#include "../../compiler/instruction/Return.hpp"
-#include "../semantic/SemanticAnalyser.hpp"
+#include "Return.hpp"
 #include "../value/Function.hpp"
 
 using namespace std;
@@ -19,6 +18,11 @@ Return::~Return() {
 void Return::print(ostream& os, int indent, bool debug) const {
 	os << "return ";
 	if (expression) expression->print(os, indent, debug);
+}
+
+unsigned Return::line() const
+{
+	return 0;
 }
 
 void Return::analyse(SemanticAnalyser* analyser, const Type& req_type)

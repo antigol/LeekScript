@@ -13,18 +13,20 @@ namespace ls {
 class Block;
 class SemanticVar;
 
-class For : public Instruction {
+class For : public Value {
 public:
 
-	std::vector<Instruction*> inits;
+	std::vector<Value*> inits;
 	Value* condition;
-	std::vector<Instruction*> increments;
+	std::vector<Value*> increments;
 	Block* body;
 
 	For();
 	virtual ~For();
 
 	virtual void print(std::ostream&, int indent, bool debug) const override;
+
+	virtual unsigned line() const override;
 
 	virtual void analyse(SemanticAnalyser*, const Type& req_type) override;
 

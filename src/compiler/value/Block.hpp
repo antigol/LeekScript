@@ -2,7 +2,6 @@
 #define BLOCK_HPP
 
 #include <vector>
-#include "../instruction/Instruction.hpp"
 #include "Value.hpp"
 
 namespace ls {
@@ -10,7 +9,7 @@ namespace ls {
 class Block : public Value {
 public:
 
-	std::vector<Instruction*> instructions;
+	std::vector<Value*> instructions;
 
 	Block();
 	virtual ~Block();

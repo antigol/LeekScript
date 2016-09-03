@@ -19,6 +19,11 @@ void Break::print(ostream& os, int, bool) const {
 	}
 }
 
+unsigned Break::line() const
+{
+	return 0;
+}
+
 void Break::analyse(SemanticAnalyser* analyser, const Type&) {
 
 	// break must be in a loop

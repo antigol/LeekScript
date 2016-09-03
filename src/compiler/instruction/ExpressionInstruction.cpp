@@ -1,4 +1,4 @@
-#include "../../compiler/instruction/ExpressionInstruction.hpp"
+#include "ExpressionInstruction.hpp"
 
 using namespace std;
 
@@ -14,6 +14,11 @@ ExpressionInstruction::~ExpressionInstruction() {
 
 void ExpressionInstruction::print(ostream& os, int indent, bool debug) const {
 	value->print(os, indent, debug);
+}
+
+unsigned ExpressionInstruction::line() const
+{
+	return 0;
 }
 
 void ExpressionInstruction::analyse(SemanticAnalyser* analyser, const Type& req_type) {

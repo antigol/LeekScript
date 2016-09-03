@@ -1,12 +1,11 @@
 #ifndef CONTINUE_HPP
 #define CONTINUE_HPP
 
-#include "../../compiler/instruction/Instruction.hpp"
-#include "../../compiler/value/Expression.hpp"
+#include "../value/Value.hpp"
 
 namespace ls {
 
-class Continue : public Instruction {
+class Continue : public Value {
 public:
 
 	int deepness;
@@ -15,6 +14,8 @@ public:
 	virtual ~Continue();
 
 	virtual void print(std::ostream&, int indent, bool debug) const override;
+
+	virtual unsigned line() const override;
 
 	virtual void analyse(SemanticAnalyser*, const Type& req_type) override;
 

@@ -82,7 +82,7 @@ Block* SyntaxicAnalyser::eatMain() {
 		} else if (t->type == TokenType::SEMICOLON) {
 			eat();
 		} else {
-			Instruction* ins = eatInstruction();
+			Value* ins = eatInstruction();
 			if (ins) {
 				block->instructions.push_back(ins);
 			}
@@ -146,7 +146,7 @@ Block* SyntaxicAnalyser::eatBlock() {
 		} else if (t->type == TokenType::SEMICOLON) {
 			eat();
 		} else {
-			Instruction* ins = eatInstruction();
+			Value* ins = eatInstruction();
 			if (ins) block->instructions.push_back(ins);
 		}
 	}
@@ -154,28 +154,28 @@ Block* SyntaxicAnalyser::eatBlock() {
 	return block;
 }
 
-Object* SyntaxicAnalyser::eatObject() {
+//Object* SyntaxicAnalyser::eatObject() {
 
-	eat(TokenType::OPEN_BRACE);
+//	eat(TokenType::OPEN_BRACE);
 
-	Object* o = new Object();
+//	Object* o = new Object();
 
-	while (t->type == TokenType::IDENT) {
+//	while (t->type == TokenType::IDENT) {
 
-		o->keys.push_back(new Ident(eatIdent()));
-		eat(TokenType::COLON);
-		o->values.push_back(eatExpression());
+//		o->keys.push_back(new Ident(eatIdent()));
+//		eat(TokenType::COLON);
+//		o->values.push_back(eatExpression());
 
-		if (t->type == TokenType::COMMA) {
-			eat();
-		}
-	}
-	eat(TokenType::CLOSING_BRACE);
+//		if (t->type == TokenType::COMMA) {
+//			eat();
+//		}
+//	}
+//	eat(TokenType::CLOSING_BRACE);
 
-	return o;
-}
+//	return o;
+//}
 
-Instruction* SyntaxicAnalyser::eatInstruction() {
+Value* SyntaxicAnalyser::eatInstruction() {
 
 	switch (t->type) {
 
@@ -231,8 +231,8 @@ Instruction* SyntaxicAnalyser::eatInstruction() {
 		case TokenType::CONTINUE:
 			return eatContinue();
 
-		case TokenType::CLASS:
-			return eatClassDeclaration();
+//		case TokenType::CLASS:
+//			return eatClassDeclaration();
 
 		case TokenType::FOR:
 			return eatFor();
@@ -972,7 +972,7 @@ Match::Pattern SyntaxicAnalyser::eatMatchPattern() {
 	}
 }
 
-Instruction* SyntaxicAnalyser::eatFor() {
+Value* SyntaxicAnalyser::eatFor() {
 
 	eat(TokenType::FOR);
 
@@ -983,12 +983,12 @@ Instruction* SyntaxicAnalyser::eatFor() {
 	}
 
 	save_current_state();
-	vector<Instruction*> inits;
+	vector<Value*> inits;
 	while (true) {
 		if (t->type == TokenType::FINISHED || t->type == TokenType::SEMICOLON || t->type == TokenType::IN || t->type == TokenType::OPEN_BRACE) {
 			break;
 		}
-		Instruction* ins = eatInstruction();
+		Value* ins = eatInstruction();
 		if (ins) inits.push_back(ins);
 	}
 
@@ -1011,7 +1011,7 @@ Instruction* SyntaxicAnalyser::eatFor() {
 			if (t->type == TokenType::FINISHED || t->type == TokenType::SEMICOLON || t->type == TokenType::DO || t->type == TokenType::OPEN_BRACE || t->type == TokenType::CLOSING_PARENTHESIS) {
 				break;
 			}
-			Instruction* ins = eatInstruction();
+			Value* ins = eatInstruction();
 			if (ins) f->increments.push_back(ins);
 		}
 
@@ -1029,7 +1029,7 @@ Instruction* SyntaxicAnalyser::eatFor() {
 
 		return f;
 	} else {
-		for (Instruction* ins : inits) delete ins;
+		for (Value* ins : inits) delete ins;
 		restore_saved_state();
 
 		// for key , value in container { body }
@@ -1066,7 +1066,7 @@ Instruction* SyntaxicAnalyser::eatFor() {
 	}
 }
 
-Instruction* SyntaxicAnalyser::eatWhile() {
+Value* SyntaxicAnalyser::eatWhile() {
 
 	eat(TokenType::WHILE);
 
@@ -1170,22 +1170,22 @@ TypeName* SyntaxicAnalyser::eatTypeName() {
 	return tn;
 }
 
-ClassDeclaration* SyntaxicAnalyser::eatClassDeclaration() {
+//ClassDeclaration* SyntaxicAnalyser::eatClassDeclaration() {
 
-	ClassDeclaration* cd = new ClassDeclaration();
+//	ClassDeclaration* cd = new ClassDeclaration();
 
-	eat(TokenType::CLASS);
-	cd->name = eatIdent()->content;
-	eat(TokenType::OPEN_BRACE);
+//	eat(TokenType::CLASS);
+//	cd->name = eatIdent()->content;
+//	eat(TokenType::OPEN_BRACE);
 
-	while (t->type == TokenType::LET) {
-		cd->fields.push_back(eatVariableDeclaration());
-	}
+//	while (t->type == TokenType::LET) {
+//		cd->fields.push_back(eatVariableDeclaration());
+//	}
 
-	eat(TokenType::CLOSING_BRACE);
+//	eat(TokenType::CLOSING_BRACE);
 
-	return cd;
-}
+//	return cd;
+//}
 
 Token* SyntaxicAnalyser::eatIdent() {
 	return eat(TokenType::IDENT);

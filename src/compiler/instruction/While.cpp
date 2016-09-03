@@ -1,8 +1,4 @@
-#include "../../compiler/instruction/While.hpp"
-
-#include "../../compiler/value/Number.hpp"
-#include "../../vm/LSValue.hpp"
-#include "../semantic/SemanticAnalyser.hpp"
+#include "While.hpp"
 
 using namespace std;
 
@@ -23,6 +19,11 @@ void While::print(ostream& os, int indent, bool debug) const {
 	condition->print(os, indent + 1, debug);
 	os << " ";
 	body->print(os, indent, debug);
+}
+
+unsigned While::line() const
+{
+	return 0;
 }
 
 void While::analyse(SemanticAnalyser* analyser, const Type&) {

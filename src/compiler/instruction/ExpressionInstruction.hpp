@@ -1,12 +1,11 @@
 #ifndef EXPRESSIONINSTRUCTION_HPP
 #define EXPRESSIONINSTRUCTION_HPP
 
-#include "../../compiler/instruction/Instruction.hpp"
-#include "../../compiler/value/Expression.hpp"
+#include "../value/Value.hpp"
 
 namespace ls {
 
-class ExpressionInstruction : public Instruction {
+class ExpressionInstruction : public Value {
 public:
 
 	Value* value;
@@ -15,6 +14,8 @@ public:
 	virtual ~ExpressionInstruction();
 
 	virtual void print(std::ostream&, int indent, bool debug) const override;
+
+	virtual unsigned line() const override;
 
 	virtual void analyse(SemanticAnalyser*, const Type& type) override;
 	virtual void preanalyse(SemanticAnalyser*) override;

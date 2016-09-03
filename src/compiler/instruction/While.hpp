@@ -3,16 +3,12 @@
 
 #include <vector>
 
-#include "../../compiler/lexical/Ident.hpp"
-#include "../../compiler/semantic/SemanticAnalyser.hpp"
-#include "../../compiler/value/Expression.hpp"
-#include "../../compiler/value/Value.hpp"
+#include "../value/Value.hpp"
 #include "../value/Block.hpp"
-class SemanticVar;
 
 namespace ls {
 
-class While : public Instruction {
+class While : public Value {
 public:
 
 	Value* condition;
@@ -22,6 +18,8 @@ public:
 	virtual ~While();
 
 	virtual void print(std::ostream&, int indent, bool debug) const override;
+
+	virtual unsigned line() const override;
 
 	virtual void analyse(SemanticAnalyser*, const Type& req_type) override;
 

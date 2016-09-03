@@ -1,7 +1,4 @@
-#include "../../compiler/instruction/Continue.hpp"
-
-#include "../semantic/SemanticAnalyser.hpp"
-#include "../semantic/SemanticException.hpp"
+#include "Continue.hpp"
 
 using namespace std;
 
@@ -18,6 +15,11 @@ void Continue::print(std::ostream& os, int, bool) const {
 	if (deepness > 1) {
 		os << " " << deepness;
 	}
+}
+
+unsigned Continue::line() const
+{
+	return 0;
 }
 
 void Continue::analyse(SemanticAnalyser* analyser, const Type&) {

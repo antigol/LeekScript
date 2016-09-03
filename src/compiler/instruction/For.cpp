@@ -11,27 +11,32 @@ For::For() {
 }
 
 For::~For() {
-	for (Instruction* ins : inits) delete ins;
+	for (Value* ins : inits) delete ins;
 	delete condition;
-	for (Instruction* ins : increments) delete ins;
+	for (Value* ins : increments) delete ins;
 	delete body;
 }
 
 void For::print(ostream& os, int indent, bool debug) const {
 	os << "for";
-	for (Instruction* ins : inits) {
+	for (Value* ins : inits) {
 		os << " ";
 		ins->print(os, indent + 1, debug);
 	}
 	os << "; ";
 	condition->print(os, indent + 1, debug);
 	os << ";";
-	for (Instruction* ins : increments) {
+	for (Value* ins : increments) {
 		os << " ";
 		ins->print(os, indent + 1, debug);
 	}
 	os << " ";
 	body->print(os, indent, debug);
+}
+
+unsigned For::line() const
+{
+	return 0;
 }
 
 void For::analyse(SemanticAnalyser* analyser, const Type& req_type) {
@@ -45,7 +50,7 @@ void For::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	analyser->enter_block();
 
 	// Init
-	for (Instruction* ins : inits) {
+	for (Value* ins : inits) {
 		ins->analyse(analyser, Type::VOID);
 		if (dynamic_cast<Return*>(ins)) {
 			analyser->leave_block();
@@ -77,7 +82,7 @@ void For::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	// Increment
 	analyser->enter_block();
-	for (Instruction* ins : increments) {
+	for (Value* ins : increments) {
 		ins->analyse(analyser, Type::VOID);
 		if (dynamic_cast<Return*>(ins)) {
 			break;
@@ -105,7 +110,7 @@ jit_value_t For::compile(Compiler& c) const {
 	jit_label_t label_end = jit_label_undefined;
 
 	// Init
-	for (Instruction* ins : inits) {
+	for (Value* ins : inits) {
 		ins->compile(c);
 		if (dynamic_cast<Return*>(ins)) {
 			jit_value_t return_v = VM::clone_obj(c.F, output_v);
@@ -141,7 +146,7 @@ jit_value_t For::compile(Compiler& c) const {
 
 	// Inc
 	c.enter_block();
-	for (Instruction* ins : increments) {
+	for (Value* ins : increments) {
 		ins->compile(c);
 		if (dynamic_cast<Return*>(ins)) {
 			break;

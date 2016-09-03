@@ -1,8 +1,5 @@
-#include "../../compiler/instruction/VariableDeclaration.hpp"
-
+#include "VariableDeclaration.hpp"
 #include "../../vm/LSValue.hpp"
-#include "../semantic/SemanticAnalyser.hpp"
-#include "../semantic/SemanticException.hpp"
 #include "../value/Reference.hpp"
 
 using namespace std;
@@ -29,6 +26,11 @@ void VariableDeclaration::print(ostream& os, int indent, bool debug) const {
 	}
 	os << " = ";
 	expression->print(os, indent, debug);
+}
+
+unsigned VariableDeclaration::line() const
+{
+	return 0;
 }
 
 void VariableDeclaration::analyse(SemanticAnalyser* analyser, const Type& req_type) {

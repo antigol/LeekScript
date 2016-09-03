@@ -8,7 +8,7 @@ namespace ls {
 
 class ArrayFor : public Value {
 public:
-	Instruction* forr;
+	Value* forr;
 
 	virtual ~ArrayFor();
 

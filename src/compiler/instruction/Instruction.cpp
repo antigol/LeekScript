@@ -1,16 +1,16 @@
 #include "../../compiler/instruction/Instruction.hpp"
 
-namespace ls {
+//namespace ls {
 
-Instruction::~Instruction() {}
+//Instruction::~Instruction() {}
 
-void Instruction::preanalyse(SemanticAnalyser* analyser)
-{
-	analyse(analyser, Type::UNKNOWN);
-}
+//void Instruction::preanalyse(SemanticAnalyser* analyser)
+//{
+//	analyse(analyser, Type::UNKNOWN);
+//}
 
-std::string Instruction::tabs(int indent) {
-	return std::string(indent * 4, ' ');
-}
+//std::string Instruction::tabs(int indent) {
+//	return std::string(indent * 4, ' ');
+//}
 
-}
+//}

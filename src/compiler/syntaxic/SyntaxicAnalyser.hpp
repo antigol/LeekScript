@@ -11,7 +11,6 @@ namespace ls {
 class Token;
 enum class TokenType;
 class Ident;
-class Instruction;
 class Value;
 class ClassDeclaration;
 class VariableDeclaration;
@@ -54,22 +53,22 @@ public:
 	bool isObject();
 	Value* eatBlockOrObject();
 	Block* eatBlock();
-	Object* eatObject();
+//	Object* eatObject();
 	Value* eatArrayOrMap();
 	Set* eatSet();
 	If* eatIf();
 	Match* eatMatch(bool force_value);
 	Match::Pattern eatMatchPattern();
-	Instruction* eatFor();
-	Instruction* eatWhile();
+	Value* eatFor();
+	Value* eatWhile();
 	Break* eatBreak();
 	Continue* eatContinue();
 	TypeName* eatTypeName();
-	ClassDeclaration* eatClassDeclaration();
+//	ClassDeclaration* eatClassDeclaration();
 	VariableDeclaration* eatVariableDeclaration();
 	Function* eatFunction();
 	VariableDeclaration* eatFunctionDeclaration();
-	Instruction* eatInstruction();
+	Value* eatInstruction();
 
 	bool beginingOfExpression(TokenType type);
 

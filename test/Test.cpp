@@ -25,7 +25,7 @@ int Test::all() {
 //	test_map();
 //	test_set();
 //	test_objects();
-//	test_functions();
+	test_functions();
 //	test_classes();
 //	test_loops();
 //	test_operators();
