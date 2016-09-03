@@ -38,6 +38,17 @@ void Boolean::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		print(oss, 0, false);
 		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
 	}
+	assert(type.is_complete());
+}
+
+void Boolean::preanalyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	constant = true;
+	if (req_type == Type::BOOLEAN || req_type == Type::VAR) {
+		type = req_type;
+	} else {
+		type = Type(RawType::UNKNOWN, { Type::BOOLEAN, Type::VAR });
+	}
 }
 
 jit_value_t Boolean::compile(Compiler& c) const {

@@ -56,6 +56,7 @@ void VariableDeclaration::analyse(SemanticAnalyser* analyser, const Type& req_ty
 	} else {
 		analyser->add_error({ SemanticException::TYPE_MISMATCH, expression->line() });
 	}
+	assert(type.is_complete());
 }
 
 jit_value_t VariableDeclaration::compile(Compiler& c) const {

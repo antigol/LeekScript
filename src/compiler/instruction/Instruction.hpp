@@ -19,7 +19,10 @@ public:
 
 	virtual void print(std::ostream&, int indent, bool debug) const = 0;
 
-	virtual void analyse(SemanticAnalyser* analyser, const Type& type) = 0;
+	// this method must leave `type` in a complete state(i.e. type.is_complete())
+	// this method must respect `req_type` (i.e. type.match_with_generic(req_type) != Type::VOID)
+	//  otherwise it must generate an error
+	virtual void analyse(SemanticAnalyser* analyser, const Type& req_type) = 0;
 
  	virtual jit_value_t compile(Compiler&) const = 0;
 

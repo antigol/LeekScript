@@ -76,7 +76,7 @@ void Array::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	}
 
 	type.set_element_type(0, element_type);
-
+	assert(type.is_complete());
 }
 
 void Array::preanalyse(SemanticAnalyser* analyser, const Type& req_type)

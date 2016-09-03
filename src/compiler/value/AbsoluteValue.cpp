@@ -29,6 +29,7 @@ void AbsoluteValue::analyse(SemanticAnalyser* analyser, const Type&)
 	type = Type::VAR;
 	expression->analyse(analyser, Type::VAR);
 	constant = expression->constant;
+	assert(type.is_complete());
 }
 
 jit_value_t AbsoluteValue::compile(Compiler& c) const

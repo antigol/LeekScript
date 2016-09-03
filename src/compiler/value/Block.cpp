@@ -62,6 +62,7 @@ void Block::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 			type = Type::VAR; // we can only offer a null
 		}
 	}
+	assert(type.is_complete() || !analyser->errors.empty());
 }
 
 LSValue* Block_move(LSValue* value) {

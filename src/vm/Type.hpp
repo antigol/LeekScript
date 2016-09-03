@@ -83,6 +83,7 @@ public:
 	bool can_be_convert_in(const Type& type) const;
 	bool is_primitive_number() const;
 	bool is_arithmetic() const;
+	bool is_complete() const;
 
 	void replace_place_holder(int id, const Type& type);
 	Type match_with_generic(const Type& generic) const;

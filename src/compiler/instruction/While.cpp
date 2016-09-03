@@ -36,6 +36,7 @@ void While::analyse(SemanticAnalyser* analyser, const Type&) {
 	analyser->enter_loop();
 	body->analyse(analyser, Type::VOID);
 	analyser->leave_loop();
+	assert(type.is_complete());
 }
 
 jit_value_t While::compile(Compiler& c) const {

@@ -41,6 +41,7 @@ void Return::analyse(SemanticAnalyser* analyser, const Type& ) {
 	}
 
 	type = Type::VOID;
+	assert(type.is_complete());
 }
 
 jit_value_t Return::compile(Compiler& c) const {

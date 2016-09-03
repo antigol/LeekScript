@@ -86,6 +86,7 @@ void For::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	analyser->leave_block();
 
 	analyser->leave_block();
+	assert(type.is_complete());
 }
 
 jit_value_t For::compile(Compiler& c) const {

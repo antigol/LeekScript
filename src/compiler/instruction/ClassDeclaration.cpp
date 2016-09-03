@@ -21,6 +21,7 @@ void ClassDeclaration::analyse(SemanticAnalyser* analyser, const Type&) {
 	for (VariableDeclaration* vd : fields) {
 		vd->analyse(analyser, Type::UNKNOWN);
 	}
+	assert(type.is_complete());
 }
 
 jit_value_t ClassDeclaration::compile(Compiler&) const {

@@ -25,6 +25,7 @@ unsigned ArrayFor::line() const {
 void ArrayFor::analyse(SemanticAnalyser* analyser, const Type&) {
 	forr->analyse(analyser, Type::VEC);
 	type = forr->type;
+	assert(type.is_complete());
 }
 
 jit_value_t ArrayFor::compile(Compiler& c) const {

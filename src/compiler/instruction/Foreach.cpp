@@ -78,6 +78,7 @@ void Foreach::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	}
 	analyser->leave_loop();
 	analyser->leave_block();
+	assert(type.is_complete());
 }
 
 /*

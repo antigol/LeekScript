@@ -15,7 +15,7 @@ bool RawType::operator ==(const RawType& type) const {
 const RawType RawType::UNKNOWN    ("?",           "?",        "?",        0,                nullptr,           Nature::UNKNOWN);
 const RawType RawType::VOID       ("void",        "?",        "void",     0,                jit_type_void,     Nature::VOID);
 const RawType RawType::UNREACHABLE("unreachable", "?",        "",         0,                nullptr,           Nature::VOID);
-const RawType RawType::LSVALUE    ("lsvalue",     "?",        "",         sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE);
+const RawType RawType::LSVALUE    ("lsvalue",     "?",        "?",         sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE);
 const RawType RawType::VAR        ("var",         "Variable", "variable", sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE);
 const RawType RawType::BOOLEAN    ("bool",        "Boolean",  "boolean",  sizeof (int32_t), jit_type_int,      Nature::VALUE);
 const RawType RawType::I32        ("i32",         "Number",   "number",   sizeof (int32_t), jit_type_int,      Nature::VALUE);
@@ -158,13 +158,22 @@ bool Type::is_arithmetic() const
 	return *this == Type::VAR || *this == Type::BOOLEAN || *this == Type::I32 || *this == Type::I64 || *this == Type::F32 || *this == Type::F64;
 }
 
+bool Type::is_complete() const
+{
+	if (raw_type == RawType::UNKNOWN || raw_type == RawType::LSVALUE) return false;
+	for (const Type& x : elements_types)  if (!x.is_complete()) return false;
+	for (const Type& x : return_types)    if (!x.is_complete()) return false;
+	for (const Type& x : arguments_types) if (!x.is_complete()) return false;
+	return true;
+}
+
 void Type::replace_place_holder(int id, const Type& type)
 {
 	if (ph == id) {
 		*this = type;
 	}
-	for (Type& x : elements_types) x.replace_place_holder(id, type);
-	for (Type& x : return_types) x.replace_place_holder(id, type);
+	for (Type& x : elements_types)  x.replace_place_holder(id, type);
+	for (Type& x : return_types)    x.replace_place_holder(id, type);
 	for (Type& x : arguments_types) x.replace_place_holder(id, type);
 }
 
@@ -180,6 +189,14 @@ Type Type::match_with_generic(const Type& generic) const
 bool Type::match_with_generic_private(const Type& generic, Type& complete) const
 {
 	if (*this == Type::UNKNOWN) return true;
+	if (raw_type == RawType::UNKNOWN) {
+		Type copy = complete;
+		for (const Type& type : elements_types) {
+			if (type.match_with_generic_private(generic, complete)) return true;
+			complete = copy;
+		}
+		return false;
+	}
 	if (*this == Type::LSVALUE && generic.raw_type.nature() == Nature::LSVALUE) return true;
 	if (generic == Type::UNKNOWN) {
 		if (generic.ph > 0) complete.replace_place_holder(generic.ph, *this);
