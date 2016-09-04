@@ -105,7 +105,7 @@ public:
 	static bool get_intersection(const Type& t1, const Type& t2, Type* result);
 private:
 	Type* copy_iterator(Type* type, Type* it);
-	static bool get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type* tr, Type& fr);
+	static int get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type* tr, Type& fr);
 public:
 	static Type get_compatible_type(const Type& t1, const Type& t2);
 

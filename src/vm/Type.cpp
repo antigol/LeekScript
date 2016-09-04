@@ -339,7 +339,7 @@ bool Type::get_intersection(const Type& t1, const Type& t2, Type* result)
 	}
 
 	Type r;
-	bool b = get_intersection_private(&f1, &f2, f1, f2, &r, r);
+	bool b = get_intersection_private(&f1, &f2, f1, f2, &r, r) > 0;
 	if (result) {
 		r.clean_place_holders();
 		*result = r;
@@ -365,7 +365,7 @@ Type* Type::copy_iterator(Type* type, Type* it)
 	return nullptr;
 }
 
-bool Type::get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type* tr, Type& fr)
+int Type::get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type* tr, Type& fr)
 {
 	if (t1->raw_type == &RawType::UNKNOWN && !t1->elements_types.empty()) {
 		vector<Type> elements_types;
@@ -373,14 +373,22 @@ bool Type::get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type
 			Type cf1 = f1;
 			Type* ct1 = cf1.copy_iterator(&f1, t1);
 			Type cf2 = f2;
-			Type cfr = fr;
 
 			// replace ct1 by its ith element
-			cf1.replace_place_holder_type(ct1->ph, ct1->elements_types[i]);
-			*ct1 = ct1->elements_types[i];
+			cf1.replace_place_holder_type(ct1->ph, t1->elements_types[i]);
+			*ct1 = t1->elements_types[i];
 
-			if (get_intersection_private(&cf1, &cf2, cf1, cf2, &cfr, cfr)) {
-				elements_types.push_back(cfr);
+			Type r;
+			if (get_intersection_private(&cf1, &cf2, cf1, cf2, &r, r) > 0) {
+				if (r == Type::UNKNOWN) {
+					fr = Type::UNKNOWN;
+					return 2;
+				}
+				if (r.raw_type == &RawType::UNKNOWN) {
+					elements_types.insert(elements_types.end(), r.elements_types.begin(), r.elements_types.end());
+				} else {
+					elements_types.push_back(r);
+				}
 			}
 		}
 		if (elements_types.empty()) return false;
@@ -389,7 +397,7 @@ bool Type::get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type
 		} else {
 			fr = Type(&RawType::UNKNOWN, elements_types);
 		}
-		return true;
+		return 2; // the very end
 	}
 	if (t2->raw_type == &RawType::UNKNOWN && !t2->elements_types.empty()) {
 		return get_intersection_private(t2, t1, f2, f1, tr, fr);
@@ -410,7 +418,7 @@ bool Type::get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type
 		f1.replace_place_holder_type(new_ph, *t2);
 		f2.replace_place_holder_type(new_ph, *t2);
 		fr.replace_place_holder_type(new_ph, *t2);
-		return true;
+		return 1;
 	}
 	if (*t2 == Type::UNKNOWN) {
 		return get_intersection_private(t2, t1, f2, f1, tr, fr);
@@ -432,36 +440,39 @@ bool Type::get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type
 			f1.replace_place_holder_type(new_ph, *t2);
 			f2.replace_place_holder_type(new_ph, *t2);
 			fr.replace_place_holder_type(new_ph, *t2);
-			return true;
+			return 1;
 		}
-		return false;
+		return 0;
 	}
 	if (*t2 == Type::LSVALUE) {
 		return get_intersection_private(t2, t1, f2, f1, tr, fr);
 	}
 
-	if (t1->raw_type != t2->raw_type) return false;
+	if (t1->raw_type != t2->raw_type) return 0;
 	tr->raw_type = t1->raw_type;
 
-	if (t1->elements_types.size() != t2->elements_types.size()) return false;
+	if (t1->elements_types.size() != t2->elements_types.size()) return 0;
 	tr->elements_types.resize(t1->elements_types.size());
 	for (size_t i = 0; i < t1->elements_types.size(); ++i) {
-		if (!get_intersection_private(&t1->elements_types[i], &t2->elements_types[i], f1, f2, &tr->elements_types[i], fr)) return false;
+		int res = get_intersection_private(&t1->elements_types[i], &t2->elements_types[i], f1, f2, &tr->elements_types[i], fr);
+		if (res != 1) return res;
 	}
 
-	if (t1->return_types.size() != t2->return_types.size()) return false;
+	if (t1->return_types.size() != t2->return_types.size()) return 0;
 	tr->return_types.resize(t1->return_types.size());
 	for (size_t i = 0; i < t1->return_types.size(); ++i) {
-		if (!get_intersection_private(&t1->return_types[i], &t2->return_types[i], f1, f2, &tr->return_types[i], fr)) return false;
+		int res = get_intersection_private(&t1->return_types[i], &t2->return_types[i], f1, f2, &tr->return_types[i], fr);
+		if (res != 1) return res;
 	}
 
-	if (t1->arguments_types.size() != t2->arguments_types.size()) return false;
+	if (t1->arguments_types.size() != t2->arguments_types.size()) return 0;
 	tr->arguments_types.resize(t1->arguments_types.size());
 	for (size_t i = 0; i < t1->arguments_types.size(); ++i) {
-		if (!get_intersection_private(&t1->arguments_types[i], &t2->arguments_types[i], f1, f2, &tr->arguments_types[i], fr)) return false;
+		int res = get_intersection_private(&t1->arguments_types[i], &t2->arguments_types[i], f1, f2, &tr->arguments_types[i], fr);
+		if (res != 1) return res;
 	}
 
-	return true;
+	return 1;
 }
 
 Type Type::get_compatible_type(const Type& t1, const Type& t2) {
