@@ -47,9 +47,12 @@ extern std::map<LSValue*, LSValue*> objs;
 
 string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 
-//	Type t1 = Type::LSVALUE;
-//	Type t2(RawType::UNKNOWN, { Type::I32, Type::F64, Type::VAR });
-//	cout << Type::get_compatible_type(t1, t2) << endl;
+	Type t1 = Type(&RawType::TUPLE, { Type::UNKNOWN.place_holder(1), Type::UNKNOWN.place_holder(1), Type(&RawType::UNKNOWN, { Type::I32, Type::F64, Type::VAR }) });
+	Type t2 = Type(&RawType::TUPLE, { Type::VAR, Type::LSVALUE.place_holder(1), Type::LSVALUE.place_holder(1) });
+	Type re;
+
+	cout << Type::get_intersection(t1, t2, &re) << endl;
+	cout << re << endl << endl;
 
 	// Reset
 	LSValue::obj_count = 0;
@@ -155,7 +158,7 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 
 jit_type_t VM::get_jit_type(const Type& type) {
 	assert(type != Type::UNKNOWN);
-	return type.raw_type.jit_type();
+	return type.raw_type->jit_type();
 }
 
 LSValue* VM_convert_i32(int32_t n) {
@@ -355,10 +358,10 @@ jit_value_t VM::create_vec(jit_function_t F, const Type& element_type, int cap) 
 	if (element_type == Type::F64) {
 		return jit_insn_call_native(F, "create_vec", (void*) VM_create_vec_f64, sig, &s, 1, JIT_CALL_NOTHROW);
 	}
-	if (element_type.raw_type.nature() == Nature::LSVALUE) {
+	if (element_type.raw_type->nature() == Nature::LSVALUE) {
 		return jit_insn_call_native(F, "create_vec", (void*) VM_create_vec_lsptr, sig, &s, 1, JIT_CALL_NOTHROW);
 	}
-	if (element_type.raw_type == RawType::FUNCTION) {
+	if (element_type.raw_type == &RawType::FUNCTION) {
 		return jit_insn_call_native(F, "create_vec", (void*) VM_create_vec_voidptr, sig, &s, 1, JIT_CALL_NOTHROW);
 	}
 	assert(0);
@@ -366,14 +369,14 @@ jit_value_t VM::create_vec(jit_function_t F, const Type& element_type, int cap) 
 
 jit_value_t VM::create_default(jit_function_t F, const Type& type)
 {
-	if (type.raw_type.nature() == Nature::LSVALUE) return create_null(F);
+	if (type.raw_type->nature() == Nature::LSVALUE) return create_null(F);
 	if (type == Type::VOID) return nullptr;
 	if (type == Type::BOOLEAN) return create_bool(F, false);
 	if (type == Type::I32) return create_i32(F, 0);
 	if (type == Type::I64) return create_i64(F, 0);
 	if (type == Type::F32) return create_f32(F, 0.0);
 	if (type == Type::F64) return create_f64(F, 0.0);
-	if (type.raw_type == RawType::FUNCTION) return create_ptr(F, nullptr);
+	if (type.raw_type == &RawType::FUNCTION) return create_ptr(F, nullptr);
 
 	assert(0);
 }
@@ -406,9 +409,9 @@ void VM::push_move_inc_vec(jit_function_t F, const Type& element_type, jit_value
 		jit_insn_call_native(F, "push_vec", (void*) VM_push_vec_i32, sig, args_v, 2, JIT_CALL_NOTHROW);
 	} else if (element_type == Type::F64) {
 		jit_insn_call_native(F, "push_vec", (void*) VM_push_vec_f64, sig, args_v, 2, JIT_CALL_NOTHROW);
-	} else if (element_type.raw_type.nature() == Nature::LSVALUE) {
+	} else if (element_type.raw_type->nature() == Nature::LSVALUE) {
 		jit_insn_call_native(F, "push_vec", (void*) VM_push_vec_lsptr, sig, args_v, 2, JIT_CALL_NOTHROW);
-	} else if (element_type.raw_type == RawType::FUNCTION) {
+	} else if (element_type.raw_type == &RawType::FUNCTION) {
 		jit_insn_call_native(F, "push_vec", (void*) VM_push_vec_voidptr, sig, args_v, 2, JIT_CALL_NOTHROW);
 	} else {
 		assert(0);

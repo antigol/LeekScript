@@ -41,7 +41,7 @@ unsigned For::line() const
 
 void For::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
-	if (req_type.raw_type == RawType::VEC) {
+	if (req_type.raw_type == &RawType::VEC) {
 		type = req_type;
 	} else {
 		type = Type::VOID;
@@ -99,7 +99,7 @@ jit_value_t For::compile(Compiler& c) const {
 	c.enter_block(); // { for init ; cond ; inc { body } }<-- this block
 
 	jit_value_t output_v = nullptr;
-	if (type.raw_type == RawType::VEC) {
+	if (type.raw_type == &RawType::VEC) {
 		output_v = VM::create_vec(c.F, type.element_type(0));
 		VM::inc_refs(c.F, output_v);
 		c.add_var("{output}", output_v, type, false); // Why create variable ? in case of `break 2` the output must be deleted
@@ -122,7 +122,7 @@ jit_value_t For::compile(Compiler& c) const {
 	// Cond
 	jit_insn_label(c.F, &label_cond);
 	jit_value_t condition_v = condition->compile(c);
-	if (condition->type.raw_type.nature() == Nature::LSVALUE) {
+	if (condition->type.raw_type->nature() == Nature::LSVALUE) {
 		jit_value_t bool_v = VM::is_true(c.F, condition_v);
 
 		if (condition->type.must_manage_memory()) {

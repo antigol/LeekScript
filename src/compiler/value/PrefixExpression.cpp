@@ -101,8 +101,8 @@ void PrefixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		}
 	}
 
-	if (req_type.raw_type.nature() != Nature::UNKNOWN) {
-		type.raw_type.nature() = req_type.raw_type.nature();
+	if (req_type.raw_type->nature() != Nature::UNKNOWN) {
+		type.raw_type->nature() = req_type.raw_type->nature();
 	}
 	*/
 }
@@ -138,7 +138,7 @@ jit_value_t PrefixExpression::compile(Compiler& c) const
 
 	switch (operatorr->type) {
 		case TokenType::PLUS_PLUS: {
-			if (expression->type.raw_type.nature() == Nature::VALUE) {
+			if (expression->type.raw_type->nature() == Nature::VALUE) {
 				jit_insn_store(c.F, x, jit_insn_add(c.F, x, VM::create_i32(c.F, 1)));
 				return x;
 			} else {
@@ -146,7 +146,7 @@ jit_value_t PrefixExpression::compile(Compiler& c) const
 			}
 		}
 		case TokenType::MINUS_MINUS: {
-			if (expression->type.raw_type.nature() == Nature::VALUE) {
+			if (expression->type.raw_type->nature() == Nature::VALUE) {
 				jit_insn_store(c.F, x, jit_insn_sub(c.F, x, VM::create_i32(c.F, 1)));
 				return x;
 			} else {
@@ -154,21 +154,21 @@ jit_value_t PrefixExpression::compile(Compiler& c) const
 			}
 		}
 		case TokenType::MINUS: {
-			if (expression->type.raw_type.nature() == Nature::VALUE) {
+			if (expression->type.raw_type->nature() == Nature::VALUE) {
 				return jit_insn_neg(c.F, x);
 			} else {
 				return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_minus, { x });
 			}
 		}
 		case TokenType::TILDE: {
-			if (expression->type.raw_type.nature() == Nature::VALUE) {
+			if (expression->type.raw_type->nature() == Nature::VALUE) {
 				return jit_insn_not(c.F, x);
 			} else {
 				return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_minus, { x });
 			}
 		}
 		case TokenType::NOT: {
-			if (expression->type.raw_type.nature() == Nature::VALUE) {
+			if (expression->type.raw_type->nature() == Nature::VALUE) {
 				return jit_insn_to_not_bool(c.F, x);
 			} else {
 				return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) PE_not, { x });
@@ -189,12 +189,12 @@ jit_value_t PrefixExpression::compile(Compiler& c) const
 	switch (operatorr->type) {
 
 		case TokenType::PLUS_PLUS: {
-			if (expression->type.raw_type.nature() == Nature::VALUE) {
+			if (expression->type.raw_type->nature() == Nature::VALUE) {
 				jit_value_t x = expression->compile(c);
 				jit_value_t y = LS_CREATE_I32(c.F, 1);
 				jit_value_t sum = jit_insn_add(c.F, x, y);
 				jit_insn_store(c.F, x, sum);
-				if (type.raw_type.nature() == Nature::LSVALUE) {
+				if (type.raw_type->nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, sum, type);
 				}
 				return sum;
@@ -205,12 +205,12 @@ jit_value_t PrefixExpression::compile(Compiler& c) const
 			break;
 		}
 		case TokenType::MINUS_MINUS: {
-			if (expression->type.raw_type.nature() == Nature::VALUE) {
+			if (expression->type.raw_type->nature() == Nature::VALUE) {
 				jit_value_t x = expression->compile(c);
 				jit_value_t y = LS_CREATE_I32(c.F, 1);
 				jit_value_t sum = jit_insn_sub(c.F, x, y);
 				jit_insn_store(c.F, x, sum);
-				if (type.raw_type.nature() == Nature::LSVALUE) {
+				if (type.raw_type->nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, sum, type);
 				}
 				return sum;
@@ -221,10 +221,10 @@ jit_value_t PrefixExpression::compile(Compiler& c) const
 			break;
 		}
 		case TokenType::NOT: {
-			if (expression->type.raw_type.nature() == Nature::VALUE) {
+			if (expression->type.raw_type->nature() == Nature::VALUE) {
 				jit_value_t x = expression->compile(c);
 				jit_value_t r = jit_insn_to_not_bool(c.F, x);
-				if (type.raw_type.nature() == Nature::LSVALUE) {
+				if (type.raw_type->nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, r, Type::BOOLEAN);
 				}
 				return r;
@@ -235,10 +235,10 @@ jit_value_t PrefixExpression::compile(Compiler& c) const
 			break;
 		}
 		case TokenType::MINUS: {
-			if (expression->type.raw_type.nature() == Nature::VALUE) {
+			if (expression->type.raw_type->nature() == Nature::VALUE) {
 				jit_value_t x = expression->compile(c);
 				jit_value_t r = jit_insn_neg(c.F, x);
-				if (type.raw_type.nature() == Nature::LSVALUE) {
+				if (type.raw_type->nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, r, type);
 				}
 				return r;
@@ -249,10 +249,10 @@ jit_value_t PrefixExpression::compile(Compiler& c) const
 			break;
 		}
 		case TokenType::TILDE: {
-			if (expression->type.raw_type.nature() == Nature::VALUE) {
+			if (expression->type.raw_type->nature() == Nature::VALUE) {
 				jit_value_t x = expression->compile(c);
 				jit_value_t r = jit_insn_not(c.F, x);
-				if (type.raw_type.nature() == Nature::LSVALUE) {
+				if (type.raw_type->nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, r, type);
 				}
 				return r;
@@ -268,14 +268,14 @@ jit_value_t PrefixExpression::compile(Compiler& c) const
 
 				if (vv->name == "Number") {
 					jit_value_t n = LS_CREATE_I32(c.F, 0);
-					if (type.raw_type.nature() == Nature::LSVALUE) {
+					if (type.raw_type->nature() == Nature::LSVALUE) {
 						return VM::value_to_pointer(c.F, n, Type::INTEGER);
 					}
 					return n;
 				}
 				if (vv->name == "Boolean") {
 					jit_value_t n = LS_CREATE_I32(c.F, 0);
-					if (type.raw_type.nature() == Nature::LSVALUE) {
+					if (type.raw_type->nature() == Nature::LSVALUE) {
 						return VM::value_to_pointer(c.F, n, Type::BOOLEAN);
 					}
 					return n;
@@ -296,13 +296,13 @@ jit_value_t PrefixExpression::compile(Compiler& c) const
 					if (vv->name == "Number") {
 						if (fc->arguments.size() > 0) {
 							jit_value_t n = fc->arguments[0]->compile(c);
-							if (type.raw_type.nature() == Nature::LSVALUE) {
+							if (type.raw_type->nature() == Nature::LSVALUE) {
 								return VM::value_to_pointer(c.F, n, Type::INTEGER);
 							}
 							return n;
 						} else {
 							jit_value_t n = LS_CREATE_I32(c.F, 0);
-							if (type.raw_type.nature() == Nature::LSVALUE) {
+							if (type.raw_type->nature() == Nature::LSVALUE) {
 								return VM::value_to_pointer(c.F, n, Type::INTEGER);
 							}
 							return n;
@@ -310,7 +310,7 @@ jit_value_t PrefixExpression::compile(Compiler& c) const
 					}
 					if (vv->name == "Boolean") {
 						jit_value_t n = LS_CREATE_I32(c.F, 0);
-						if (type.raw_type.nature() == Nature::LSVALUE) {
+						if (type.raw_type->nature() == Nature::LSVALUE) {
 							return VM::value_to_pointer(c.F, n, Type::BOOLEAN);
 						}
 						return n;

@@ -79,7 +79,7 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	if (oa != nullptr) {
 
 		oa->object->analyse(analyser, Type::UNKNOWN);
-		Module* module = analyser->module_by_name(oa->object->type.raw_type.clazz());
+		Module* module = analyser->module_by_name(oa->object->type.raw_type->clazz());
 
 		if (module == nullptr) {
 			analyser->add_error({ SemanticException::METHOD_NOT_FOUND, line() });
@@ -184,7 +184,7 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 				arg_types.push_back(arg->type);
 			}
 
-			if (object_type.raw_type == RawType::CLASS) { // String.size("salut")
+			if (object_type.raw_type == &RawType::CLASS) { // String.size("salut")
 
 				string clazz = ((VariableValue*) oa->object)->name;
 
@@ -201,8 +201,8 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 			} else { // "salut".size()
 
-				if (object_type.raw_type == RawType::INTEGER
-					|| object_type.raw_type == RawType::FLOAT) {
+				if (object_type.raw_type == &RawType::INTEGER
+					|| object_type.raw_type == &RawType::FLOAT) {
 
 					if (field_name == "abs") {
 						function->type.setArgumentType(0, Type::INTEGER);
@@ -253,7 +253,7 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 				}
 
 
-				if (!is_native and object_type.raw_type != RawType::UNKNOWN) {
+				if (!is_native and object_type.raw_type != &RawType::UNKNOWN) {
 
 					LSClass* object_class = (LSClass*) analyser->program->system_vars[object_type.clazz];
 
@@ -281,7 +281,7 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 				for (unsigned int i = 0; i < function->type.arguments_types.size(); ++i) {
 					cout << "arg " << i << " type : " << function->type.getArgumentType(i) << endl;
 					Type arg = function->type.getArgumentType(i);
-					if (arg.raw_type == RawType::FUNCTION) {
+					if (arg.raw_type == &RawType::FUNCTION) {
 						for (unsigned int j = 0; j < arg.getArgumentTypes().size(); ++j) {
 							if (arg.getArgumentType(j) == Type::PTR_ARRAY_ELEMENT) {
 								cout << "set arg " << j << " : " << object_type.getElementType(0) << endl;
@@ -306,7 +306,7 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 			for (Value* arg : arguments) {
 				arg->analyse(analyser, Type::UNKNOWN);
 				effectiveType = arg->type;
-				if (arg->type.raw_type.nature() != Nature::VALUE) {
+				if (arg->type.raw_type->nature() != Nature::VALUE) {
 					isByValue = false;
 				}
 			}
@@ -327,7 +327,7 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	a = 0;
 	for (Value* arg : arguments) {
 		arg->analyse(analyser, function->type.getArgumentType(a));
-		if (function->type.getArgumentType(a).raw_type == RawType::FUNCTION) {
+		if (function->type.getArgumentType(a).raw_type == &RawType::FUNCTION) {
 			arg->will_take(analyser, function->type.getArgumentType(a).arguments_types);
 		}
 		a++;
@@ -341,16 +341,16 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		vv->var->will_take(analyser, arg_types);
 
 		Type ret_type = vv->var->value->type.getReturnType();
-		if (ret_type.raw_type != RawType::UNKNOWN) {
+		if (ret_type.raw_type != &RawType::UNKNOWN) {
 			type = ret_type;
 		}
 	} else {
 		Type ret_type = function->type.getReturnType();
-		if (ret_type.raw_type.nature() != Nature::UNKNOWN) {
+		if (ret_type.raw_type->nature() != Nature::UNKNOWN) {
 			type = ret_type;
 		}
 		/*
-		if (ret_type.raw_type != RawType::UNKNOWN) {
+		if (ret_type.raw_type != &RawType::UNKNOWN) {
 			type = ret_type;
 		} else {
 			// TODO : to be able to remove temporary variable we must know the nature
@@ -361,14 +361,14 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	return_type = function->type.getReturnType();
 
-	if (req_type.raw_type.nature() != Nature::UNKNOWN) {
-		type.raw_type.nature() = req_type.raw_type.nature();
+	if (req_type.raw_type->nature() != Nature::UNKNOWN) {
+		type.raw_type->nature() = req_type.raw_type->nature();
 	}
 	*/
 
 	function->analyse(analyser, Type::UNKNOWN);
 
-	if (function->type.raw_type != RawType::FUNCTION) {
+	if (function->type.raw_type != &RawType::FUNCTION) {
 		std::ostringstream oss;
 		function->print(oss);
 		analyser->add_error({ SemanticException::CANNOT_CALL_VALUE, function->line(), oss.str() });
@@ -409,14 +409,14 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 	if (vv != nullptr) {
 		if (vv->name == "Boolean") {
 			jit_value_t n = jit_value_create_nint_constant(c.F, LS_I32, 0);
-			if (type.raw_type.nature() == Nature::LSVALUE) {
+			if (type.raw_type->nature() == Nature::LSVALUE) {
 				return VM::value_to_pointer(c.F, n, Type::BOOLEAN);
 			}
 			return n;
 		}
 		if (vv->name == "Number") {
 			jit_value_t n = LS_CREATE_I32(c.F, 0);
-			if (type.raw_type.nature() == Nature::LSVALUE) {
+			if (type.raw_type->nature() == Nature::LSVALUE) {
 				return VM::value_to_pointer(c.F, n, Type::INTEGER);
 			}
 			return n;
@@ -478,7 +478,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 		}
 
 		if (res != nullptr) {
-			if (type.raw_type.nature() == Nature::LSVALUE) {
+			if (type.raw_type->nature() == Nature::LSVALUE) {
 				return VM::value_to_pointer(c.F, res, type);
 			}
 			return res;
@@ -530,7 +530,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 		}
 
 		if (res != nullptr) {
-			if (type.raw_type.nature() == Nature::LSVALUE) {
+			if (type.raw_type->nature() == Nature::LSVALUE) {
 				return VM::value_to_pointer(c.F, res, type);
 			}
 			return res;
@@ -558,7 +558,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 
 		jit_value_t res = jit_insn_call_native(c.F, "std_func", (void*) std_func, sig, args.data(), arg_count, JIT_CALL_NOTHROW);
 
-		if (return_type.raw_type.nature() == Nature::VALUE and type.raw_type.nature() == Nature::LSVALUE) {
+		if (return_type.raw_type->nature() == Nature::VALUE and type.raw_type->nature() == Nature::LSVALUE) {
 			return VM::value_to_pointer(c.F, res, type);
 		}
 		return res;
@@ -584,7 +584,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 
 		jit_value_t res = jit_insn_call_native(c.F, "std_func", (void*) std_func, sig, args.data(), arg_count, JIT_CALL_NOTHROW);
 
-		if (return_type.raw_type.nature() == Nature::VALUE and type.raw_type.nature() == Nature::LSVALUE) {
+		if (return_type.raw_type->nature() == Nature::VALUE and type.raw_type->nature() == Nature::LSVALUE) {
 			return VM::value_to_pointer(c.F, res, type);
 		}
 		return res;
@@ -596,8 +596,8 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 	VariableValue* f = dynamic_cast<VariableValue*>(function);
 
 	if (f != nullptr) {
-		if (function->type.getArgumentType(0).raw_type.nature() == Nature::VALUE
-			and function->type.getArgumentType(1).raw_type.nature() == Nature::VALUE) {
+		if (function->type.getArgumentType(0).raw_type->nature() == Nature::VALUE
+			and function->type.getArgumentType(1).raw_type->nature() == Nature::VALUE) {
 
 			jit_value_t (*jit_func)(jit_function_t, jit_value_t, jit_value_t) = nullptr;
 			if (f->name == "+") {
@@ -618,7 +618,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 				jit_value_t v1 = arguments[1]->compile(c);
 				jit_value_t ret = jit_func(c.F, v0, v1);
 
-				if (type.raw_type.nature() == Nature::LSVALUE) {
+				if (type.raw_type->nature() == Nature::LSVALUE) {
 					return VM::value_to_pointer(c.F, ret, type);
 				}
 				return ret;
@@ -633,13 +633,13 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 		vector<jit_value_t> args;
 		vector<jit_type_t> args_types;
 		args.push_back(oa->object->compile(c));
-		args_types.push_back(oa->object->type.raw_type.jit_type());
+		args_types.push_back(oa->object->type.raw_type->jit_type());
 		for (size_t i = 0; i < arguments.size(); ++i) {
 			args.push_back(arguments[i]->compile(c));
-			args_types.push_back(arguments[i]->type.raw_type.jit_type());
+			args_types.push_back(arguments[i]->type.raw_type->jit_type());
 		}
 		Type rt = method.type.return_type();
-		return Compiler::compile_convert(c.F, Compiler::call_native(c.F, rt.raw_type.jit_type(), args_types, method.addr, args), rt, type);
+		return Compiler::compile_convert(c.F, Compiler::call_native(c.F, rt.raw_type->jit_type(), args_types, method.addr, args), rt, type);
 	}
 
 

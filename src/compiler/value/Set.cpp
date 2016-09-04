@@ -36,12 +36,12 @@ void Set::analyse(SemanticAnalyser* analyser, const Type&) {
 		element_type = Type::get_compatible_type(element_type, ex->type);
 	}
 
-	if (element_type.raw_type.nature() == Nature::VALUE) {
+	if (element_type.raw_type->nature() == Nature::VALUE) {
 		if (element_type != Type::INTEGER && element_type != Type::FLOAT) {
 			element_type = Type::POINTER;
 		}
-	} else if (element_type.raw_type.nature() == Nature::UNKNOWN) {
-		element_type.raw_type.nature() = Nature::LSVALUE;
+	} else if (element_type.raw_type->nature() == Nature::UNKNOWN) {
+		element_type.raw_type->nature() = Nature::LSVALUE;
 	}
 
 	constant = true;
@@ -50,7 +50,7 @@ void Set::analyse(SemanticAnalyser* analyser, const Type&) {
 		constant = constant && ex->constant;
 	}
 
-	type = Type(RawType::SET, Nature::LSVALUE, element_type);
+	type = Type(&RawType::SET, Nature::LSVALUE, element_type);
 	*/
 	assert(type.is_complete() || !analyser->errors.empty());
 }

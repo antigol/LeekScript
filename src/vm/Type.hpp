@@ -2,6 +2,7 @@
 #define TYPE_HPP
 
 #include <vector>
+#include <set>
 #include <iostream>
 #include <jit/jit.h>
 
@@ -22,6 +23,7 @@ private:
 	int id;
 
 	RawType() = delete;
+	RawType(const RawType&) = delete;
 	RawType(const std::string& name, const std::string& classname, const std::string& jsonname, size_t bytes, jit_type_t jit_type, Nature nature, int id);
 
 public:
@@ -59,15 +61,15 @@ public:
 class Type {
 public:
 
-	RawType raw_type;
+	const RawType* raw_type;
 	std::vector<Type> elements_types;
 	std::vector<Type> return_types;
 	std::vector<Type> arguments_types;
-	int ph; // not compared in ==
+	uint32_t ph; // not compared in ==
 
 	Type();
-	Type(const RawType& raw_type);
-	Type(const RawType& raw_type, const std::vector<Type>& elements_types);
+	explicit Type(const RawType* raw_type);
+	Type(const RawType* raw_type, const std::vector<Type>& elements_types);
 
 	Type place_holder(int id) const;
 	bool must_manage_memory() const;
@@ -88,7 +90,11 @@ public:
 	bool is_complete() const;
 	void make_it_complete();
 
-	void replace_place_holder(int id, const Type& type);
+	void replace_place_holder_type(uint32_t id, const Type& type);
+	void replace_place_holder_id(uint32_t old_id, uint32_t new_id);
+	std::set<uint32_t> place_holder_set() const;
+	void clean_place_holders();
+
 	bool match_with_generic(const Type& generic, Type* new_generic = nullptr) const;
 private:
 	bool match_with_generic_private(Type& generic, Type& complete) const;
@@ -96,6 +102,11 @@ public:
 
 	void toJson(std::ostream&) const;
 
+	static bool get_intersection(const Type& t1, const Type& t2, Type* result);
+private:
+	Type* copy_iterator(Type* type, Type* it);
+	static bool get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type* tr, Type& fr);
+public:
 	static Type get_compatible_type(const Type& t1, const Type& t2);
 
 	static std::string get_nature_name(const Nature& nature);

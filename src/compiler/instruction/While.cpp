@@ -50,7 +50,7 @@ jit_value_t While::compile(Compiler& c) const {
 
 	// condition
 	jit_value_t cond = condition->compile(c);
-	if (condition->type.raw_type.nature() == Nature::LSVALUE) {
+	if (condition->type.raw_type->nature() == Nature::LSVALUE) {
 		jit_value_t cond_bool = VM::is_true(c.F, cond);
 
 		if (condition->type.must_manage_memory()) {

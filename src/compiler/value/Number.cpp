@@ -56,9 +56,9 @@ void Number::preanalyse(SemanticAnalyser* analyser)
 {
 	constant = true;
 	if (value.find('.') != string::npos) {
-		type = Type(RawType::UNKNOWN, { Type::F64, Type::VAR }); // in preference order
+		type = Type(&RawType::UNKNOWN, { Type::F64, Type::VAR }); // in preference order
 	} else {
-		type = Type(RawType::UNKNOWN, { Type::I32, Type::F64, Type::VAR });
+		type = Type(&RawType::UNKNOWN, { Type::I32, Type::F64, Type::VAR });
 	}
 }
 

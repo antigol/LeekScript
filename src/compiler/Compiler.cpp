@@ -160,7 +160,7 @@ jit_value_t Compiler::compile_ge(jit_function_t F, jit_value_t v1, const Type& t
 {
 	// TODO : complete all type possibilities
 	if (t1.is_primitive_number() && t2.is_primitive_number()) return jit_insn_ge(F, v1, v2);
-	if (t1.raw_type.nature() == Nature::LSVALUE && t2.raw_type.nature() == Nature::LSVALUE) {
+	if (t1.raw_type->nature() == Nature::LSVALUE && t2.raw_type->nature() == Nature::LSVALUE) {
 		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_greater_equal, { v1, v2 });
 	}
 	return nullptr;
@@ -170,12 +170,12 @@ jit_value_t Compiler::compile_lt(jit_function_t F, jit_value_t v1, const Type& t
 {
 	// TODO : complete all type possibilities
 	if (t1 == Type::BOOLEAN && t2 == Type::VAR) {
-		return call_native(F, jit_type_sys_bool, { t1.raw_type.jit_type(), LS_POINTER }, (void*) CP_less_bool_var, { v1, v2 });
+		return call_native(F, jit_type_sys_bool, { t1.raw_type->jit_type(), LS_POINTER }, (void*) CP_less_bool_var, { v1, v2 });
 	}
 	if (t1.is_primitive_number() && t2.is_primitive_number()) {
 		return jit_insn_lt(F, v1, v2);
 	}
-	if (t1.raw_type.nature() == Nature::LSVALUE && t2.raw_type.nature() == Nature::LSVALUE) {
+	if (t1.raw_type->nature() == Nature::LSVALUE && t2.raw_type->nature() == Nature::LSVALUE) {
 		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_less, { v1, v2 });
 	}
 	return nullptr;
@@ -185,7 +185,7 @@ jit_value_t Compiler::compile_eq(jit_function_t F, jit_value_t v1, const Type& t
 {
 	// TODO : complete all type possibilities
 	if (t1.is_primitive_number() && t2.is_primitive_number()) return jit_insn_eq(F, v1, v2);
-	if (t1.raw_type.nature() == Nature::LSVALUE && t2.raw_type.nature() == Nature::LSVALUE) {
+	if (t1.raw_type->nature() == Nature::LSVALUE && t2.raw_type->nature() == Nature::LSVALUE) {
 		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_equal, { v1, v2 });
 	}
 	return nullptr;

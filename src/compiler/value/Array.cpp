@@ -81,7 +81,7 @@ void Array::preanalyse(SemanticAnalyser* analyser)
 	cout << " = " << element_type << endl;
 #endif
 
-	type = Type(RawType::VEC, { element_type });
+	type = Type(&RawType::VEC, { element_type });
 }
 
 jit_value_t Array::compile(Compiler& c) const {

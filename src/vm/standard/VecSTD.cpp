@@ -32,7 +32,7 @@ LSValue* array_sub(LSVec<LSValue*>* array, int begin, int end) {
 #endif
 VecSTD::VecSTD() : Module(RawType::VEC.clazz())
 {
-	Type vec_ls = Type(RawType::VEC, { Type::LSVALUE.place_holder(1) });
+	Type vec_ls = Type(&RawType::VEC, { Type::LSVALUE.place_holder(1) });
 
 	method("push", {
 		{vec_ls, vec_ls, { Type::LSVALUE.place_holder(1) }, (void*) LSVec<LSValue*>::ls_push},

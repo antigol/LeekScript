@@ -44,7 +44,7 @@ unsigned Foreach::line() const
 
 void Foreach::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
-	if (req_type.raw_type == RawType::VEC) {
+	if (req_type.raw_type == &RawType::VEC) {
 		type = req_type;
 	} else {
 		type = Type::VOID;
@@ -54,10 +54,10 @@ void Foreach::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	container->analyse(analyser, Type::UNKNOWN);
 
-	if (container->type.raw_type == RawType::VEC || container->type.raw_type == RawType::SET) {
+	if (container->type.raw_type == &RawType::VEC || container->type.raw_type == &RawType::SET) {
 		key_type = Type::I32; // If no key type in array key = 0, 1, 2...
 		value_type = container->type.element_type(0);
-	} else if (container->type.raw_type == RawType::MAP) {
+	} else if (container->type.raw_type == &RawType::MAP) {
 		key_type = container->type.element_type(0);
 		value_type = container->type.element_type(1);
 	} else {
@@ -226,7 +226,7 @@ jit_value_t Foreach::compile(Compiler& c) const {
 
 	// Potential output [for ...]
 	jit_value_t output_v = nullptr;
-	if (type.raw_type == RawType::VEC) {
+	if (type.raw_type == &RawType::VEC) {
 		output_v = VM::create_vec(c.F, type.element_type(0));
 		VM::inc_refs(c.F, output_v);
 		c.add_var("{output}", output_v, type, false); // Why create variable ? in case of `break 2` the output must be deleted
@@ -256,51 +256,51 @@ jit_value_t Foreach::compile(Compiler& c) const {
 	c.enter_loop(&label_end, &label_it);
 
 	// Static Selector
-	if (container->type == Type(RawType::VEC, { Type::I32 })) {
+	if (container->type == Type(&RawType::VEC, { Type::I32 })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_array_all, (void*) fun_condition_array_all, (void*) fun_value_array_int, (void*) fun_key_array_int, (void*) fun_inc_array_int,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::VEC, { Type::F64 })) {
+	} else if (container->type == Type(&RawType::VEC, { Type::F64 })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_array_all, (void*) fun_condition_array_all, (void*) fun_value_array_float, (void*) fun_key_array_float, (void*) fun_inc_array_float,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::VEC, { Type::VAR })) {
+	} else if (container->type == Type(&RawType::VEC, { Type::VAR })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_array_all, (void*) fun_condition_array_all, (void*) fun_value_array_ptr, (void*) fun_key_array_ptr, (void*) fun_inc_array_ptr,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::MAP, { Type::VAR, Type::VAR })) {
+	} else if (container->type == Type(&RawType::MAP, { Type::VAR, Type::VAR })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_ptr_ptr, (void*) fun_key_map_ptr_ptr, (void*) fun_inc_map_ptr_ptr,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::MAP, { Type::VAR, Type::I32 })) {
+	} else if (container->type == Type(&RawType::MAP, { Type::VAR, Type::I32 })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_ptr_int, (void*) fun_key_map_ptr_int, (void*) fun_inc_map_ptr_int,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::MAP, { Type::VAR, Type::F64 })) {
+	} else if (container->type == Type(&RawType::MAP, { Type::VAR, Type::F64 })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_ptr_float, (void*) fun_key_map_ptr_float, (void*) fun_inc_map_ptr_float,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::MAP, { Type::I32, Type::VAR })) {
+	} else if (container->type == Type(&RawType::MAP, { Type::I32, Type::VAR })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_int_ptr, (void*) fun_key_map_int_ptr, (void*) fun_inc_map_int_ptr,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::MAP, { Type::I32, Type::I32 })) {
+	} else if (container->type == Type(&RawType::MAP, { Type::I32, Type::I32 })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_int_int, (void*) fun_key_map_int_int, (void*) fun_inc_map_int_int,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::MAP, { Type::I32, Type::F64 })) {
+	} else if (container->type == Type(&RawType::MAP, { Type::I32, Type::F64 })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_int_float, (void*) fun_key_map_int_float, (void*) fun_inc_map_int_float,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::SET, { Type::I32 })) {
+	} else if (container->type == Type(&RawType::SET, { Type::I32 })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_set_all, (void*) fun_condition_set_all, (void*) fun_value_set<int>, (void*) fun_key_set<int>, (void*) fun_inc_set<int>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::SET, { Type::F64 })) {
+	} else if (container->type == Type(&RawType::SET, { Type::F64 })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_set_all, (void*) fun_condition_set_all, (void*) fun_value_set<double>, (void*) fun_key_set<double>, (void*) fun_inc_set<double>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(RawType::SET, { Type::VAR })) {
+	} else if (container->type == Type(&RawType::SET, { Type::VAR })) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_set_all, (void*) fun_condition_set_all, (void*) fun_value_set<LSValue*>, (void*) fun_key_set<LSValue*>, (void*) fun_inc_set<LSValue*>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
