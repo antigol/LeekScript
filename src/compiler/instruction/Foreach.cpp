@@ -89,7 +89,7 @@ void Foreach::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 /*
  * Begin
  */
-LSVec<LSValue*>::iterator fun_begin_array_all(LSVec<LSValue*>* array) {
+LSVec<LSValue*>::iterator fun_begin_vec_all(LSVec<LSValue*>* array) {
 	return array->begin();
 }
 LSMap<LSValue*,LSValue*>::iterator fun_begin_map_all(LSMap<LSValue*,LSValue*>* map) {
@@ -102,7 +102,7 @@ LSSet<LSValue*>::iterator fun_begin_set_all(LSSet<LSValue*>* set) {
 /*
  * Condition
  */
-bool fun_condition_array_all(LSVec<LSValue*>* array, LSVec<LSValue*>::iterator it) {
+bool fun_condition_vec_all(LSVec<LSValue*>* array, LSVec<LSValue*>::iterator it) {
 	return it != array->end();
 }
 bool fun_condition_map_all(LSMap<LSValue*,LSValue*>* map, LSMap<LSValue*,LSValue*>::iterator it) {
@@ -115,31 +115,12 @@ bool fun_condition_set_all(LSSet<LSValue*>* set, LSSet<LSValue*>::iterator it) {
 /*
  * Value
  */
-LSValue* fun_value_array_ptr(LSVec<LSValue*>::iterator it) {
+template <typename T>
+T fun_value_vec(typename LSVec<T>::iterator it) {
 	return *it;
 }
-int fun_value_array_int(LSVec<int>::iterator it) {
-	return *it;
-}
-double fun_value_array_float(LSVec<double>::iterator it) {
-	return *it;
-}
-LSValue* fun_value_map_ptr_ptr(LSMap<LSValue*,LSValue*>::iterator it) {
-	return it->second;
-}
-int fun_value_map_ptr_int(LSMap<LSValue*,int>::iterator it) {
-	return it->second;
-}
-double fun_value_map_ptr_float(LSMap<LSValue*,double>::iterator it) {
-	return it->second;
-}
-LSValue* fun_value_map_int_ptr(LSMap<int,LSValue*>::iterator it) {
-	return it->second;
-}
-int fun_value_map_int_int(LSMap<int,int>::iterator it) {
-	return it->second;
-}
-double fun_value_map_int_float(LSMap<int,double>::iterator it) {
+template <typename K, typename T>
+T fun_value_map(typename LSMap<K,T>::iterator it) {
 	return it->second;
 }
 template <typename T>
@@ -151,31 +132,12 @@ T fun_value_set(typename LSSet<T>::iterator it) {
 /*
  * Key
  */
-int fun_key_array_ptr(LSVec<LSValue*>* array, LSVec<LSValue*>::iterator it) {
-	return distance(array->begin(), it);
+template <typename T>
+int fun_key_vec(LSVec<T>* vec, typename LSVec<T>::iterator it) {
+	return distance(vec->begin(), it);
 }
-int fun_key_array_int(LSVec<int>* array, LSVec<int>::iterator it) {
-	return distance(array->begin(), it);
-}
-int fun_key_array_float(LSVec<double>* array, LSVec<double>::iterator it) {
-	return distance(array->begin(), it);
-}
-LSValue* fun_key_map_ptr_ptr(void*, LSMap<LSValue*,LSValue*>::iterator it) {
-	return it->first;
-}
-LSValue* fun_key_map_ptr_int(void*, LSMap<LSValue*,int>::iterator it) {
-	return it->first;
-}
-LSValue* fun_key_map_ptr_float(void*, LSMap<LSValue*,double>::iterator it) {
-	return it->first;
-}
-int fun_key_map_int_ptr(void*, LSMap<int,LSValue*>::iterator it) {
-	return it->first;
-}
-int fun_key_map_int_int(void*, LSMap<int,int>::iterator it) {
-	return it->first;
-}
-int fun_key_map_int_float(void*, LSMap<int,double>::iterator it) {
+template <typename K, typename T>
+K fun_key_map(LSMap<K,T>*, typename LSMap<K,T>::iterator it) {
 	return it->first;
 }
 template <typename T>
@@ -188,31 +150,12 @@ int fun_key_set(LSSet<T>* set, typename LSSet<T>::iterator it) {
 /*
  * Increment
  */
-LSVec<LSValue*>::iterator fun_inc_array_ptr(LSVec<LSValue*>::iterator it) {
+template <typename T>
+typename LSVec<T>::iterator fun_inc_vec(typename LSVec<T>::iterator it) {
 	return ++it;
 }
-LSVec<int>::iterator fun_inc_array_int(LSVec<int>::iterator it) {
-	return ++it;
-}
-LSVec<double>::iterator fun_inc_array_float(LSVec<double>::iterator it) {
-	return ++it;
-}
-LSMap<LSValue*,LSValue*>::iterator fun_inc_map_ptr_ptr(LSMap<LSValue*,LSValue*>::iterator it) {
-	return ++it;
-}
-LSMap<LSValue*,int>::iterator fun_inc_map_ptr_int(LSMap<LSValue*,int>::iterator it) {
-	return ++it;
-}
-LSMap<LSValue*,double>::iterator fun_inc_map_ptr_float(LSMap<LSValue*,double>::iterator it) {
-	return ++it;
-}
-LSMap<int,LSValue*>::iterator fun_inc_map_int_ptr(LSMap<int,LSValue*>::iterator it) {
-	return ++it;
-}
-LSMap<int,int>::iterator fun_inc_map_int_int(LSMap<int,int>::iterator it) {
-	return ++it;
-}
-LSMap<int,double>::iterator fun_inc_map_int_float(LSMap<int,double>::iterator it) {
+template <typename K, typename T>
+typename LSMap<K,T>::iterator fun_inc_map(typename LSMap<K,T>::iterator it) {
 	return ++it;
 }
 template <typename T>
@@ -258,39 +201,43 @@ jit_value_t Foreach::compile(Compiler& c) const {
 	// Static Selector
 	if (container->type == Type(&RawType::VEC, { Type::I32 })) {
 		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_array_all, (void*) fun_condition_array_all, (void*) fun_value_array_int, (void*) fun_key_array_int, (void*) fun_inc_array_int,
+						(void*) fun_begin_vec_all, (void*) fun_condition_vec_all, (void*) fun_value_vec<int32_t>, (void*) fun_key_vec<int32_t>, (void*) fun_inc_vec<int32_t>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
 	} else if (container->type == Type(&RawType::VEC, { Type::F64 })) {
 		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_array_all, (void*) fun_condition_array_all, (void*) fun_value_array_float, (void*) fun_key_array_float, (void*) fun_inc_array_float,
+						(void*) fun_begin_vec_all, (void*) fun_condition_vec_all, (void*) fun_value_vec<double>, (void*) fun_key_vec<double>, (void*) fun_inc_vec<double>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(&RawType::VEC, { Type::VAR })) {
+	} else if (Type::get_intersection(container->type, Type(&RawType::VEC, { Type::LSVALUE }))) {
 		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_array_all, (void*) fun_condition_array_all, (void*) fun_value_array_ptr, (void*) fun_key_array_ptr, (void*) fun_inc_array_ptr,
+						(void*) fun_begin_vec_all, (void*) fun_condition_vec_all, (void*) fun_value_vec<LSValue*>, (void*) fun_key_vec<LSValue*>, (void*) fun_inc_vec<LSValue*>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(&RawType::MAP, { Type::VAR, Type::VAR })) {
+	} else if (Type::get_intersection(container->type, Type(&RawType::VEC, { Type::UNKNOWN }))) { // tout le reste == functions
 		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_ptr_ptr, (void*) fun_key_map_ptr_ptr, (void*) fun_inc_map_ptr_ptr,
+						(void*) fun_begin_vec_all, (void*) fun_condition_vec_all, (void*) fun_value_vec<void*>, (void*) fun_key_vec<void*>, (void*) fun_inc_vec<void*>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(&RawType::MAP, { Type::VAR, Type::I32 })) {
+	} else if (Type::get_intersection(container->type, Type(&RawType::MAP, { Type::LSVALUE, Type::LSVALUE }))) {
 		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_ptr_int, (void*) fun_key_map_ptr_int, (void*) fun_inc_map_ptr_int,
+						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map<LSValue*,LSValue*>, (void*) fun_key_map<LSValue*,LSValue*>, (void*) fun_inc_map<LSValue*,LSValue*>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(&RawType::MAP, { Type::VAR, Type::F64 })) {
+	} else if (Type::get_intersection(container->type, Type(&RawType::MAP, { Type::LSVALUE, Type::I32 }))) {
 		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_ptr_float, (void*) fun_key_map_ptr_float, (void*) fun_inc_map_ptr_float,
+						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map<LSValue*,int32_t>, (void*) fun_key_map<LSValue*,int32_t>, (void*) fun_inc_map<LSValue*,int32_t>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(&RawType::MAP, { Type::I32, Type::VAR })) {
+	} else if (Type::get_intersection(container->type, Type(&RawType::MAP, { Type::LSVALUE, Type::F64 }))) {
 		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_int_ptr, (void*) fun_key_map_int_ptr, (void*) fun_inc_map_int_ptr,
+						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map<LSValue*,double>, (void*) fun_key_map<LSValue*,double>, (void*) fun_inc_map<LSValue*,double>,
+						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
+	} else if (Type::get_intersection(container->type, Type(&RawType::MAP, { Type::I32, Type::LSVALUE }))) {
+		compile_foreach(c, container_v, output_v,
+						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map<int32_t,LSValue*>, (void*) fun_key_map<int32_t,LSValue*>, (void*) fun_inc_map<int32_t,LSValue*>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
 	} else if (container->type == Type(&RawType::MAP, { Type::I32, Type::I32 })) {
 		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_int_int, (void*) fun_key_map_int_int, (void*) fun_inc_map_int_int,
+						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map<int32_t,int32_t>, (void*) fun_key_map<int32_t,int32_t>, (void*) fun_inc_map<int32_t,int32_t>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
 	} else if (container->type == Type(&RawType::MAP, { Type::I32, Type::F64 })) {
 		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_int_float, (void*) fun_key_map_int_float, (void*) fun_inc_map_int_float,
+						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map<int32_t,double>, (void*) fun_key_map<int32_t,double>, (void*) fun_inc_map<int32_t,double>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
 	} else if (container->type == Type(&RawType::SET, { Type::I32 })) {
 		compile_foreach(c, container_v, output_v,

@@ -188,6 +188,7 @@ jit_value_t Compiler::compile_eq(jit_function_t F, jit_value_t v1, const Type& t
 	if (t1.raw_type->nature() == Nature::LSVALUE && t2.raw_type->nature() == Nature::LSVALUE) {
 		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_equal, { v1, v2 });
 	}
+	assert(0);
 	return nullptr;
 }
 

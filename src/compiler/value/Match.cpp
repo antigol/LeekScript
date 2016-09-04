@@ -71,24 +71,20 @@ void Match::analyse(ls::SemanticAnalyser* analyser, const Type& req_type)
 		}
 	}
 
-	if (req_type != Type::UNKNOWN) {
-		for (Value* ret : returns) {
-			ret->analyse(analyser, req_type);
+	type = req_type;
+	for (Value* ret : returns) {
+		ret->preanalyse(analyser);
+		if (!Type::get_intersection(type, ret->type, &type)) {
+			stringstream oss;
+			ret->print(oss);
+			analyser->add_error({ SemanticException::INCOMPATIBLE_TYPES, ret->line(), oss.str() });
+			break;
 		}
-		type = req_type;
-	} else {
-		type = Type::UNKNOWN;
-		for (Value* ret : returns) {
-			ret->analyse(analyser, Type::UNKNOWN);
-			type = Type::get_compatible_type(type, ret->type);
-			if (type == Type::VOID) {
-				analyser->add_error({ SemanticException::INCOMPATIBLE_TYPES, ret->line() });
-				break;
-			}
-		}
-		for (Value* ret : returns) {
-			ret->analyse(analyser, type);
-		}
+	}
+	type.make_it_complete();
+
+	for (Value* ret : returns) {
+		ret->analyse(analyser, type);
 	}
 }
 

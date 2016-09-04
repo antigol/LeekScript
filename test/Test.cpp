@@ -27,7 +27,7 @@ int Test::all() {
 //	test_objects();
 	test_functions();
 //	test_classes();
-//	test_loops();
+	test_loops();
 //	test_operators();
 //	test_references();
 //	test_operations();

@@ -125,7 +125,6 @@ void Function::analyse(SemanticAnalyser* analyser, const Type& req_type)
 #endif
 	for (size_t i = 0; i < type.return_types.size(); ++i) { // body.type, return[0].type, return[1].type, ...
 		if (type.return_types[i] == Type::UNREACHABLE) continue;
-//		return_type = Type::get_compatible_type(return_type, type.return_types[i]);
 		if (!Type::get_intersection(return_type, type.return_types[i], &return_type)) {
 			stringstream oss;
 			print(oss, 0, false);

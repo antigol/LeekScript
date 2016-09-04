@@ -24,13 +24,13 @@ unsigned Break::line() const
 	return 0;
 }
 
-void Break::analyse(SemanticAnalyser* analyser, const Type&) {
+void Break::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	// break must be in a loop
 	if (!analyser->in_loop(deepness)) {
-		analyser->add_error({SemanticException::Type::BREAK_MUST_BE_IN_LOOP, 0});
+		analyser->add_error({ SemanticException::Type::BREAK_MUST_BE_IN_LOOP, line() });
 	}
-	assert(type.is_complete());
+	type = Type::UNREACHABLE;
 }
 
 jit_value_t Break::compile(Compiler& c) const {

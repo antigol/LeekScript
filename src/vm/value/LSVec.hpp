@@ -71,9 +71,10 @@ public:
 
 	LSVALUE_OPERATORS
 
-//	bool eq(const LSVec<LSValue*>*) const override;
-//	bool eq(const LSVec<int32_t>*) const override;
-//	bool eq(const LSVec<double>*) const override;
+	bool eq(const LSVec<LSValue*>*) const override;
+	bool eq(const LSVec<void*>*) const override;
+	bool eq(const LSVec<int32_t>*) const override;
+	bool eq(const LSVec<double>*) const override;
 
 	virtual int typeID() const override { return 5; }
 

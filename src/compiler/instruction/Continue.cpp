@@ -26,9 +26,9 @@ void Continue::analyse(SemanticAnalyser* analyser, const Type&) {
 
 	// continue must be in a loop
 	if (!analyser->in_loop(deepness)) {
-		analyser->add_error({SemanticException::Type::CONTINUE_MUST_BE_IN_LOOP, 0});
+		analyser->add_error({ SemanticException::Type::CONTINUE_MUST_BE_IN_LOOP, line() });
 	}
-	assert(type.is_complete());
+	type = Type::UNREACHABLE;
 }
 
 jit_value_t Continue::compile(Compiler& c) const {

@@ -140,8 +140,7 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 			analyser->add_error({ SemanticException::MUST_BE_ARITHMETIC_TYPE, v2->line(), oss.str() });
 		}
 
-		type = Type::get_compatible_type(v1->type, v2->type);
-		if (type == Type::VOID) {
+		if (!Type::get_intersection(v1->type, v2->type, &type)) {
 			stringstream oss;
 			print(oss, 0, false);
 			analyser->add_error({ SemanticException::INCOMPATIBLE_TYPES, line(), oss.str() });
@@ -327,7 +326,7 @@ void Expression::preanalyse(SemanticAnalyser* analyser)
 	} else if (op->type == TokenType::PLUS) {
 		v1->preanalyse(analyser);
 		v2->preanalyse(analyser);
-		type = Type::get_compatible_type(v1->type, v2->type);
+		Type::get_intersection(v1->type, v2->type, &type);
 	}
 }
 

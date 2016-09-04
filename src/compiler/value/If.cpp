@@ -62,7 +62,8 @@ void If::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		} else if (elze->type == Type::UNREACHABLE) { // elze contains return instruction
 			type = then->type;
 		} else {
-			type = Type::get_compatible_type(then->type, elze->type);
+			if (!Type::get_intersection(then->type, elze->type, &type)) type = Type::VOID;
+
 #if DEBUG > 0
 		cout << "#If " << then->type << " + " << elze->type << " = " << type << endl;
 #endif
@@ -103,7 +104,7 @@ void If::preanalyse(SemanticAnalyser* analyser)
 		} else if (elze->type == Type::UNREACHABLE) { // elze contains return instruction
 			type = then->type;
 		} else {
-			type = Type::get_compatible_type(then->type, elze->type);
+			if (!Type::get_intersection(then->type, elze->type, &type)) type = Type::VOID;
 		}
 	} else {
 		then->preanalyse(analyser);
