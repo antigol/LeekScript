@@ -59,11 +59,27 @@ void Array::preanalyse(SemanticAnalyser* analyser)
 
 	Type element_type = Type::UNKNOWN;
 
+#if DEBUG > 0
+	if (expressions.size() > 1) {
+		cout << "#Array ";
+	}
+	bool first = true;
+#endif
+
 	for (Value* ex : expressions) {
 		ex->preanalyse(analyser);
 		constant = constant && ex->constant;
 		element_type = Type::get_compatible_type(element_type, ex->type);
+#if DEBUG > 0
+		if (expressions.size() > 1) {
+			if (first) first = false; else cout << " + ";
+			cout << ex->type;
+		}
+#endif
 	}
+#if DEBUG > 0
+	cout << " = " << element_type << endl;
+#endif
 
 	type = Type(RawType::VEC, { element_type });
 }

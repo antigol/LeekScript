@@ -47,13 +47,9 @@ extern std::map<LSValue*, LSValue*> objs;
 
 string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 
-//	Type t1(RawType::UNKNOWN, { Type(RawType::MAP, { Type::I32, Type::F64 }), Type(RawType::MAP, { Type::BOOLEAN, Type::LSVALUE }) });
-//	Type t2(RawType::UNKNOWN, { Type::I32, Type::F64, Type::LSVALUE });
-//	t2 = Type(RawType::MAP, { Type::UNKNOWN.place_holder(1), Type::UNKNOWN.place_holder(1) });
-//	Type t3;
+//	Type t1 = Type::LSVALUE;
+//	Type t2(RawType::UNKNOWN, { Type::I32, Type::F64, Type::VAR });
 //	cout << Type::get_compatible_type(t1, t2) << endl;
-//	cout << t1.match_with_generic(t2, &t3) << endl;
-//	cout << t3 << endl;
 
 	// Reset
 	LSValue::obj_count = 0;
@@ -313,6 +309,15 @@ LSValue* VM_create_bool(int value) {
 jit_value_t VM::create_lsbool(jit_function_t F, bool value)
 {
 	return Compiler::call_native(F, LS_POINTER, { LS_BOOLEAN }, (void*) VM_create_bool, { create_bool(F, value) });
+}
+
+LSValue* VM_create_real(double value) {
+	return new LSVar(value);
+}
+
+jit_value_t VM::create_lsreal(jit_function_t F, double value)
+{
+	return Compiler::call_native(F, LS_POINTER, { LS_F64 }, (void*) VM_create_real, { create_f64(F, value) });
 }
 
 LSVec<void*>* VM_create_vec_voidptr(int cap) {

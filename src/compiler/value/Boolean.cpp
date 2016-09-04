@@ -39,7 +39,7 @@ void Boolean::analyse(SemanticAnalyser* analyser, const Type& req_type)
 void Boolean::preanalyse(SemanticAnalyser*)
 {
 	constant = true;
-	type = Type(RawType::UNKNOWN, { Type::BOOLEAN, Type::VAR });
+	type = Type(RawType::UNKNOWN, { Type::BOOLEAN, Type::VAR, Type::I32, Type::I64 });
 }
 
 jit_value_t Boolean::compile(Compiler& c) const {
@@ -49,6 +49,9 @@ jit_value_t Boolean::compile(Compiler& c) const {
 	}
 	if (type == Type::I32) {
 		return VM::create_i32(c.F, value);
+	}
+	if (type == Type::I64) {
+		return VM::create_i64(c.F, value);
 	}
 	if (type == Type::BOOLEAN) {
 		return VM::create_bool(c.F, value);

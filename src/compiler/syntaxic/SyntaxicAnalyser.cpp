@@ -616,20 +616,6 @@ Value* SyntaxicAnalyser::eatExpression(bool pipe_opened, bool set_opened) {
 	return e;
 }
 
-double stod_(string str) {
-
-	if (str.size() > 2 && str[0] == '0' && str[1] == 'b') {
-		double x = 0.0;
-		for (size_t i = 2; i < str.size(); ++i) {
-			x *= 2.0;
-			if (str[i] == '1') x += 1.0;
-		}
-		return x;
-	} else {
-		return stod(str);
-	}
-}
-
 Value* SyntaxicAnalyser::eatValue() {
 
 	switch (t->type) {
@@ -649,14 +635,10 @@ Value* SyntaxicAnalyser::eatValue() {
 
 		case TokenType::NUMBER:
 		{
-			Number* n = new Number(stod_(t->content), t);
+			Number* n = new Number(t->content, t);
 			eat();
 			return n;
 		}
-
-		case TokenType::PI:
-			eat();
-			return new Number(M_PI, t);
 
 		case TokenType::STRING:
 		{
@@ -1086,7 +1068,7 @@ Break*SyntaxicAnalyser::eatBreak() {
 	Break* b = new Break();
 
 	if (t->type == TokenType::NUMBER /*&& t->line == lt->line*/) {
-		double deepness = stod_(t->content);
+		double deepness = stod(t->content);
 		if (deepness != int(deepness) || deepness <= 0) {
 			errors.push_back(new SyntaxicalError(t, "Break should only be followed by a positive integer"));
 		} else {
@@ -1103,7 +1085,7 @@ Continue*SyntaxicAnalyser::eatContinue() {
 	Continue* c = new Continue();
 
 	if (t->type == TokenType::NUMBER /*&& t->line == lt->line*/) {
-		double deepness = stod_(t->content);
+		double deepness = stod(t->content);
 		if (deepness != int(deepness) || deepness <= 0) {
 			errors.push_back(new SyntaxicalError(t, "Continue should only be followed by a positive integer"));
 		} else {
@@ -1136,10 +1118,12 @@ TypeName* SyntaxicAnalyser::eatTypeName() {
 	}
 	if (t->type == TokenType::OPEN_PARENTHESIS) {
 		eat();
-		tn->arguments.push_back(eatTypeName());
-		while (t->type == TokenType::COMMA) {
-			eat();
+		if (t->type != TokenType::CLOSING_PARENTHESIS) {
 			tn->arguments.push_back(eatTypeName());
+			while (t->type == TokenType::COMMA) {
+				eat();
+				tn->arguments.push_back(eatTypeName());
+			}
 		}
 		eat(TokenType::CLOSING_PARENTHESIS);
 		if (t->type == TokenType::ARROW) {

@@ -8,11 +8,10 @@ namespace ls {
 
 class Number : public Value {
 public:
-
+	std::string value;
 	Token* token;
-	double value;
 
-	Number(double value, Token* token);
+	Number(const std::string& value, Token* token);
 	virtual ~Number();
 
 	virtual void print(std::ostream&, int indent, bool debug) const override;

@@ -42,13 +42,6 @@ void Block::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	for (size_t i = 0; i < instructions.size(); ++i) {
 		Value* ins = instructions[i];
 
-		if (dynamic_cast<Return*>(ins)) {
-			ins->analyse(analyser, Type::UNKNOWN);
-			type = Type::UNREACHABLE;
-			analyser->leave_block();
-			return; // no need to compile after a return
-		}
-
 		if (i == instructions.size() - 1) {
 			// last instruction
 			ins->analyse(analyser, req_type);
@@ -57,6 +50,11 @@ void Block::analyse(SemanticAnalyser* analyser, const Type& req_type)
 			return;
 		} else {
 			ins->analyse(analyser, Type::VOID);
+			if (ins->type == Type::UNREACHABLE) {
+				type = Type::UNREACHABLE;
+				analyser->leave_block();
+				return; // no need to compile after a return
+			}
 		}
 	}
 
@@ -79,13 +77,6 @@ void Block::preanalyse(SemanticAnalyser* analyser)
 	for (size_t i = 0; i < instructions.size(); ++i) {
 		Value* ins = instructions[i];
 
-		if (dynamic_cast<Return*>(ins)) {
-			ins->preanalyse(analyser);
-			type = Type::UNREACHABLE;
-			analyser->leave_block();
-			return; // no need to compile after a return
-		}
-
 		if (i == instructions.size() - 1) {
 			// last instruction
 			ins->preanalyse(analyser);
@@ -94,6 +85,11 @@ void Block::preanalyse(SemanticAnalyser* analyser)
 			return;
 		} else {
 			ins->preanalyse(analyser);
+			if (ins->type == Type::UNREACHABLE) {
+				type = Type::UNREACHABLE;
+				analyser->leave_block();
+				return; // no need to compile after a return
+			}
 		}
 	}
 
@@ -121,7 +117,7 @@ jit_value_t Block::compile(Compiler& c) const {
 
 	for (unsigned i = 0; i < instructions.size(); ++i) {
 		jit_value_t val = instructions[i]->compile(c);
-		if (dynamic_cast<Return*>(instructions[i])) {
+		if (instructions[i]->type == Type::UNREACHABLE) {
 			break; // no need to compile after a return
 		}
 		if (i == instructions.size() - 1 && instructions[i]->type.raw_type.nature() != Nature::VOID) {

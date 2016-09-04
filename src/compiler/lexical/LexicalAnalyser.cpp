@@ -55,7 +55,7 @@ static vector<vector<string>> type_literals = {
 
 	{ "~" }, { "~=" }, { "~~" }, { "~~=" },
 
-	{ "π" },
+	{},
 
 	{ ".." }, { "..." },
 

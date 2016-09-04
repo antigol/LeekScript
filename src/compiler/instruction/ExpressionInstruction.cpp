@@ -24,7 +24,8 @@ unsigned ExpressionInstruction::line() const
 void ExpressionInstruction::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	if (req_type == Type::VOID) {
 		value->analyse(analyser, Type::UNKNOWN);
-		type = Type::VOID;
+		if (value->type == Type::UNREACHABLE) type = Type::UNREACHABLE;
+		else type = Type::VOID;
 	} else {
 		value->analyse(analyser, req_type);
 		type = value->type;

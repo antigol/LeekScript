@@ -52,14 +52,7 @@ void Return::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		}
 	}
 
-
-	type = Type::VOID;
-	if (!type.match_with_generic(req_type)) {
-		stringstream oss;
-		print(oss, 0, false);
-		analyser->add_error({ SemanticException::TYPE_MISMATCH, 0, oss.str() });
-	}
-	assert(type.is_complete());
+	type = Type::UNREACHABLE;
 }
 
 jit_value_t Return::compile(Compiler& c) const {

@@ -300,6 +300,9 @@ Type Type::get_compatible_type(const Type& t1, const Type& t2) {
 	}
 	if (t2.raw_type == RawType::UNKNOWN) return get_compatible_type(t2, t1);
 
+	if (t1 == Type::LSVALUE) return t2.raw_type.nature() == Nature::LSVALUE ? t2 : Type::VOID;
+	if (t2 == Type::LSVALUE) return t1.raw_type.nature() == Nature::LSVALUE ? t1 : Type::VOID;
+
 	// FUNCTION
 	if (t1.raw_type == RawType::FUNCTION && t2.raw_type == RawType::FUNCTION) {
 		if (t1.arguments_types.size() != t2.arguments_types.size()) return Type::VOID;

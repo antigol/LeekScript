@@ -120,14 +120,24 @@ void Function::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	bool all_void = true;
 	Type return_type = Type::UNKNOWN;
 	type.return_types[0] = body->type;
+#if DEBUG > 0
+	if (type.return_types.size() > 1) cout << "#Function ";
+#endif
 	for (size_t i = 0; i < type.return_types.size(); ++i) { // body.type, return[0].type, return[1].type, ...
 		if (type.return_types[i] == Type::UNREACHABLE) continue;
-		cout << return_type << " + " << type.return_types[i] << " = ";
 		return_type = Type::get_compatible_type(return_type, type.return_types[i]);
-		cout << return_type << endl;
+#if DEBUG > 0
+		if (type.return_types.size() > 1) {
+			if (i > 0) cout << " + ";
+			cout << type.return_types[i];
+		}
+#endif
 		if (type.return_types[i] == Type::VOID) any_void = true;
 		else all_void = false;
 	}
+#if DEBUG > 0
+	if (type.return_types.size() > 1) cout << " = " << return_type << endl;
+#endif
 	// fix return type
 	if ((any_void && !all_void) || !return_type.match_with_generic(req_return_type, &return_type)) {
 		stringstream oss;
@@ -139,13 +149,7 @@ void Function::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	type.return_types.clear();
 	type.set_return_type(return_type);
 
-	for (size_t i = 0; i < arguments.size(); ++i) {
-		Type arg_type = analyser->get_var(arguments[i])->type;
-		arg_type.make_it_complete();
-		type.arguments_types[i] = arg_type;
-	}
-
-	body->analyse(analyser, return_type);
+	body->analyse(analyser, body->type == Type::UNREACHABLE ? Type::UNKNOWN : return_type);
 
 //	vars = analyser->get_local_vars();
 

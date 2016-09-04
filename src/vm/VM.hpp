@@ -76,6 +76,7 @@ public:
 	static jit_value_t create_ptr(jit_function_t F, void* value);
 	static jit_value_t create_null(jit_function_t F);
 	static jit_value_t create_lsbool(jit_function_t F, bool value);
+	static jit_value_t create_lsreal(jit_function_t F, double value);
 	static jit_value_t create_vec(jit_function_t F, const Type& element_type, int cap = 0);
 	static jit_value_t create_default(jit_function_t F, const Type& type);
 	static void push_move_inc_vec(jit_function_t F, const Type& element_type, jit_value_t array, jit_value_t value);

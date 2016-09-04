@@ -39,8 +39,8 @@ unsigned If::line() const {
 	return 0;
 }
 
-void If::analyse(SemanticAnalyser* analyser, const Type& req_type) {
-
+void If::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
 	condition->analyse(analyser, Type::UNKNOWN);
 	if (condition->type == Type::FUNCTION || condition->type == Type::VOID) {
 		stringstream oss;
@@ -52,14 +52,21 @@ void If::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		then->preanalyse(analyser);
 		elze->preanalyse(analyser);
 
-		if (then->type == Type::UNREACHABLE) { // then contains return instruction
+		if (then->type == Type::UNREACHABLE && elze->type == Type::UNREACHABLE) {
+			type = Type::UNREACHABLE;
+			then->analyse(analyser, Type::UNKNOWN);
+			elze->analyse(analyser, Type::UNKNOWN);
+			return;
+		} else if (then->type == Type::UNREACHABLE) { // then contains return instruction
 			type = elze->type;
 		} else if (elze->type == Type::UNREACHABLE) { // elze contains return instruction
 			type = then->type;
 		} else {
 			type = Type::get_compatible_type(then->type, elze->type);
+#if DEBUG > 0
+		cout << "#If " << then->type << " + " << elze->type << " = " << type << endl;
+#endif
 		}
-		cout << then->type << " + " << elze->type << " = " << type << endl;
 
 		if (!type.match_with_generic(req_type, &type)) {
 			stringstream oss;
@@ -81,6 +88,27 @@ void If::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		}
 	}
 	assert(type.is_complete() || !analyser->errors.empty());
+}
+
+void If::preanalyse(SemanticAnalyser* analyser)
+{
+	condition->preanalyse(analyser);
+
+	if (elze) {
+		then->preanalyse(analyser);
+		elze->preanalyse(analyser);
+
+		if (then->type == Type::UNREACHABLE) { // then contains return instruction
+			type = elze->type;
+		} else if (elze->type == Type::UNREACHABLE) { // elze contains return instruction
+			type = then->type;
+		} else {
+			type = Type::get_compatible_type(then->type, elze->type);
+		}
+	} else {
+		then->preanalyse(analyser);
+		type = Type::VOID;
+	}
 }
 
 jit_value_t If::compile(Compiler& c) const {

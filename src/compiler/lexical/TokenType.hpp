@@ -87,7 +87,7 @@ enum class TokenType {
 	TILDE_EQUAL,
 	TILDE_TILDE,
 	TILDE_TILDE_EQUAL,
-	PI,
+	PI, // TODO : remove
 	TWO_DOTS,
 	THREE_DOTS,
 	INSTANCEOF,

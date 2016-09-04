@@ -21,7 +21,7 @@ void TypeName::print(std::ostream& os) const {
 		}
 		os << ">";
 	}
-	if (!arguments.empty()) {
+	if (!arguments.empty() || returnType) {
 		os << "(";
 		for (size_t i = 0; i < arguments.size(); ++i) {
 			arguments[i]->print(os);
@@ -29,10 +29,10 @@ void TypeName::print(std::ostream& os) const {
 			if (i < arguments.size() - 1) os << ", ";
 		}
 		os << ")";
-	}
-	if (returnType) {
-		os << "->";
-		returnType->print(os);
+		if (returnType) {
+			os << "->";
+			returnType->print(os);
+		}
 	}
 }
 

@@ -36,6 +36,7 @@ public:
 	// this method is a relaxation of the last one
 	// `type` can be leave in a generic form (like Type::UNKNOWN or Type(RawType::VEC, { Type::UNKNOWN }) )
 	// it is not mandatory to generate errors
+	// This method is mandatory to analyse all its content as in the original one, to explore all the code for evantual return instructions
 	virtual void preanalyse(SemanticAnalyser* analyser);
 
 	virtual jit_value_t compile(Compiler&) const = 0;
