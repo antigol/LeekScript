@@ -177,30 +177,30 @@ SemanticVar* SemanticAnalyser::add_parameter(Token* v, Type type) {
 
 SemanticVar* SemanticAnalyser::get_var(Token* v) {
 
-	// Search in interval variables : global for the program
+	// Search in internal variables : global for the program
 	try {
 		return internal_vars.at(v->content);
-	} catch (exception& e) {}
+	} catch (exception&) {}
 
 	// Search recursively in the functions
 	int f = functions_stack.size() - 1;
 	while (f >= 0) {
 		// Search in the function parameters
 		try {
-			return parameters.at(f).at(v->content);
-		} catch (exception& e) {}
+			return parameters[f].at(v->content);
+		} catch (exception&) {}
 
 		// Search in the local variables of the function
-		int b = variables.at(f).size() - 1;
+		int b = variables[f].size() - 1;
 		while (b >= 0) {
 			try {
-				return variables.at(f).at(b).at(v->content);
-			} catch (exception& e) {}
+				return variables[f][b].at(v->content);
+			} catch (exception&) {}
 			b--;
 		}
 		f--;
 	}
-	add_error({SemanticException::Type::UNDEFINED_VARIABLE, v->line, v->content});
+	add_error({ SemanticException::Type::UNDEFINED_VARIABLE, v->line, v->content });
 	return nullptr;
 }
 

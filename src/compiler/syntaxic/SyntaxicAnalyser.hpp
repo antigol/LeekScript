@@ -67,6 +67,7 @@ public:
 //	ClassDeclaration* eatClassDeclaration();
 	VariableDeclaration* eatVariableDeclaration();
 	Function* eatFunction();
+	Function* eatLambda();
 	VariableDeclaration* eatFunctionDeclaration();
 	Value* eatInstruction();
 

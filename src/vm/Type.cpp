@@ -202,11 +202,11 @@ void Type::replace_place_holder(int id, const Type& type)
 	for (Type& x : arguments_types) x.replace_place_holder(id, type);
 }
 
-bool Type::match_with_generic(const Type& generic, Type* completed) const
+bool Type::match_with_generic(const Type& generic, Type* new_generic) const
 {
 	Type copy = generic;
 	bool r = match_with_generic_private(copy, copy);
-	if (completed) *completed = copy;
+	if (new_generic) *new_generic = copy;
 	return r;
 }
 

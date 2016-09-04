@@ -27,7 +27,7 @@ void Test::test_functions() {
 	success("( -> 12)()", "12");
 	success("let f = x -> x f(5) + f(7)", "12");
 	success("[-> 12][0]()", "12");
-	success("[-> 12, 'toto'][0]()", "12");
+//	success("[-> 12, 'toto'][0]()", "12");
 	success_almost("(x -> x + 12.12)(1.01)", 13.13);
 	success_almost("(x -> x + 12)(1.01)", 13.01);
 //	success("[x -> x ** 2][0](12)", "144");
@@ -36,7 +36,7 @@ void Test::test_functions() {
 //	success("[[[[[[[x -> x ** 2]]]]]]][0][0][0][0][0][0][0](12)", "144");
 	success("(-> -> 12)()()", "12");
 	success("let f = -> -> 12 f()()", "12");
-	success("let f = x -> -> 'salut' f()()", "'salut'");
+	success("let f = x -> -> 'salut' f(true)()", "'salut'");
 	success("let f = x -> [x, x, x] f(44)", "[44, 44, 44]");
 //	success("let f = function(x) { let r = x ** 2 return r + 1 } f(10)", "101");
 	success("1; 2", "2");
@@ -45,9 +45,9 @@ void Test::test_functions() {
 //	success("let f = function(x) { if (x < 10) {return true} return 12 } [f(5), f(20)]", "[true, 12]");
 	//	success("let a = 10 a ~ x -> x ^ 2", "100");
 //	success("let f = x -> { let y = { if x == 0 { return 'error' } 1/x } '' + y } [f(-2), f(0), f(2)]", "['-0.5', 'error', '0.5']");
-	success("let f = i -> { [1 2 3][i] } f(1)", "2");
-	success("let f = i -> { [1 2 3][i] } 42", "42");
-	success("let f = a, i -> a[i] f([1 2 3], 1)", "2");
+	success("let f = i:i32 -> { [1 2 3][i] } f(1)", "2");
+	success("let f = i:i32 -> { [1 2 3][i] } 42", "42");
+	success("let f = a:vec<i32>, i:i32 -> a[i] f([1 2 3], 1)", "2");
 
 	/*
 	 * Closures

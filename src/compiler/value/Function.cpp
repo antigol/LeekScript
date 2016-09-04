@@ -129,7 +129,7 @@ void Function::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		else all_void = false;
 	}
 	// fix return type
-	if ((any_void && !all_void) || !return_type.match_with_generic(req_type, &return_type)) {
+	if ((any_void && !all_void) || !return_type.match_with_generic(req_return_type, &return_type)) {
 		stringstream oss;
 		print(oss, 0, false);
 		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
@@ -138,6 +138,13 @@ void Function::analyse(SemanticAnalyser* analyser, const Type& req_type)
 
 	type.return_types.clear();
 	type.set_return_type(return_type);
+
+	for (size_t i = 0; i < arguments.size(); ++i) {
+		Type arg_type = analyser->get_var(arguments[i])->type;
+		arg_type.make_it_complete();
+		type.arguments_types[i] = arg_type;
+	}
+
 	body->analyse(analyser, return_type);
 
 //	vars = analyser->get_local_vars();

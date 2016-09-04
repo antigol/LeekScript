@@ -89,7 +89,7 @@ public:
 	void make_it_complete();
 
 	void replace_place_holder(int id, const Type& type);
-	bool match_with_generic(const Type& generic, Type* completed = nullptr) const;
+	bool match_with_generic(const Type& generic, Type* new_generic = nullptr) const;
 private:
 	bool match_with_generic_private(Type& generic, Type& complete) const;
 public:

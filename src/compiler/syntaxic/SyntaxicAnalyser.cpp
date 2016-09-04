@@ -283,6 +283,7 @@ Function* SyntaxicAnalyser::eatFunction() {
 	if (t->type != TokenType::CLOSING_PARENTHESIS) {
 		bool reference = false;
 		Token* ident = nullptr;
+		TypeName* typeName = nullptr;
 		Value* defaultValue = nullptr;
 
 eatFunction_eatArgument:
@@ -292,11 +293,13 @@ eatFunction_eatArgument:
 			reference = true;
 		}
 		ident = eatIdent();
-		TypeName* typeName = nullptr;
+
+		typeName = nullptr;
 		if (t->type == TokenType::COLON) {
 			eat();
 			typeName = eatTypeName();
 		}
+
 		defaultValue = nullptr;
 		if (t->type == TokenType::EQUAL) {
 			eat();
@@ -326,6 +329,38 @@ eatFunction_eatArgument:
 	if (!braces) {
 		eat(TokenType::END);
 	}
+
+	return f;
+}
+
+Function*SyntaxicAnalyser::eatLambda()
+{
+	Function* f = new Function();
+
+	if (t->type != TokenType::ARROW) {
+		Token* ident = nullptr;
+		TypeName* typeName = nullptr;
+
+eatFunction_eatArgument:
+		ident = eatIdent();
+
+		typeName = nullptr;
+		if (t->type == TokenType::COLON) {
+			eat();
+			typeName = eatTypeName();
+		}
+
+		f->addArgument(ident, false, typeName, nullptr);
+
+		if (t->type == TokenType::COMMA) {
+			eat();
+			goto eatFunction_eatArgument;
+		}
+	}
+	eat(TokenType::ARROW);
+
+	f->body = new Block();
+	f->body->instructions.push_back(new ExpressionInstruction(eatExpression()));
 
 	return f;
 }
@@ -644,64 +679,16 @@ Value* SyntaxicAnalyser::eatValue() {
 
 		case TokenType::IDENT:
 		{
-			Token* ident = eatIdent();
-
-			switch (t->type) {
-
-				case TokenType::ARROW: {
-
-					Function* l = new Function();
-					l->lambda = true;
-					l->arguments.push_back(ident);
-					eat(TokenType::ARROW);
-					l->body = new Block();
-					l->body->instructions.push_back(new ExpressionInstruction(eatExpression()));
-
-					return l;
-				}
-
-				case TokenType::COMMA: {
-
-					// Là y'a une virgule, il faut voir si y'a une flèche
-					// plus loin
-					bool canBeLamda = true;
-					int pos = i;
-					while (true) {
-						if (tokens.at(pos).type == TokenType::ARROW) {
-							break;
-						}
-						if (tokens.at(pos).type != TokenType::COMMA || tokens.at(pos + 1).type != TokenType::IDENT) {
-							canBeLamda = false;
-							break;
-						}
-						pos += 2;
-					}
-
-					if (canBeLamda) {
-
-						Function* l = new Function();
-						l->lambda = true;
-						l->arguments.push_back(ident);
-						while (t->type == TokenType::COMMA) {
-							eat();
-							l->arguments.push_back(eatIdent());
-						}
-
-						eat(TokenType::ARROW);
-						l->body = new Block();
-						l->body->instructions.push_back(new ExpressionInstruction(eatExpression()));
-
-						return l;
-
-					} else {
-						return new VariableValue(ident);
-					}
-				}
-				default: {
-					return new VariableValue(ident);
-				}
+			save_current_state();
+			Function* l = eatLambda();
+			if (errors.empty()) {
+				forgot_saved_state();
+				return l;
+			} else {
+				delete l;
+				restore_saved_state();
+				return new VariableValue(eatIdent());
 			}
-			break;
 		}
 
 		case TokenType::AROBASE:
@@ -728,14 +715,7 @@ Value* SyntaxicAnalyser::eatValue() {
 
 
 		case TokenType::ARROW:
-		{
-			Function* l = new Function();
-			l->lambda = true;
-			eat(TokenType::ARROW);
-			l->body = new Block();
-			l->body->instructions.push_back(new ExpressionInstruction(eatExpression()));
-			return l;
-		}
+			return eatLambda();
 
 		default:
 			break;
@@ -1136,7 +1116,7 @@ Continue*SyntaxicAnalyser::eatContinue() {
 }
 
 TypeName* SyntaxicAnalyser::eatTypeName() {
-	TypeName* tn = new TypeName;
+	TypeName* tn = new TypeName();
 	tn->name = eatIdent();
 	if (t->type == TokenType::LOWER) {
 		eat();
@@ -1162,10 +1142,10 @@ TypeName* SyntaxicAnalyser::eatTypeName() {
 			tn->arguments.push_back(eatTypeName());
 		}
 		eat(TokenType::CLOSING_PARENTHESIS);
-	}
-	if (t->type == TokenType::ARROW) {
-		eat();
-		tn->returnType = eatTypeName();
+		if (t->type == TokenType::ARROW) {
+			eat();
+			tn->returnType = eatTypeName();
+		}
 	}
 	return tn;
 }

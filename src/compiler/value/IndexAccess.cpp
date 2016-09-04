@@ -81,6 +81,12 @@ void IndexAccess::analyse(SemanticAnalyser* analyser, const Type& req_type)
 			type = Type(RawType::VEC, { container->type.element_type(1) });
 		}
 	}
+
+	if (!type.match_with_generic(req_type)) {
+		stringstream oss;
+		print(oss, 0, true);
+		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
+	}
 }
 
 

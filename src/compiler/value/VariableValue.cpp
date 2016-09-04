@@ -31,29 +31,28 @@ void VariableValue::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	var = analyser->get_var(token);
 	if (var) {
-		type = var->type;
-
 		if (var->function != analyser->current_function()) {
 			analyser->current_function()->capture(var);
   		}
-	}
+		type = var->type;
 
-	if (req_type != Type::UNKNOWN && type.can_be_convert_in(req_type)) {
-		type = req_type;
-	}
-
-	if (req_type != Type::UNKNOWN && type != req_type) {
-		stringstream oss;
-		print(oss, 0, false);
-		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
+		if (!var->type.match_with_generic(req_type)) {
+			type = Type::get_compatible_type(var->type, req_type);
+			type.make_it_complete();
+			if (!type.match_with_generic(req_type)) {
+				stringstream oss;
+				print(oss, 0, false);
+				analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
+			}
+		}
 	}
 	assert(type.is_complete() || !analyser->errors.empty());
 }
 
 extern map<string, jit_value_t> internals;
 
-jit_value_t VariableValue::compile(Compiler& c) const {
-
+jit_value_t VariableValue::compile(Compiler& c) const
+{
 	jit_value_t v;
 	switch (var->scope) {
 		case VarScope::INTERNAL:

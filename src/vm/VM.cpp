@@ -368,7 +368,7 @@ jit_value_t VM::create_default(jit_function_t F, const Type& type)
 	if (type == Type::I64) return create_i64(F, 0);
 	if (type == Type::F32) return create_f32(F, 0.0);
 	if (type == Type::F64) return create_f64(F, 0.0);
-	if (type == Type::FUNCTION) return create_ptr(F, nullptr);
+	if (type.raw_type == RawType::FUNCTION) return create_ptr(F, nullptr);
 
 	assert(0);
 }
