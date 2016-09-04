@@ -1,4 +1,4 @@
-#include "../../compiler/value/LeftValue.hpp"
+#include "LeftValue.hpp"
 
 namespace ls {
 

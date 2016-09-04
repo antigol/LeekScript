@@ -633,13 +633,13 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 		vector<jit_value_t> args;
 		vector<jit_type_t> args_types;
 		args.push_back(oa->object->compile(c));
-		args_types.push_back(oa->object->type.raw_type->jit_type());
+		args_types.push_back(oa->object->type.jit_type());
 		for (size_t i = 0; i < arguments.size(); ++i) {
 			args.push_back(arguments[i]->compile(c));
-			args_types.push_back(arguments[i]->type.raw_type->jit_type());
+			args_types.push_back(arguments[i]->type.jit_type());
 		}
 		Type rt = method.type.return_type();
-		return Compiler::compile_convert(c.F, Compiler::call_native(c.F, rt.raw_type->jit_type(), args_types, method.addr, args), rt, type);
+		return Compiler::compile_convert(c.F, Compiler::call_native(c.F, rt.jit_type(), args_types, method.addr, args), rt, type);
 	}
 
 
@@ -647,7 +647,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 	 * Default function
 	 */
 	jit_value_t fun = function->compile(c);
-	jit_value_t res = function->type.return_type() != Type::VOID ? jit_value_create(c.F, VM::get_jit_type(function->type.return_type())) : nullptr;
+	jit_value_t res = function->type.return_type() != Type::VOID ? jit_value_create(c.F, function->type.return_type().jit_type()) : nullptr;
 
 	jit_label_t label_ok= jit_label_undefined;
 	jit_label_t label_end = jit_label_undefined;
@@ -666,14 +666,14 @@ jit_value_t FunctionCall::compile(Compiler& c) const {
 	for (size_t i = 0; i < arguments.size(); ++i) {
 
 		args.push_back(arguments[i]->compile(c));
-		args_types.push_back(VM::get_jit_type(function->type.argument_type(i)));
+		args_types.push_back(function->type.argument_type(i).jit_type());
 
 		if (function->type.argument_type(i).must_manage_memory()) {
 			args[i] = VM::move_inc_obj(c.F, args[i]);
 		}
 	}
 
-	jit_type_t jit_return_type = VM::get_jit_type(function->type.return_type());
+	jit_type_t jit_return_type = function->type.return_type().jit_type();
 
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_return_type, args_types.data(), arguments.size(), 0);
 

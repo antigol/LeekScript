@@ -116,7 +116,7 @@ jit_value_t Match::compile(Compiler& c) const {
 
 	jit_value_t v = value->compile(c);
 
-	jit_value_t res = jit_value_create(c.F, VM::get_jit_type(type));
+	jit_value_t res = jit_value_create(c.F, type.jit_type());
 	jit_label_t label_end = jit_label_undefined;
 
 	for (size_t i = 0; i < pattern_list.size(); ++i) {

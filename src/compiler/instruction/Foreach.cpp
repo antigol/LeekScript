@@ -185,9 +185,9 @@ jit_value_t Foreach::compile(Compiler& c) const {
 	c.add_var("{array}", container_v, container->type, false);
 
 	// Create variables
-	jit_type_t jit_value_type = VM::get_jit_type(value_type);
+	jit_type_t jit_value_type = value_type.jit_type();
 	jit_value_t value_v = jit_value_create(c.F, jit_value_type);
-	jit_type_t jit_key_type = VM::get_jit_type(key_type);
+	jit_type_t jit_key_type = key_type.jit_type();
 	jit_value_t key_v = key ? jit_value_create(c.F, jit_key_type) : nullptr;
 
 	c.add_var(value->content, value_v, value_type, true);

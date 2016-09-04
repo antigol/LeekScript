@@ -68,7 +68,7 @@ jit_value_t VariableDeclaration::compile(Compiler& c) const {
 		c.add_var(variable->content, val, expression->type, true);
 		if (type != Type::VOID) return Compiler::compile_convert(c.F, val, expression->type, type);
 	} else {
-		jit_value_t var = jit_value_create(c.F, VM::get_jit_type(expression->type));
+		jit_value_t var = jit_value_create(c.F, expression->type.jit_type());
 		jit_value_t val = expression->compile(c);
 
 		if (expression->type.must_manage_memory()) {

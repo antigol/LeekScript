@@ -2,7 +2,6 @@
 #define LEFTVALUE_HPP_
 
 #include "Value.hpp"
-#include "../Compiler.hpp"
 
 namespace ls {
 

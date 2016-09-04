@@ -116,7 +116,7 @@ jit_value_t If::compile(Compiler& c) const {
 
 	jit_value_t res = nullptr;
 	if (type != Type::VOID) {
-		res = jit_value_create(c.F, VM::get_jit_type(type));
+		res = jit_value_create(c.F, type.jit_type());
 	}
 
 	jit_label_t label_else = jit_label_undefined;

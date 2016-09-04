@@ -181,10 +181,10 @@ jit_value_t Function::compile(Compiler& c) const {
 
 	vector<jit_type_t> params;
 	for (size_t i = 0; i < arguments.size(); ++i) {
-		params.push_back(VM::get_jit_type(type.argument_type(i)));
+		params.push_back(type.argument_type(i).jit_type());
 	}
 
-	jit_type_t return_type = VM::get_jit_type(type.return_type());
+	jit_type_t return_type = type.return_type().jit_type();
 
 	jit_type_t signature = jit_type_create_signature(jit_abi_cdecl, return_type, params.data(), arguments.size(), 0);
 	jit_function_t function = jit_function_create(context, signature);

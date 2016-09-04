@@ -155,11 +155,6 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 	return result;
 }
 
-jit_type_t VM::get_jit_type(const Type& type) {
-	assert(type != Type::UNKNOWN);
-	return type.raw_type->jit_type();
-}
-
 LSValue* VM_convert_i32(int32_t n) {
 	return new LSVar(n);
 }
@@ -400,7 +395,7 @@ void VM::push_move_inc_vec(jit_function_t F, const Type& element_type, jit_value
 	/* Because of the move, there is no need to call delete_temporary on the pushed value.
 	 * If value points to a temporary variable his ownership will be transfer to the vec.
 	 */
-	jit_type_t args[2] = {LS_POINTER, get_jit_type(element_type)};
+	jit_type_t args[2] = { LS_POINTER, element_type.jit_type() };
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_void, args, 2, 0);
 	jit_value_t args_v[] = {vec, value};
 

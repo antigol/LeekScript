@@ -26,6 +26,7 @@ class Function;
 class Break;
 class Continue;
 class TypeName;
+class Tuple;
 
 class SyntaxicAnalyser {
 

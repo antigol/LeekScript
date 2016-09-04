@@ -24,7 +24,7 @@ bool RawType::operator <(const RawType& type) const
 const RawType RawType::UNKNOWN    ("?",           "?",        "?",        0,                nullptr,           Nature::UNKNOWN,  11);
 const RawType RawType::VOID       ("void",        "?",        "void",     0,                jit_type_void,     Nature::VOID,     12);
 const RawType RawType::UNREACHABLE("unreachable", "?",        "",         0,                nullptr,           Nature::VOID,     13);
-const RawType RawType::LSVALUE    ("lsvalue",     "?",        "?",         sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE, 14);
+const RawType RawType::LSVALUE    ("lsvalue",     "?",        "?",        sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  14);
 const RawType RawType::VAR        ("var",         "Variable", "variable", sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  5);
 const RawType RawType::BOOLEAN    ("bool",        "Boolean",  "boolean",  sizeof (int32_t), jit_type_int,      Nature::VALUE,    0);
 const RawType RawType::I32        ("i32",         "Number",   "number",   sizeof (int32_t), jit_type_int,      Nature::VALUE,    1);
@@ -224,6 +224,20 @@ void Type::clean_place_holders()
 	for (Type& x : arguments_types) x.clean_place_holders();
 }
 
+jit_type_t Type::jit_type() const
+{
+	if (raw_type->jit_type() != nullptr) return raw_type->jit_type();
+	if (raw_type == &RawType::TUPLE) {
+		vector<jit_type_t> fields;
+		for (const Type& type : elements_types) {
+			fields.push_back(type.jit_type());
+		}
+		return jit_type_create_struct(fields.data(), fields.size(), 0);
+	}
+	assert(0);
+	return nullptr;
+}
+
 void Type::toJson(ostream& os) const {
 	os << "{\"type\":\"" << raw_type->json_name() << "\"";
 
@@ -284,11 +298,11 @@ Type* Type::copy_iterator(Type* type, Type* it)
 		if (r) return r;
 	}
 	for (size_t i = 0; i < return_types.size(); ++i) {
-		Type* r = elements_types[i].copy_iterator(&type->return_types[i], it);
+		Type* r = return_types[i].copy_iterator(&type->return_types[i], it);
 		if (r) return r;
 	}
 	for (size_t i = 0; i < arguments_types.size(); ++i) {
-		Type* r = elements_types[i].copy_iterator(&type->arguments_types[i], it);
+		Type* r = arguments_types[i].copy_iterator(&type->arguments_types[i], it);
 		if (r) return r;
 	}
 	return nullptr;

@@ -38,6 +38,7 @@
 #include "SyntaxicalError.hpp"
 #include "../lexical/Token.hpp"
 #include "../TypeName.hpp"
+#include "../value/Tuple.hpp"
 
 using namespace std;
 
@@ -341,7 +342,7 @@ Function*SyntaxicAnalyser::eatLambda()
 		Token* ident = nullptr;
 		TypeName* typeName = nullptr;
 
-eatFunction_eatArgument:
+eatLambda_eatArgument:
 		ident = eatIdent();
 
 		typeName = nullptr;
@@ -354,7 +355,7 @@ eatFunction_eatArgument:
 
 		if (t->type == TokenType::COMMA) {
 			eat();
-			goto eatFunction_eatArgument;
+			goto eatLambda_eatArgument;
 		}
 	}
 	eat(TokenType::ARROW);
@@ -398,11 +399,29 @@ Value* SyntaxicAnalyser::eatSimpleExpression(bool pipe_opened, bool set_opened) 
 
 		if (t->type == TokenType::CLOSING_PARENTHESIS) {
 			eat();
-			e = new Nulll();
+			e = new Tuple();
 		} else {
 			e = eatExpression();
-			e->parenthesis = true;
-			eat(TokenType::CLOSING_PARENTHESIS);
+
+			if (t->type == TokenType::COMMA) {
+				eat();
+				Tuple* tup = new Tuple();
+				tup->elements.push_back(e);
+
+				if (t->type != TokenType::CLOSING_PARENTHESIS) {
+					tup->elements.push_back(eatExpression());
+					while (t->type == TokenType::COMMA) {
+						eat();
+						tup->elements.push_back(eatExpression());
+					}
+				}
+				eat(TokenType::CLOSING_PARENTHESIS);
+
+				e = tup;
+			} else {
+				e->parenthesis = true;
+				eat(TokenType::CLOSING_PARENTHESIS);
+			}
 		}
 
 	} else if (t->type == TokenType::PIPE) {

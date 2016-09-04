@@ -545,10 +545,7 @@ jit_value_t Expression::compile(Compiler& c) const
 			jit_insn_branch_if_not(c.F, l, &label_end);
 			jit_value_t v = v2->compile(c);
 			if (left->type.must_manage_memory()) {
-				jit_type_t args_t[2] = { LS_POINTER, LS_POINTER };
-				jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_VOID, args_t, 2, 0);
-				jit_value_t args[2] = { l, v };
-				jit_insn_call_native(c.F, "store", (void*) EX_store_lsptr, sig, args, 2, JIT_CALL_NOTHROW);
+				Compiler::call_native(c.F, LS_VOID, { LS_POINTER, LS_POINTER }, (void*) EX_store_lsptr, { l, v });
 			} else {
 				jit_insn_store_relative(c.F, l, 0, v);
 			}

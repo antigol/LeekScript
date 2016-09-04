@@ -95,6 +95,7 @@ public:
 	std::set<uint32_t> place_holder_set() const;
 	void clean_place_holders();
 
+	jit_type_t jit_type() const;
 	void toJson(std::ostream&) const;
 
 	static bool get_intersection(const Type& t1, const Type& t2, Type* result = nullptr);

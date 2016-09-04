@@ -1,11 +1,7 @@
 #ifndef OBJECTACCESS_HPP
 #define OBJECTACCESS_HPP
 
-#include <string>
-
-#include "../../compiler/value/LeftValue.hpp"
-#include "../../compiler/value/Value.hpp"
-#include "../lexical/Token.hpp"
+#include "LeftValue.hpp"
 
 namespace ls {
 
@@ -14,12 +10,12 @@ public:
 
 	Value* object;
 	Token* field;
-	std::string object_class_name;
-	std::string class_name;
-	bool class_attr = false;
-	void* attr_addr;
-	void* access_function = nullptr;
-	Type field_type;
+//	std::string object_class_name;
+//	std::string class_name;
+//	bool class_attr = false;
+//	void* attr_addr;
+//	void* access_function = nullptr;
+//	Type field_type;
 
 	ObjectAccess();
 	virtual ~ObjectAccess();
@@ -27,7 +23,8 @@ public:
 	virtual void print(std::ostream&, int indent, bool debug) const override;
 	virtual unsigned line() const override;
 
-	virtual void analyse(SemanticAnalyser*, const Type&) override;
+	virtual void analyse(SemanticAnalyser* analyser, const Type& req_type) override;
+	virtual void preanalyse(SemanticAnalyser* analyser) override;
 
 	virtual jit_value_t compile(Compiler&) const override;
 

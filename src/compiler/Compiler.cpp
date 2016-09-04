@@ -170,7 +170,7 @@ jit_value_t Compiler::compile_lt(jit_function_t F, jit_value_t v1, const Type& t
 {
 	// TODO : complete all type possibilities
 	if (t1 == Type::BOOLEAN && t2 == Type::VAR) {
-		return call_native(F, jit_type_sys_bool, { t1.raw_type->jit_type(), LS_POINTER }, (void*) CP_less_bool_var, { v1, v2 });
+		return call_native(F, jit_type_sys_bool, { t1.jit_type(), LS_POINTER }, (void*) CP_less_bool_var, { v1, v2 });
 	}
 	if (t1.is_primitive_number() && t2.is_primitive_number()) {
 		return jit_insn_lt(F, v1, v2);
@@ -199,7 +199,7 @@ jit_value_t Compiler::compile_convert(jit_function_t F, jit_value_t v, const Typ
 		return VM::value_to_lsvalue(F, v, t_in);
 	}
 	if (t_in == Type::I32 && t_out == Type::F64) {
-		return jit_insn_convert(F, v, VM::get_jit_type(t_out), 0);
+		return jit_insn_convert(F, v, t_out.jit_type(), 0);
 	}
 	if (t_in == Type::BOOLEAN && t_out == Type::I32) {
 		return v;

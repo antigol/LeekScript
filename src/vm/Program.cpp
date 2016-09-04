@@ -117,7 +117,7 @@ void Program::compile_main(Context& context) {
 	jit_context_build_start(jit_context);
 
 	jit_type_t params[0] = {};
-	jit_type_t signature = jit_type_create_signature(jit_abi_cdecl, VM::get_jit_type(main->type.return_type()), params, 0, 0);
+	jit_type_t signature = jit_type_create_signature(jit_abi_cdecl, main->type.return_type().jit_type(), params, 0, 0);
 	jit_function_t F = jit_function_create(jit_context, signature);
 	jit_insn_uses_catcher(F);
 	c.enter_function(F);
@@ -176,6 +176,11 @@ string Program::execute() {
 		auto fun = (void* (*)()) closure;
 		fun();
 		return "<function>";
+	}
+	if (output_type.raw_type == &RawType::TUPLE) {
+		auto fun = (void* (*)()) closure;
+		fun();
+		return "<tuple>";
 	}
 	auto fun = (LSValue* (*)()) closure;
 	LSValue* value = fun();

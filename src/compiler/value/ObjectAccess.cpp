@@ -1,11 +1,5 @@
 #include "ObjectAccess.hpp"
-
-#include <chrono>
-
-#include "../../compiler/semantic/SemanticAnalyser.hpp"
-#include "VariableValue.hpp"
-#include "../../vm/Program.hpp"
-#include "../../vm/Module.hpp"
+#include <string>
 
 using namespace std;
 
@@ -38,7 +32,34 @@ unsigned ObjectAccess::line() const {
 	return 0;
 }
 
-void ObjectAccess::analyse(SemanticAnalyser* analyser, const Type& req_type) {
+void ObjectAccess::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	preanalyse(analyser);
+
+	try {
+		ulong index = stoul(field->content);
+
+		if (object->type.raw_type == &RawType::TUPLE && index < object->type.elements_types.size()) {
+			if (!Type::get_intersection(type, req_type, &type)) {
+				stringstream oss;
+				print(oss, 0, false);
+				analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
+			}
+			Type tuple_type = Type::TUPLE;
+			tuple_type.elements_types.resize(object->type.elements_types.size(), Type::UNKNOWN);
+			tuple_type.elements_types[index] = type;
+
+			object->analyse(analyser, tuple_type);
+
+			type = object->type.elements_types[index];
+		} else {
+			type = Type::VOID;
+		}
+
+	} catch (exception&) {
+		type = Type::VOID;
+	}
+
 /*
 	if (field_string == nullptr) {
 		field_string = new LSString(field->content);
@@ -114,6 +135,24 @@ void ObjectAccess::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 //	cout << "object_access '" << field->content << "' type : " << type << endl;*/
 }
+
+void ObjectAccess::preanalyse(SemanticAnalyser* analyser)
+{
+	try {
+		ulong index = stoul(field->content);
+		object->preanalyse(analyser);
+
+		if (object->type.raw_type == &RawType::TUPLE && index < object->type.elements_types.size()) {
+			type = object->type.elements_types[index];
+		} else {
+			type = Type::VOID;
+		}
+
+	} catch (exception&) {
+		type = Type::VOID;
+	}
+}
+
 /*
 void ObjectAccess::change_type(SemanticAnalyser*, const Type& req_type) {
 	type = req_type;
@@ -127,7 +166,20 @@ LSValue** object_access_l(LSValue* o, LSString* k) {
 	return o->attrL(k);
 }
 */
-jit_value_t ObjectAccess::compile(Compiler& c) const {
+jit_value_t ObjectAccess::compile(Compiler& c) const
+{
+	try {
+		ulong index = stoul(field->content);
+
+		if (object->type.raw_type == &RawType::TUPLE && index < object->type.elements_types.size()) {
+			jit_value_t ptr = jit_insn_address_of(c.F, object->compile(c));
+			jit_type_t obj_type = object->type.jit_type();
+			return jit_insn_load_relative(c.F, ptr, jit_type_get_offset(obj_type, index), object->type.element_type(index).jit_type());
+		}
+
+	} catch (exception&) {
+	}
+	return nullptr;
 /*
 	// Special case for custom attributes, accessible via a function
 	if (access_function != nullptr) {
@@ -163,7 +215,20 @@ jit_value_t ObjectAccess::compile(Compiler& c) const {
 	}*/
 }
 
-jit_value_t ObjectAccess::compile_l(Compiler& c) const {
+jit_value_t ObjectAccess::compile_l(Compiler& c) const
+{
+	try {
+		ulong index = stoul(field->content);
+
+		if (object->type.raw_type == &RawType::TUPLE && index < object->type.elements_types.size()) {
+			jit_value_t ptr = jit_insn_address_of(c.F, object->compile(c));
+			jit_type_t obj_type = object->type.jit_type();
+			return jit_insn_add_relative(c.F, ptr, jit_type_get_offset(obj_type, index));
+		}
+
+	} catch (exception&) {
+	}
+	return nullptr;
 /*
 	jit_value_t o = object->compile(c);
 

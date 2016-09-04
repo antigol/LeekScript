@@ -316,7 +316,7 @@ jit_value_t IndexAccess::compile_l(Compiler& c) const
 	jit_value_t a = container->compile(c);
 	jit_value_t k = key->compile(c);
 
-	jit_type_t args_types[2] = { container->type.raw_type->jit_type(), key->type.raw_type->jit_type() };
+	jit_type_t args_types[2] = { container->type.jit_type(), key->type.jit_type() };
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_types, 2, 0);
 	jit_value_t args[] = { a, k };
 
