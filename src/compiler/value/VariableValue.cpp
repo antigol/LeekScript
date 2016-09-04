@@ -36,10 +36,10 @@ void VariableValue::analyse(SemanticAnalyser* analyser, const Type& req_type) {
   		}
 		type = var->type;
 
-		if (!var->type.match_with_generic(req_type)) {
+		if (!Type::get_intersection(var->type, req_type)) {
 			type = Type::get_compatible_type(var->type, req_type);
 			type.make_it_complete();
-			if (!type.match_with_generic(req_type)) {
+			if (!Type::get_intersection(type, req_type)) {
 				stringstream oss;
 				print(oss, 0, false);
 				analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });

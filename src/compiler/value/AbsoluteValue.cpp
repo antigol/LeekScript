@@ -30,7 +30,7 @@ void AbsoluteValue::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	expression->analyse(analyser, Type::VAR);
 	constant = expression->constant;
 
-	if (!type.match_with_generic(req_type, &type)) {
+	if (!Type::get_intersection(type, req_type, &type)) {
 		stringstream oss;
 		print(oss, 0, false);
 		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });

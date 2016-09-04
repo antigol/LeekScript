@@ -118,14 +118,20 @@ void Function::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	body->preanalyse(analyser);
 	bool any_void = false;
 	bool all_void = true;
-	Type return_type = Type::UNKNOWN;
+	Type return_type = req_return_type;
 	type.return_types[0] = body->type;
 #if DEBUG > 0
 	if (type.return_types.size() > 1) cout << "#Function ";
 #endif
 	for (size_t i = 0; i < type.return_types.size(); ++i) { // body.type, return[0].type, return[1].type, ...
 		if (type.return_types[i] == Type::UNREACHABLE) continue;
-		return_type = Type::get_compatible_type(return_type, type.return_types[i]);
+//		return_type = Type::get_compatible_type(return_type, type.return_types[i]);
+		if (!Type::get_intersection(return_type, type.return_types[i], &return_type)) {
+			stringstream oss;
+			print(oss, 0, false);
+			analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
+		}
+
 #if DEBUG > 0
 		if (type.return_types.size() > 1) {
 			if (i > 0) cout << " + ";
@@ -138,11 +144,11 @@ void Function::analyse(SemanticAnalyser* analyser, const Type& req_type)
 #if DEBUG > 0
 	if (type.return_types.size() > 1) cout << " = " << return_type << endl;
 #endif
-	// fix return type
-	if ((any_void && !all_void) || !return_type.match_with_generic(req_return_type, &return_type)) {
+
+	if (any_void && !all_void) {
 		stringstream oss;
 		print(oss, 0, false);
-		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
+		analyser->add_error({ SemanticException::RETURN_VOID, line(), oss.str() });
 	}
 	return_type.make_it_complete();
 

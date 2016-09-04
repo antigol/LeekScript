@@ -23,7 +23,7 @@ unsigned Nulll::line() const {
 void Nulll::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	constant = true;
 	type = Type::LSVALUE;
-	if (!type.match_with_generic(req_type, &type)) {
+	if (!Type::get_intersection(type, req_type, &type)) {
 		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), "null" });
 	}
 	type.make_it_complete();

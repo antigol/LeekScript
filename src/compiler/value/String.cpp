@@ -28,7 +28,7 @@ void String::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	type = Type::VAR;
 	constant = true;
 
-	if (!type.match_with_generic(req_type)) {
+	if (!Type::get_intersection(type, req_type)) {
 		stringstream oss;
 		print(oss, 0, false);
 		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });

@@ -45,7 +45,7 @@ Method Module::get_method_implementation(const string& name, const Type& obj_typ
 		if (method.name == name) {
 			for (const Method& method_impl : method.impl) {
 				Type completed_type;
-				if (proposal_type.match_with_generic(method_impl.type, &completed_type)) {
+				if (Type::get_intersection(proposal_type, method_impl.type, &completed_type)) {
 					return Method(completed_type, method_impl.addr);
 				}
 			}

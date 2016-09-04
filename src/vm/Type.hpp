@@ -95,14 +95,9 @@ public:
 	std::set<uint32_t> place_holder_set() const;
 	void clean_place_holders();
 
-	bool match_with_generic(const Type& generic, Type* new_generic = nullptr) const;
-private:
-	bool match_with_generic_private(Type& generic, Type& complete) const;
-public:
-
 	void toJson(std::ostream&) const;
 
-	static bool get_intersection(const Type& t1, const Type& t2, Type* result);
+	static bool get_intersection(const Type& t1, const Type& t2, Type* result = nullptr);
 private:
 	Type* copy_iterator(Type* type, Type* it);
 	static int get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type* tr, Type& fr);

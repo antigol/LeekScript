@@ -61,6 +61,7 @@ std::string SemanticException::type_to_string(Type type) {
 		case Type::INCOMPATIBLE_TYPES: return "INCOMPATIBLE_TYPES";
 		case Type::NUMBER_ARGUMENTS_MISMATCH: return "NUMBER_ARGUMENTS_MISMATCH";
 		case Type::MUST_BE_ARITHMETIC_TYPE: return "MUST_BE_ARITHMETIC_TYPE";
+		case Type::RETURN_VOID: return "RETURN_VOID";
 
 		default:
 			return "UNKNOWN_ERROR";

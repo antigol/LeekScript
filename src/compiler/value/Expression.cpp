@@ -120,7 +120,7 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		v2->analyse(analyser, v1->type);
 
 		type = v1->type;
-		if (!type.match_with_generic(req_type)) {
+		if (!Type::get_intersection(type, req_type)) {
 			stringstream oss;
 			print(oss, 0, false);
 			analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
@@ -150,7 +150,7 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		v1->analyse(analyser, type);
 		v2->analyse(analyser, type);
 
-		if (!type.match_with_generic(req_type)) {
+		if (!Type::get_intersection(type, req_type)) {
 			if (type.can_be_convert_in(req_type)) {
 				type = req_type;
 				type.make_it_complete();

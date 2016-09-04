@@ -40,7 +40,7 @@ void Array::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
 	preanalyse(analyser);
 
-	if (!type.match_with_generic(req_type, &type)) {
+	if (!Type::get_intersection(type, req_type, &type)) {
 		stringstream oss;
 		print(oss, 0, false);
 		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
@@ -60,21 +60,23 @@ void Array::preanalyse(SemanticAnalyser* analyser)
 	Type element_type = Type::UNKNOWN;
 
 #if DEBUG > 0
-	if (expressions.size() > 1) {
-		cout << "#Array ";
-	}
+	cout << "#Array ";
+	print(cout, 0, false);
+	cout << "  ";
 	bool first = true;
 #endif
 
 	for (Value* ex : expressions) {
 		ex->preanalyse(analyser);
 		constant = constant && ex->constant;
-		element_type = Type::get_compatible_type(element_type, ex->type);
-#if DEBUG > 0
-		if (expressions.size() > 1) {
-			if (first) first = false; else cout << " + ";
-			cout << ex->type;
+
+		if (!Type::get_intersection(element_type, ex->type, &element_type)) {
+			element_type = Type::VOID;
 		}
+
+#if DEBUG > 0
+		if (first) first = false; else cout << " + ";
+		cout << ex->type;
 #endif
 	}
 #if DEBUG > 0

@@ -47,12 +47,11 @@ extern std::map<LSValue*, LSValue*> objs;
 
 string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 
-	Type t1 = Type(&RawType::TUPLE, { Type::UNKNOWN.place_holder(1), Type(&RawType::VEC, { Type::UNKNOWN.place_holder(1) }), Type::UNKNOWN });
-	Type t2 = Type(&RawType::TUPLE, { Type(&RawType::UNKNOWN, { Type::I32, Type::F64 }), Type(&RawType::VEC, { Type::UNKNOWN.place_holder(1) }), Type::UNKNOWN.place_holder(1) });
-	Type re;
-
-	cout << Type::get_intersection(t1, t2, &re) << endl;
-	cout << re << endl << endl;
+//	Type t1 = Type(&RawType::TUPLE, { Type::UNKNOWN.place_holder(1), Type(&RawType::VEC, { Type::UNKNOWN.place_holder(1) }), Type::UNKNOWN.place_holder(2), Type::UNKNOWN.place_holder(2) });
+//	Type t2 = Type(&RawType::TUPLE, { Type(&RawType::UNKNOWN, { Type::I32, Type::F64, Type::LSVALUE }), Type(&RawType::VEC, { Type::UNKNOWN.place_holder(1) }), Type::UNKNOWN.place_holder(1), Type::VAR });
+//	Type re;
+//	cout << Type::get_intersection(t1, t2, &re) << endl;
+//	cout << re << endl << endl;
 
 	// Reset
 	LSValue::obj_count = 0;

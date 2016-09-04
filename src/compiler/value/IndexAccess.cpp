@@ -82,7 +82,7 @@ void IndexAccess::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		}
 	}
 
-	if (!type.match_with_generic(req_type)) {
+	if (!Type::get_intersection(type, req_type)) {
 		stringstream oss;
 		print(oss, 0, true);
 		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });

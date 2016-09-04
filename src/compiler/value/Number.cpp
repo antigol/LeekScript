@@ -43,12 +43,14 @@ unsigned Number::line() const {
 void Number::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
 	preanalyse(analyser);
-	if (!type.match_with_generic(req_type, &type)) {
+
+	if (!Type::get_intersection(type, req_type, &type)) {
 		stringstream oss;
 		print(oss, 0, false);
 		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
 	}
 	type.make_it_complete();
+
 	assert(type.is_complete() || !analyser->errors.empty());
 }
 
@@ -56,7 +58,7 @@ void Number::preanalyse(SemanticAnalyser* analyser)
 {
 	constant = true;
 	if (value.find('.') != string::npos) {
-		type = Type(&RawType::UNKNOWN, { Type::F64, Type::VAR }); // in preference order
+		type = Type(&RawType::UNKNOWN, { Type::F64, Type::VAR });
 	} else {
 		type = Type(&RawType::UNKNOWN, { Type::I32, Type::F64, Type::VAR });
 	}
