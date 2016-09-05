@@ -545,7 +545,7 @@ jit_value_t Expression::compile(Compiler& c) const
 			jit_insn_branch_if_not(c.F, l, &label_end);
 			jit_value_t v = v2->compile(c);
 			if (left->type.must_manage_memory()) {
-				Compiler::call_native(c.F, LS_VOID, { LS_POINTER, LS_POINTER }, (void*) EX_store_lsptr, { l, v });
+				Compiler::call_native(c.F, LS_VOID, { LS_POINTER, LS_POINTER }, (void*) EX_store_lsptr, { l, v }); // TODO update for tuples
 			} else {
 				jit_insn_store_relative(c.F, l, 0, v);
 			}

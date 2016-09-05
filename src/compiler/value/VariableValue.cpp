@@ -27,7 +27,12 @@ unsigned VariableValue::line() const {
 	return token->line;
 }
 
-void VariableValue::analyse(SemanticAnalyser* analyser, const Type& req_type) {
+void VariableValue::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (req_type == Type::VOID) {
+		type = Type::VOID;
+		return;
+	}
 
 	var = analyser->get_var(token);
 	if (var) {
@@ -53,6 +58,10 @@ extern map<string, jit_value_t> internals;
 
 jit_value_t VariableValue::compile(Compiler& c) const
 {
+	if (type == Type::VOID) {
+		return nullptr;
+	}
+
 	jit_value_t v;
 	switch (var->scope) {
 		case VarScope::INTERNAL:

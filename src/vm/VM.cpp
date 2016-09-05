@@ -317,50 +317,6 @@ jit_value_t VM::create_lsreal(jit_function_t F, double value)
 	return Compiler::call_native(F, LS_POINTER, { LS_F64 }, (void*) VM_create_real, { create_f64(F, value) });
 }
 
-LSVec<void*>* VM_create_vec_voidptr(int cap) {
-	LSVec<void*>* vec = new LSVec<void*>();
-	vec->reserve(cap);
-	return vec;
-}
-
-LSVec<LSValue*>* VM_create_vec_lsptr(int cap) {
-	LSVec<LSValue*>* vec = new LSVec<LSValue*>();
-	vec->reserve(cap);
-	return vec;
-}
-
-LSVec<int>* VM_create_vec_i32(int cap) {
-	LSVec<int>* vec = new LSVec<int32_t>();
-	vec->reserve(cap);
-	return vec;
-}
-
-LSVec<double>* VM_create_vec_f64(int cap) {
-	LSVec<double>* vec = new LSVec<double>();
-	vec->reserve(cap);
-	return vec;
-}
-
-jit_value_t VM::create_vec(jit_function_t F, const Type& element_type, int cap) {
-	jit_type_t args[1] = {LS_I32};
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args, 1, 0);
-	jit_value_t s = create_i32(F, cap);
-
-	if (element_type == Type::I32) {
-		return jit_insn_call_native(F, "create_vec", (void*) VM_create_vec_i32, sig, &s, 1, JIT_CALL_NOTHROW);
-	}
-	if (element_type == Type::F64) {
-		return jit_insn_call_native(F, "create_vec", (void*) VM_create_vec_f64, sig, &s, 1, JIT_CALL_NOTHROW);
-	}
-	if (element_type.raw_type->nature() == Nature::LSVALUE) {
-		return jit_insn_call_native(F, "create_vec", (void*) VM_create_vec_lsptr, sig, &s, 1, JIT_CALL_NOTHROW);
-	}
-	if (element_type.raw_type == &RawType::FUNCTION) {
-		return jit_insn_call_native(F, "create_vec", (void*) VM_create_vec_voidptr, sig, &s, 1, JIT_CALL_NOTHROW);
-	}
-	assert(0);
-}
-
 jit_value_t VM::create_default(jit_function_t F, const Type& type)
 {
 	if (type.raw_type->nature() == Nature::LSVALUE) return create_null(F);
@@ -375,19 +331,31 @@ jit_value_t VM::create_default(jit_function_t F, const Type& type)
 	assert(0);
 }
 
-void VM_push_vec_voidptr(LSVec<void*>* vec, void* value) {
-	vec->push_back(value);
+template <typename T>
+LSVec<T>* VM_create_vec(int32_t cap) {
+	LSVec<T>* vec = new LSVec<T>();
+	vec->reserve(cap);
+	return vec;
+}
+
+jit_value_t VM::create_vec(jit_function_t F, const Type& element_type, int cap) {
+	jit_value_t s = create_i32(F, cap);
+
+	if (element_type == Type::I32) return Compiler::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<int32_t>, { s });
+	if (element_type == Type::F64) return Compiler::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<double>, { s });
+	if (element_type.raw_type->nature() == Nature::LSVALUE)
+								   return Compiler::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<LSValue*>, { s });
+	if (element_type.raw_type == &RawType::FUNCTION)
+								   return Compiler::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<void*>, { s });
+	assert(0);
 }
 
 void VM_push_vec_lsptr(LSVec<LSValue*>* vec, LSValue* value) {
 	vec->push_back(LSValue::move_inc(value));
 }
 
-void VM_push_vec_i32(LSVec<int32_t>* vec, int32_t value) {
-	vec->push_back(value);
-}
-
-void VM_push_vec_f64(LSVec<double>* vec, double value) {
+template <typename T>
+void VM_push_vec(LSVec<T>* vec, T value) {
 	vec->push_back(value);
 }
 
@@ -395,21 +363,19 @@ void VM::push_move_inc_vec(jit_function_t F, const Type& element_type, jit_value
 	/* Because of the move, there is no need to call delete_temporary on the pushed value.
 	 * If value points to a temporary variable his ownership will be transfer to the vec.
 	 */
-	jit_type_t args[2] = { LS_POINTER, element_type.jit_type() };
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_void, args, 2, 0);
-	jit_value_t args_v[] = {vec, value};
 
 	if (element_type == Type::I32) {
-		jit_insn_call_native(F, "push_vec", (void*) VM_push_vec_i32, sig, args_v, 2, JIT_CALL_NOTHROW);
-	} else if (element_type == Type::F64) {
-		jit_insn_call_native(F, "push_vec", (void*) VM_push_vec_f64, sig, args_v, 2, JIT_CALL_NOTHROW);
-	} else if (element_type.raw_type->nature() == Nature::LSVALUE) {
-		jit_insn_call_native(F, "push_vec", (void*) VM_push_vec_lsptr, sig, args_v, 2, JIT_CALL_NOTHROW);
+		Compiler::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec<int32_t>, { vec, value });
+	} else 	if (element_type == Type::F64) {
+		Compiler::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec<double>, { vec, value });
+	} else 	if (element_type.raw_type->nature() == Nature::LSVALUE) {
+		Compiler::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec_lsptr, { vec, value });
 	} else if (element_type.raw_type == &RawType::FUNCTION) {
-		jit_insn_call_native(F, "push_vec", (void*) VM_push_vec_voidptr, sig, args_v, 2, JIT_CALL_NOTHROW);
+		Compiler::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec<void*>, { vec, value });
 	} else {
 		assert(0);
 	}
+
 }
 
 jit_value_t VM::move_obj(jit_function_t F, jit_value_t ptr) {

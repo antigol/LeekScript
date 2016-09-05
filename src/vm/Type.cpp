@@ -224,6 +224,19 @@ void Type::clean_place_holders()
 	for (Type& x : arguments_types) x.clean_place_holders();
 }
 
+size_t Type::bytes() const
+{
+	if (raw_type->bytes() > 0) return raw_type->bytes();
+	if (raw_type == &RawType::TUPLE) {
+		size_t sum = 0;
+		for (const Type& type : elements_types) {
+			sum += type.bytes();
+		}
+		return sum;
+	}
+	return 0;
+}
+
 jit_type_t Type::jit_type() const
 {
 	if (raw_type->jit_type() != nullptr) return raw_type->jit_type();
@@ -284,8 +297,12 @@ bool Type::get_intersection(const Type& t1, const Type& t2, Type* result)
 	Type r;
 	bool b = get_intersection_private(&f1, &f2, f1, f2, &r, r) > 0;
 	if (result) {
-		r.clean_place_holders();
-		*result = r;
+		if (b) {
+			r.clean_place_holders();
+			*result = r;
+		} else {
+			*result = Type::VOID;
+		}
 	}
 	return b;
 }
@@ -334,7 +351,7 @@ int Type::get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type*
 				}
 			}
 		}
-		if (elements_types.empty()) return false;
+		if (elements_types.empty()) return 0;
 		else if (elements_types.size() == 1) {
 			fr = elements_types[0];
 		} else {
@@ -420,6 +437,8 @@ int Type::get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type*
 
 Type Type::get_compatible_type(const Type& t1, const Type& t2) {
 	/* Returns a type into both t1 and t2 can be converted
+	 *
+	 * Do not manage placeholders
 	 */
 
 	if (t1 == t2) {

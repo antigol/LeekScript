@@ -98,17 +98,17 @@ void Block::preanalyse(SemanticAnalyser* analyser)
 	analyser->leave_block();
 }
 
-LSValue* Block_move(LSValue* value) {
-	/* Move the value if it's a temporary variable
-	 * or if it's only attached to the current block.
-	 */
-	if (value == nullptr) return nullptr;
-	if (value->refs <= 1) {
-		value->refs = 0;
-		return value;
-	}
-	return value->clone();
-}
+//LSValue* Block_move(LSValue* value) {
+//	/* Move the value if it's a temporary variable
+//	 * or if it's only attached to the current block.
+//	 */
+//	if (value == nullptr) return nullptr;
+//	if (value->refs <= 1) {
+//		value->refs = 0;
+//		return value;
+//	}
+//	return value->clone();
+//}
 
 
 jit_value_t Block::compile(Compiler& c) const {
@@ -122,9 +122,10 @@ jit_value_t Block::compile(Compiler& c) const {
 		}
 		if (i == instructions.size() - 1 && instructions[i]->type.raw_type->nature() != Nature::VOID) {
 			if (type.must_manage_memory()) {
-				jit_type_t args[1] = { LS_POINTER };
-				jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args, 1, 0);
-				jit_value_t ret = jit_insn_call_native(c.F, "true_move", (void*) Block_move, sig, &val, 1, JIT_CALL_NOTHROW);
+//				jit_type_t args[1] = { LS_POINTER };
+//				jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args, 1, 0);
+//				jit_value_t ret = jit_insn_call_native(c.F, "true_move", (void*) Block_move, sig, &val, 1, JIT_CALL_NOTHROW);
+				jit_value_t ret = VM::move_obj(c.F, val);
 				c.leave_block(c.F);
 				return ret;
 			} else {
