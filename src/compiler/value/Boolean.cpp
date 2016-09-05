@@ -24,22 +24,18 @@ unsigned Boolean::line() const {
 	return 0;
 }
 
-void Boolean::analyse(SemanticAnalyser* analyser, const Type& req_type)
-{
-	preanalyse(analyser);
-	if (!Type::get_intersection(type, req_type, &type)) {
-		stringstream oss;
-		print(oss, 0, false);
-		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
-	}
-	type.make_it_complete();
-	assert(type.is_complete() || !analyser->errors.empty());
-}
-
 void Boolean::preanalyse(SemanticAnalyser*)
 {
 	constant = true;
 	type = Type(&RawType::UNKNOWN, { Type::BOOLEAN, Type::VAR, Type::I32, Type::I64 });
+}
+
+void Boolean::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	type.make_it_complete();
 }
 
 jit_value_t Boolean::compile(Compiler& c) const {

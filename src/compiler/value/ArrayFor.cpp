@@ -22,7 +22,15 @@ unsigned ArrayFor::line() const {
 	return 0;
 }
 
+void ArrayFor::preanalyse(SemanticAnalyser* analyser)
+{
+	forr->preanalyse(analyser);
+	// TODO
+	assert(0);
+}
+
 void ArrayFor::analyse(SemanticAnalyser* analyser, const Type& req_type) {
+	assert(0);
 	forr->analyse(analyser, Type::VEC);
 	type = forr->type;
 	assert(type.is_complete() || !analyser->errors.empty());

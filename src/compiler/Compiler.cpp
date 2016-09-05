@@ -161,10 +161,11 @@ bool CP_greater_equal_bool_var(int32_t x, LSVar* y) {
 jit_value_t Compiler::compile_ge(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2)
 {
 	// TODO : complete all type possibilities
-	if (t1.is_primitive_number() && t2.is_primitive_number()) return jit_insn_ge(F, v1, v2);
+	if (Type::intersection(t1, Type::VALUE_NUMBER) && Type::intersection(t2, Type::VALUE_NUMBER)) return jit_insn_ge(F, v1, v2);
 	if (t1.raw_type->nature() == Nature::LSVALUE && t2.raw_type->nature() == Nature::LSVALUE) {
 		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_greater_equal, { v1, v2 });
 	}
+	assert(0);
 	return nullptr;
 }
 
@@ -174,19 +175,20 @@ jit_value_t Compiler::compile_lt(jit_function_t F, jit_value_t v1, const Type& t
 	if (t1 == Type::BOOLEAN && t2 == Type::VAR) {
 		return call_native(F, jit_type_sys_bool, { t1.jit_type(), LS_POINTER }, (void*) CP_less_bool_var, { v1, v2 });
 	}
-	if (t1.is_primitive_number() && t2.is_primitive_number()) {
+	if (Type::intersection(t1, Type::VALUE_NUMBER) && Type::intersection(t2, Type::VALUE_NUMBER)) {
 		return jit_insn_lt(F, v1, v2);
 	}
 	if (t1.raw_type->nature() == Nature::LSVALUE && t2.raw_type->nature() == Nature::LSVALUE) {
 		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_less, { v1, v2 });
 	}
+	assert(0);
 	return nullptr;
 }
 
 jit_value_t Compiler::compile_eq(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2)
 {
 	// TODO : complete all type possibilities
-	if (t1.is_primitive_number() && t2.is_primitive_number()) return jit_insn_eq(F, v1, v2);
+	if (Type::intersection(t1, Type::VALUE_NUMBER) && Type::intersection(t2, Type::VALUE_NUMBER)) return jit_insn_eq(F, v1, v2);
 	if (t1.raw_type->nature() == Nature::LSVALUE && t2.raw_type->nature() == Nature::LSVALUE) {
 		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_equal, { v1, v2 });
 	}
@@ -206,6 +208,9 @@ jit_value_t Compiler::compile_convert(jit_function_t F, jit_value_t v, const Typ
 	if (t_in == Type::BOOLEAN && t_out == Type::I32) {
 		return v;
 	}
+
+	// TODO add other possibilities here and in Compiler::compile_convert
+
 	assert(0);
 	return nullptr;
 }

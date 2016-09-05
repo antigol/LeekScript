@@ -13,7 +13,6 @@ RawType::RawType(const string& name, const string& classname, const string& json
 
 bool RawType::operator ==(const RawType& type) const {
 	return id == type.id;
-	//	return _name == type._name && _clazz == type._clazz && _json_name == type._json_name && _bytes == type._bytes && _jit_type == type._jit_type && _nature == type._nature;
 }
 
 bool RawType::operator <(const RawType& type) const
@@ -37,24 +36,28 @@ const RawType RawType::SET        ("set",         "Set",      "set",      sizeof
 const RawType RawType::FUNCTION   ("fn",          "?",        "fn",       sizeof (void*),   jit_type_void_ptr, Nature::VALUE,    9);
 const RawType RawType::TUPLE      ("tuple",       "Tuple",    "tuple",    0,                nullptr,           Nature::VALUE,    10);
 
-const Type Type::UNKNOWN    (&RawType::UNKNOWN);
-const Type Type::LSVALUE    (&RawType::LSVALUE);
-const Type Type::VOID       (&RawType::VOID);
-const Type Type::UNREACHABLE(&RawType::UNREACHABLE);
-const Type Type::VAR        (&RawType::VAR);
-const Type Type::BOOLEAN    (&RawType::BOOLEAN);
-const Type Type::I32        (&RawType::I32);
-const Type Type::I64        (&RawType::I64);
-const Type Type::F32        (&RawType::F32);
-const Type Type::F64        (&RawType::F64);
-const Type Type::VEC        (&RawType::VEC, { Type::UNKNOWN });
-const Type Type::VEC_VAR    (&RawType::VEC, { Type::VAR });
-const Type Type::VEC_I32    (&RawType::VEC, { Type::I32 });
-const Type Type::VEC_F64    (&RawType::VEC, { Type::F64 });
-const Type Type::MAP        (&RawType::VEC, { Type::UNKNOWN, Type::UNKNOWN });
-const Type Type::SET        (&RawType::VEC, { Type::UNKNOWN });
-const Type Type::FUNCTION   (&RawType::FUNCTION);
-const Type Type::TUPLE      (&RawType::TUPLE);
+const Type Type::UNKNOWN     (&RawType::UNKNOWN);
+const Type Type::LSVALUE     (&RawType::LSVALUE);
+const Type Type::VOID        (&RawType::VOID);
+const Type Type::UNREACHABLE (&RawType::UNREACHABLE);
+const Type Type::VAR         (&RawType::VAR);
+const Type Type::BOOLEAN     (&RawType::BOOLEAN);
+const Type Type::I32         (&RawType::I32);
+const Type Type::I64         (&RawType::I64);
+const Type Type::F32         (&RawType::F32);
+const Type Type::F64         (&RawType::F64);
+const Type Type::VEC         (&RawType::VEC,     { Type::UNKNOWN });
+const Type Type::VEC_VAR     (&RawType::VEC,     { Type::VAR });
+const Type Type::VEC_I32     (&RawType::VEC,     { Type::I32 });
+const Type Type::VEC_F64     (&RawType::VEC,     { Type::F64 });
+const Type Type::MAP         (&RawType::MAP,     { Type::UNKNOWN, Type::UNKNOWN });
+const Type Type::SET         (&RawType::SET,     { Type::UNKNOWN });
+const Type Type::FUNCTION    (&RawType::FUNCTION);
+const Type Type::TUPLE       (&RawType::TUPLE);
+const Type Type::ARITHMETIC  (&RawType::UNKNOWN, { Type::VAR, Type::BOOLEAN, Type::I32, Type::I64, Type::F32, Type::F64 });
+const Type Type::LOGIC       (&RawType::UNKNOWN, { Type::LSVALUE, Type::ARITHMETIC });
+const Type Type::INDEXABLE   (&RawType::UNKNOWN, { Type::VEC, Type::MAP });
+const Type Type::VALUE_NUMBER(&RawType::UNKNOWN, { Type::BOOLEAN, Type::I32, Type::I64, Type::F32, Type::F64 });
 
 Type::Type() :
 	raw_type(&RawType::UNKNOWN), ph(0)
@@ -79,7 +82,20 @@ bool Type::must_manage_memory() const {
 	return raw_type->nature() == Nature::LSVALUE;
 }
 
+const RawType* Type::get_raw_type() const
+{
+	if (raw_type != &RawType::UNKNOWN) return raw_type;
+	if (elements_types.empty()) return &RawType::UNKNOWN;
+	const RawType* raw = elements_types[0].get_raw_type();
+	for (size_t i = 1; i < elements_types.size(); ++i) {
+		const RawType* rawi = elements_types[i].get_raw_type();
+		if (raw != rawi) return &RawType::UNKNOWN;
+	}
+	return raw;
+}
+
 Type Type::return_type() const {
+	// TODO unknown proof
 	if (return_types.size() == 0) {
 		return Type::UNKNOWN;
 	}
@@ -87,6 +103,7 @@ Type Type::return_type() const {
 }
 
 void Type::set_return_type(const Type& type) {
+	// TODO unknown proof
 	if (return_types.size() == 0) {
 		return_types.push_back(Type::UNKNOWN);
 	}
@@ -94,10 +111,12 @@ void Type::set_return_type(const Type& type) {
 }
 
 void Type::add_argument_type(const Type& type) {
+	// TODO unknown proof
 	arguments_types.push_back(type);
 }
 
 void Type::set_argument_type(size_t index, const Type& type) {
+	// TODO unknown proof
 	while (arguments_types.size() <= index) {
 		arguments_types.push_back(Type::UNKNOWN);
 	}
@@ -105,6 +124,7 @@ void Type::set_argument_type(size_t index, const Type& type) {
 }
 
 const Type& Type::argument_type(size_t index) const {
+	// TODO unknown proof
 	if (index >= arguments_types.size()) {
 		return Type::UNKNOWN;
 	}
@@ -112,37 +132,28 @@ const Type& Type::argument_type(size_t index) const {
 }
 
 const Type& Type::element_type(size_t i) const {
-	if (i < elements_types.size()) {
-		return elements_types[i];
+	if (raw_type != &RawType::UNKNOWN) {
+		if (i < elements_types.size()) {
+			return elements_types[i];
+		}
+		return Type::UNKNOWN;
 	}
-	return Type::UNKNOWN;
+	if (elements_types.empty()) return Type::UNKNOWN;
+
+	const Type& el = elements_types[0].element_type(i);
+	for (size_t i = 1; i < elements_types.size(); ++i) {
+		const Type& eli = elements_types[i].element_type(i);
+		if (el != eli) return Type::UNKNOWN;
+	}
+	return el;
 }
 
 void Type::set_element_type(size_t index, const Type& type) {
+	// TODO unknown proof
 	while (elements_types.size() <= index) {
 		elements_types.push_back(Type::UNKNOWN);
 	}
 	elements_types[index] = type;
-}
-
-bool Type::can_be_convert_in(const Type& type) const {
-	return get_compatible_type(*this, type) == type;
-}
-
-bool Type::is_primitive_number() const
-{
-	if (raw_type == &RawType::UNKNOWN) {
-		for (const Type& type : elements_types) if (type.is_primitive_number()) return true;
-	}
-	return *this == Type::BOOLEAN || *this == Type::I32 || *this == Type::I64 || *this == Type::F32 || *this == Type::F64;
-}
-
-bool Type::is_arithmetic() const
-{
-	if (raw_type == &RawType::UNKNOWN) {
-		for (const Type& type : elements_types) if (type.is_arithmetic()) return true;
-	}
-	return *this == Type::VAR || *this == Type::BOOLEAN || *this == Type::I32 || *this == Type::I64 || *this == Type::F32 || *this == Type::F64;
 }
 
 bool Type::is_complete() const
@@ -267,7 +278,62 @@ void Type::toJson(ostream& os) const {
 	os << "}";
 }
 
-bool Type::get_intersection(const Type& t1, const Type& t2, Type* result)
+Type Type::image_conversion() const
+{
+	// return a generic type of all the possible convertion of any alternative of this
+	// All these convertions should be implemanted in Compiler::compile_convert
+	if (raw_type == &RawType::UNKNOWN) {
+		set<Type> elements;
+		for (const Type& type : elements_types) {
+			Type conv = type.image_conversion();
+			if (conv.raw_type == &RawType::UNKNOWN) {
+				if (conv.elements_types.empty()) return Type::UNKNOWN;
+				elements.insert(conv.elements_types.begin(), conv.elements_types.end());
+			} else {
+				elements.insert(conv);
+			}
+		}
+		return Type(&RawType::UNKNOWN, vector<Type>(elements.begin(), elements.end()));
+	}
+
+	if (*this == Type::BOOLEAN) return Type(&RawType::UNKNOWN, { Type::BOOLEAN, Type::I32, Type::I64, Type::VAR });
+	if (*this == Type::I32) return Type(&RawType::UNKNOWN, { Type::I32, Type::I64, Type::F64, Type::VAR });
+	if (*this == Type::F64) return Type(&RawType::UNKNOWN, { Type::F64, Type::VAR });
+
+	// TODO add other possibilities here and in Compiler::compile_convert
+
+	return *this;
+}
+
+Type Type::fiber_conversion() const
+{
+	// return a generic type of all the possible type that can be convert into this (or at least an alternative of this)
+	// All these convertions should be implemanted in Compiler::compile_convert
+	if (raw_type == &RawType::UNKNOWN) {
+		set<Type> elements;
+		for (const Type& type : elements_types) {
+			Type conv = type.fiber_conversion();
+			if (conv.raw_type == &RawType::UNKNOWN) {
+				if (conv.elements_types.empty()) return Type::UNKNOWN;
+				elements.insert(conv.elements_types.begin(), conv.elements_types.end());
+			} else {
+				elements.insert(conv);
+			}
+		}
+		return Type(&RawType::UNKNOWN, vector<Type>(elements.begin(), elements.end()));
+	}
+
+	if (*this == Type::LSVALUE) return Type(&RawType::UNKNOWN, { Type::BOOLEAN, Type::I32, Type::I64, Type::LSVALUE });
+	if (*this == Type::VAR) return Type(&RawType::UNKNOWN, { Type::BOOLEAN, Type::I32, Type::I64, Type::VAR });
+	if (*this == Type::F64) return Type(&RawType::UNKNOWN, { Type::BOOLEAN, Type::I32, Type::F64 });
+	if (*this == Type::I32) return Type(&RawType::UNKNOWN, { Type::BOOLEAN, Type::I32 });
+
+	// TODO add other possibilities here and in Compiler::compile_convert
+
+	return *this;
+}
+
+bool Type::intersection(const Type& t1, const Type& t2, Type* result)
 {
 	/* UNKNOWN with no elements is the set of all types (infinite set)
 	 * UNKNOWN with elements is a set of elements
@@ -328,7 +394,7 @@ Type* Type::copy_iterator(Type* type, Type* it)
 int Type::get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type* tr, Type& fr)
 {
 	if (t1->raw_type == &RawType::UNKNOWN && !t1->elements_types.empty()) {
-		vector<Type> elements_types;
+		set<Type> elements_types;
 		for (size_t i = 0; i < t1->elements_types.size(); ++i) {
 			Type cf1 = f1;
 			Type* ct1 = cf1.copy_iterator(&f1, t1);
@@ -345,17 +411,17 @@ int Type::get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type*
 					return 2;
 				}
 				if (r.raw_type == &RawType::UNKNOWN) {
-					elements_types.insert(elements_types.end(), r.elements_types.begin(), r.elements_types.end());
+					elements_types.insert(r.elements_types.begin(), r.elements_types.end());
 				} else {
-					elements_types.push_back(r);
+					elements_types.insert(r);
 				}
 			}
 		}
 		if (elements_types.empty()) return 0;
 		else if (elements_types.size() == 1) {
-			fr = elements_types[0];
+			fr = *elements_types.begin();
 		} else {
-			fr = Type(&RawType::UNKNOWN, elements_types);
+			fr = Type(&RawType::UNKNOWN, vector<Type>(elements_types.begin(), elements_types.end()));
 		}
 		return 2; // the very end
 	}
@@ -435,120 +501,6 @@ int Type::get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type*
 	return 1;
 }
 
-Type Type::get_compatible_type(const Type& t1, const Type& t2) {
-	/* Returns a type into both t1 and t2 can be converted
-	 *
-	 * Do not manage placeholders
-	 */
-
-	if (t1 == t2) {
-		return t1;
-	}
-
-	if (t1 == Type::UNKNOWN) return t2;
-	if (t2 == Type::UNKNOWN) return t1;
-
-	if (t1.raw_type == &RawType::UNKNOWN) {
-		set<Type> compatibles;
-		for (const Type& type : t1.elements_types) {
-			Type compatible = get_compatible_type(t2, type);
-			if (compatible.raw_type == &RawType::UNKNOWN) {
-				compatibles.insert(compatible.elements_types.begin(), compatible.elements_types.end());
-			} else if (compatible != Type::VOID) compatibles.insert(compatible);
-		}
-		if (compatibles.empty()) return Type::VOID;
-		if (compatibles.size() == 1) return *compatibles.begin();
-		Type type = Type::UNKNOWN;
-		type.elements_types.insert(type.elements_types.begin(), compatibles.begin(), compatibles.end());
-		return type;
-	}
-	if (t2.raw_type == &RawType::UNKNOWN) return get_compatible_type(t2, t1);
-
-	if (t1 == Type::LSVALUE) return t2.raw_type->nature() == Nature::LSVALUE ? t2 : Type::VOID;
-	if (t2 == Type::LSVALUE) return t1.raw_type->nature() == Nature::LSVALUE ? t1 : Type::VOID;
-
-	// FUNCTION
-	if (t1.raw_type == &RawType::FUNCTION && t2.raw_type == &RawType::FUNCTION) {
-		if (t1.arguments_types.size() != t2.arguments_types.size()) return Type::VOID;
-		vector<Type> compatible_args;
-		for (size_t i = 0; i < t1.arguments_types.size(); ++i) {
-			compatible_args.push_back(get_compatible_type(t1.arguments_types[i], t2.arguments_types[i]));
-			if (compatible_args[i] == Type::VOID) return Type::VOID;
-		}
-		if (t1.return_type() == Type::VOID && t2.return_type() == Type::VOID) {
-			Type fun = Type::FUNCTION;
-			fun.arguments_types = compatible_args;
-			fun.set_return_type(Type::VOID);
-			return fun;
-		}
-		if (t1.return_type() == Type::VOID || t2.return_type() == Type::VOID) return Type::VOID;
-		Type compatible_return = get_compatible_type(t1.return_type(), t2.return_type());
-		if (compatible_return == Type::VOID) return Type::VOID;
-		Type fun = Type::FUNCTION;
-		fun.arguments_types = compatible_args;
-		fun.set_return_type(compatible_return);
-		return fun;
-	}
-	if (t1.raw_type == &RawType::FUNCTION || t2.raw_type == &RawType::FUNCTION) return Type::VOID;
-
-	// VAR
-	if (t1 == Type::VAR && (t2 == Type::BOOLEAN || t2 == Type::I32 || t2 == Type::I64 || t2 == Type::F32 || t2 == Type::F64)) return Type::VAR;
-	if (t2 == Type::VAR && (t1 == Type::BOOLEAN || t1 == Type::I32 || t1 == Type::I64 || t1 == Type::F32 || t1 == Type::F64)) return Type::VAR;
-	if (t1 == Type::VAR || t2 == Type::VAR) return Type::VOID;
-
-	// VEC
-	if (t1.raw_type == &RawType::VEC && t2.raw_type == &RawType::VEC) {
-		Type compatible_element = get_compatible_type(t1.element_type(0), t2.element_type(0));
-		if (compatible_element == Type::VOID) return Type::VOID;
-		return Type(&RawType::VEC, { compatible_element });
-	}
-	if (t1.raw_type == &RawType::VEC || t2.raw_type == &RawType::VEC) return Type::VOID;
-
-	// SET
-	if (t1.raw_type == &RawType::SET && t2.raw_type == &RawType::SET) {
-		Type compatible_element = get_compatible_type(t1.element_type(0), t2.element_type(0));
-		if (compatible_element == Type::VOID) return Type::VOID;
-		return Type(&RawType::SET, { compatible_element });
-	}
-	if (t1.raw_type == &RawType::SET || t2.raw_type == &RawType::SET) return Type::VOID;
-
-	// MAP
-	if (t1.raw_type == &RawType::MAP && t2.raw_type == &RawType::MAP) {
-		Type compatible_key = get_compatible_type(t1.element_type(0), t2.element_type(0));
-		if (compatible_key == Type::VOID) return Type::VOID;
-		Type compatible_value = get_compatible_type(t1.element_type(1), t2.element_type(1));
-		if (compatible_value == Type::VOID) return Type::VOID;
-		return Type(&RawType::MAP, { compatible_key, compatible_value });
-	}
-	if (t1.raw_type == &RawType::MAP || t2.raw_type == &RawType::MAP) return Type::VOID;
-
-	// TUPLE
-	if (t1.raw_type == &RawType::TUPLE && t2.raw_type == &RawType::TUPLE) {
-		if (t1.elements_types.size() != t2.elements_types.size()) return Type::VOID;
-		vector<Type> compatible_elements;
-		for (size_t i = 0; i < t1.elements_types.size(); ++i) {
-			compatible_elements.push_back(get_compatible_type(t1.elements_types[i], t2.elements_types[i]));
-			if (compatible_elements[i] == Type::VOID) return Type::VOID;
-		}
-		return Type(&RawType::TUPLE, compatible_elements);
-	}
-	if (t1.raw_type == &RawType::SET || t2.raw_type == &RawType::SET) return Type::VOID;
-
-	// BOOL, I32, I64, F32, F64
-	if (t1 == Type::I32 && t2 == Type::BOOLEAN) return Type::I32;
-	if (t2 == Type::I32 && t1 == Type::BOOLEAN) return Type::I32;
-	if (t1 == Type::I64 && t2 == Type::BOOLEAN) return Type::I64;
-	if (t2 == Type::I64 && t1 == Type::BOOLEAN) return Type::I64;
-	if (t1 == Type::I64 && t2 == Type::I32) return Type::I64;
-	if (t2 == Type::I64 && t1 == Type::I32) return Type::I64;
-	if (t1 == Type::F64 && t2 == Type::I32) return Type::F64;
-	if (t2 == Type::F64 && t1 == Type::I32) return Type::F64;
-	if (t1 == Type::F64 && t2 == Type::F32) return Type::F64;
-	if (t2 == Type::F64 && t1 == Type::F32) return Type::F64;
-
-	return Type::VOID;
-}
-
 string Type::get_nature_name(const Nature& nature) {
 	switch (nature) {
 		case Nature::LSVALUE:
@@ -583,12 +535,14 @@ bool Type::operator ==(const Type& type) const {
 	return raw_type == type.raw_type &&
 			elements_types == type.elements_types &&
 			return_types == type.return_types &&
-			arguments_types == type.arguments_types;
+			arguments_types == type.arguments_types &&
+			ph == type.ph;
 }
 
 bool Type::operator <(const Type& type) const
 {
-	if (raw_type != type.raw_type) return raw_type < type.raw_type;
+	if (*raw_type != *type.raw_type) return *raw_type < *type.raw_type;
+	if (ph != type.ph) return ph < type.ph;
 	if (elements_types != type.elements_types) return std::lexicographical_compare(elements_types.begin(), elements_types.end(), type.elements_types.begin(), type.elements_types.end());
 	if (return_types != type.return_types) return std::lexicographical_compare(return_types.begin(), return_types.end(), type.return_types.begin(), type.return_types.end());
 	return std::lexicographical_compare(arguments_types.begin(), arguments_types.end(), type.arguments_types.begin(), type.arguments_types.end());

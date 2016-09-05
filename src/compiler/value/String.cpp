@@ -24,22 +24,18 @@ unsigned String::line() const {
 	return token->line;
 }
 
+void String::preanalyse(SemanticAnalyser* analyser)
+{
+	constant = true;
+	type = Type::VAR;
+}
+
 void String::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
-	type = Type::VAR;
-	constant = true;
-
-	if (req_type == Type::VOID) {
-		type = Type::VOID;
-		return;
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-
-	if (!Type::get_intersection(type, req_type)) {
-		stringstream oss;
-		print(oss, 0, false);
-		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
-	}
-	assert(type.is_complete() || !analyser->errors.empty());
+	type.make_it_complete();
 }
 
 LSValue* String_create(string* s) {

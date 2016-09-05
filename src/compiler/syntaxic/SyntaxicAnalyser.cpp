@@ -4,7 +4,6 @@
 #include <math.h>
 
 #include "../value/Function.hpp"
-#include "../instruction/Instruction.hpp"
 #include "../value/Block.hpp"
 #include "../instruction/Break.hpp"
 #include "../instruction/Foreach.hpp"

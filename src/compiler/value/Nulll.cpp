@@ -20,20 +20,18 @@ unsigned Nulll::line() const {
 	return 0;
 }
 
-void Nulll::analyse(SemanticAnalyser* analyser, const Type& req_type) {
-	constant = true;
-	type = Type::LSVALUE;
-	if (!Type::get_intersection(type, req_type, &type)) {
-		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), "null" });
-	}
-	type.make_it_complete();
-	assert(type.is_complete() || !analyser->errors.empty());
-}
-
 void Nulll::preanalyse(SemanticAnalyser*)
 {
 	constant = true;
 	type = Type::LSVALUE;
+}
+
+void Nulll::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	type.make_it_complete();
 }
 
 jit_value_t Nulll::compile(Compiler& c) const {

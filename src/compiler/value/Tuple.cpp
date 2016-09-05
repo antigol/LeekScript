@@ -26,24 +26,6 @@ unsigned Tuple::line() const
 	return 0;
 }
 
-void Tuple::analyse(SemanticAnalyser* analyser, const Type& req_type)
-{
-	preanalyse(analyser);
-
-	if (!Type::get_intersection(type, req_type, &type)) {
-		stringstream oss;
-		print(oss);
-		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
-	}
-
-	for (size_t i = 0; i < elements.size(); ++i) {
-		elements[i]->analyse(analyser, type.elements_types[i]);
-		type.elements_types[i] = elements[i]->type;
-	}
-
-	assert(type.is_complete());
-}
-
 void Tuple::preanalyse(SemanticAnalyser* analyser)
 {
 	type = Type::TUPLE;
@@ -51,6 +33,18 @@ void Tuple::preanalyse(SemanticAnalyser* analyser)
 	for (Value* val : elements) {
 		val->preanalyse(analyser);
 		type.elements_types.push_back(val->type);
+	}
+}
+
+void Tuple::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	type.make_it_complete();
+
+	for (size_t i = 0; i < elements.size(); ++i) {
+		elements[i]->analyse(analyser, type.element_type(i));
 	}
 }
 

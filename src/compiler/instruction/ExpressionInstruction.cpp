@@ -21,6 +21,12 @@ unsigned ExpressionInstruction::line() const
 	return 0;
 }
 
+void ExpressionInstruction::preanalyse(SemanticAnalyser* analyser)
+{
+	value->preanalyse(analyser);
+	type = value->type;
+}
+
 void ExpressionInstruction::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	if (req_type == Type::VOID) {
 		value->analyse(analyser, Type::UNKNOWN);
@@ -31,12 +37,6 @@ void ExpressionInstruction::analyse(SemanticAnalyser* analyser, const Type& req_
 		type = value->type;
 	}
 	assert(type.is_complete() || !analyser->errors.empty());
-}
-
-void ExpressionInstruction::preanalyse(SemanticAnalyser* analyser)
-{
-	value->preanalyse(analyser);
-	type = value->type;
 }
 
 jit_value_t ExpressionInstruction::compile(Compiler& c) const {

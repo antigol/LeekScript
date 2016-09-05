@@ -62,10 +62,11 @@ class Type {
 public:
 
 	const RawType* raw_type;
+	uint32_t ph;
+
 	std::vector<Type> elements_types;
 	std::vector<Type> return_types;
 	std::vector<Type> arguments_types;
-	uint32_t ph; // not compared in ==
 
 	Type();
 	explicit Type(const RawType* raw_type);
@@ -73,6 +74,8 @@ public:
 
 	Type place_holder(int id) const;
 	bool must_manage_memory() const;
+
+	const RawType* get_raw_type() const;
 
 	Type return_type() const;
 	void set_return_type(const Type& type);
@@ -84,9 +87,6 @@ public:
 	const Type& element_type(size_t i) const;
 	void set_element_type(size_t index, const Type&);
 
-	bool can_be_convert_in(const Type& type) const;
-	bool is_primitive_number() const;
-	bool is_arithmetic() const;
 	bool is_complete() const;
 	void make_it_complete();
 
@@ -99,12 +99,14 @@ public:
 	jit_type_t jit_type() const;
 	void toJson(std::ostream&) const;
 
-	static bool get_intersection(const Type& t1, const Type& t2, Type* result = nullptr);
+	Type image_conversion() const;
+	Type fiber_conversion() const;
+
+	static bool intersection(const Type& t1, const Type& t2, Type* result = nullptr);
 private:
 	Type* copy_iterator(Type* type, Type* it);
 	static int get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type* tr, Type& fr);
 public:
-	static Type get_compatible_type(const Type& t1, const Type& t2);
 
 	static std::string get_nature_name(const Nature& nature);
 	static std::string get_nature_symbol(const Nature& nature);
@@ -133,6 +135,12 @@ public:
 	static const Type SET; // LSVALUE
 	static const Type FUNCTION;
 	static const Type TUPLE;
+
+	// Some useful generics
+	static const Type ARITHMETIC;
+	static const Type LOGIC;
+	static const Type INDEXABLE;
+	static const Type VALUE_NUMBER;
 };
 
 std::ostream& operator << (std::ostream&, const Type&);

@@ -14,13 +14,6 @@ public:
 	Value* function;
 	std::vector<Value*> arguments;
 
-//	bool is_native = false;
-//	bool is_static_native = false;
-//	std::string native_func;
-//	Type return_type;
-
-//	void* std_func;
-//	Value* this_ptr;
 	Method method;
 
 	FunctionCall();
@@ -29,7 +22,8 @@ public:
 	virtual void print(std::ostream&, int indent, bool debug) const override;
 	virtual unsigned line() const override;
 
-	virtual void analyse(SemanticAnalyser*, const Type&) override;
+	virtual void preanalyse(SemanticAnalyser* analyser) override;
+	virtual void analyse(SemanticAnalyser* analyser, const Type& req_type) override;
 
 	virtual jit_value_t compile(Compiler&) const override;
 };

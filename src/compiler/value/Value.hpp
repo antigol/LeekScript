@@ -27,20 +27,39 @@ public:
 
 	virtual unsigned line() const = 0;
 
+///////////////// PREANALYSE ////////////////////
 
-	// this method must leave `type` in a complete state(i.e. type.is_complete())
-	// this method must respect `req_type` (i.e. Type::get_intersection(type, req_type) != Type::VOID)
+	// `type` must represant all possible outputs (conversions included)
+	// must go through all the program
+	virtual void preanalyse(SemanticAnalyser* analyser) = 0;
+
+	// When call `will_take` ?
+	//  During preanalyse, call only on leftvalue part
+	//  x = y         called on x
+	//  z = x + y     called on z
+	virtual void will_take(SemanticAnalyser* analyser, const Type& req_type);
+
+	// When call `will_require` ?
+	//  During preanalyse, call on the non left value part
+	//  x = y         called on y
+	//  z = x + y     called on x,y
+	virtual void will_require(SemanticAnalyser* analyser, const Type& req_type);
+
+///////////////// ANALYSE ////////////////////
+
+	// this method must leave `type` in a complete state (i.e. type.is_complete())
+	// this method must respect `req_type` (i.e. Type::get_intersection(type, req_type))
 	//  otherwise it must generate an error
+	// must go through all the program
 	virtual void analyse(SemanticAnalyser* analyser, const Type& req_type) = 0;
 
-	// this method is a relaxation of the last one
-	// `type` can be leave in a generic form (like Type::UNKNOWN or Type(&RawType::VEC, { Type::UNKNOWN }) )
-	// it is not mandatory to generate errors
-	// This method is mandatory to analyse all its content as in the original one, to explore all the code for evantual return instructions
-	virtual void preanalyse(SemanticAnalyser* analyser);
+///////////////// COMPILATION ////////////////////
 
 	virtual jit_value_t compile(Compiler&) const = 0;
 
+
+
+	void add_error(SemanticAnalyser* analyser, SemanticException::Type error_type);
 	static std::string tabs(int indent);
 };
 

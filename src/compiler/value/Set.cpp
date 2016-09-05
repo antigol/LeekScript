@@ -27,7 +27,15 @@ unsigned Set::line() const {
 	return 0;
 }
 
-void Set::analyse(SemanticAnalyser* analyser, const Type&) {
+void Set::preanalyse(SemanticAnalyser* analyser)
+{
+	// TODO
+	assert(0);
+}
+
+void Set::analyse(SemanticAnalyser* analyser, const Type&)
+{
+	assert(0);
 /*
 	Type element_type = Type::UNKNOWN;
 

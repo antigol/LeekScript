@@ -39,61 +39,10 @@ unsigned If::line() const {
 	return 0;
 }
 
-void If::analyse(SemanticAnalyser* analyser, const Type& req_type)
-{
-	condition->analyse(analyser, Type::UNKNOWN);
-	if (condition->type == Type::FUNCTION || condition->type == Type::VOID) {
-		stringstream oss;
-		condition->print(oss);
-		analyser->add_error({ SemanticException::TYPE_MISMATCH, condition->line(), oss.str() });
-	}
-
-	if (elze) {
-		then->preanalyse(analyser);
-		elze->preanalyse(analyser);
-
-		if (then->type == Type::UNREACHABLE && elze->type == Type::UNREACHABLE) {
-			type = Type::UNREACHABLE;
-			then->analyse(analyser, Type::UNKNOWN);
-			elze->analyse(analyser, Type::UNKNOWN);
-			return;
-		} else if (then->type == Type::UNREACHABLE) { // then contains return instruction
-			type = elze->type;
-		} else if (elze->type == Type::UNREACHABLE) { // elze contains return instruction
-			type = then->type;
-		} else {
-			if (!Type::get_intersection(then->type, elze->type, &type)) type = Type::VOID;
-
-#if DEBUG > 0
-		cout << "#If " << then->type << " + " << elze->type << " = " << type << endl;
-#endif
-		}
-
-		if (!Type::get_intersection(type, req_type, &type)) {
-			stringstream oss;
-			print(oss, 0, false);
-			analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
-		}
-		type.make_it_complete();
-
-		then->analyse(analyser, type);
-		elze->analyse(analyser, type);
-	} else {
-		then->analyse(analyser, Type::VOID);
-		type = Type::VOID;
-
-		if (!Type::get_intersection(type, req_type)) {
-			stringstream oss;
-			print(oss, 0, false);
-			analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
-		}
-	}
-	assert(type.is_complete() || !analyser->errors.empty());
-}
-
 void If::preanalyse(SemanticAnalyser* analyser)
 {
 	condition->preanalyse(analyser);
+	condition->will_require(analyser, Type::LOGIC);
 
 	if (elze) {
 		then->preanalyse(analyser);
@@ -104,11 +53,29 @@ void If::preanalyse(SemanticAnalyser* analyser)
 		} else if (elze->type == Type::UNREACHABLE) { // elze contains return instruction
 			type = then->type;
 		} else {
-			if (!Type::get_intersection(then->type, elze->type, &type)) type = Type::VOID;
+			if (!Type::intersection(then->type, elze->type, &type)) {
+				type = Type::VOID;
+			}
 		}
 	} else {
 		then->preanalyse(analyser);
 		type = Type::VOID;
+	}
+}
+
+void If::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	condition->analyse(analyser, Type::UNKNOWN);
+
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	type.make_it_complete();
+
+	then->analyse(analyser, type);
+
+	if (elze) {
+		elze->analyse(analyser, type);
 	}
 }
 

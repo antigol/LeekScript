@@ -7,6 +7,7 @@ namespace ls {
 
 class LeftValue : public Value {
 public:
+	Type left_type;
 
 	LeftValue();
 	virtual ~LeftValue();

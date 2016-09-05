@@ -51,8 +51,15 @@ unsigned Match::line() const {
 	return 0;
 }
 
+void Match::preanalyse(SemanticAnalyser* analyser)
+{
+	// TODO
+	assert(0);
+}
+
 void Match::analyse(ls::SemanticAnalyser* analyser, const Type& req_type)
 {
+	assert(0);
 	value->analyse(analyser, Type::UNKNOWN);
 	if (value->type == Type::FUNCTION || value->type == Type::VOID) {
 		stringstream oss;
@@ -74,7 +81,7 @@ void Match::analyse(ls::SemanticAnalyser* analyser, const Type& req_type)
 	type = req_type;
 	for (Value* ret : returns) {
 		ret->preanalyse(analyser);
-		if (!Type::get_intersection(type, ret->type, &type)) {
+		if (!Type::intersection(type, ret->type, &type)) {
 			stringstream oss;
 			ret->print(oss);
 			analyser->add_error({ SemanticException::INCOMPATIBLE_TYPES, ret->line(), oss.str() });

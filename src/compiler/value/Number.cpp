@@ -40,24 +40,6 @@ unsigned Number::line() const {
 	return token->line;
 }
 
-void Number::analyse(SemanticAnalyser* analyser, const Type& req_type)
-{
-	preanalyse(analyser);
-
-	if (req_type == Type::VOID) {
-		type = Type::VOID;
-	}
-
-	if (!Type::get_intersection(type, req_type, &type)) {
-		stringstream oss;
-		print(oss, 0, false);
-		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
-	}
-	type.make_it_complete();
-
-	assert(type.is_complete() || !analyser->errors.empty());
-}
-
 void Number::preanalyse(SemanticAnalyser* analyser)
 {
 	constant = true;
@@ -66,6 +48,14 @@ void Number::preanalyse(SemanticAnalyser* analyser)
 	} else {
 		type = Type(&RawType::UNKNOWN, { Type::I32, Type::F64, Type::VAR });
 	}
+}
+
+void Number::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	type.make_it_complete();
 }
 
 jit_value_t Number::compile(Compiler& c) const
@@ -86,9 +76,6 @@ jit_value_t Number::compile(Compiler& c) const
 	}
 	if (type == Type::I64) {
 		return VM::create_i64(c.F, v);
-	}
-	if (type == Type::VOID) {
-		return nullptr;
 	}
 	assert(0);
 	return nullptr;

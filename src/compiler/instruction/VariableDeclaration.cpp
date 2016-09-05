@@ -33,32 +33,27 @@ unsigned VariableDeclaration::line() const
 	return 0;
 }
 
-void VariableDeclaration::analyse(SemanticAnalyser* analyser, const Type& req_type) {
+void VariableDeclaration::preanalyse(SemanticAnalyser* analyser)
+{
+	expression->preanalyse(analyser);
 
 	if (typeName) {
 		Type tn = typeName->getInternalType(analyser);
-		expression->analyse(analyser, tn);
-		if (expression->type != tn) {
-			analyser->add_error({SemanticException::Type::TYPE_MISMATCH, 0});
+
+		// restrict expression types
+		if (!Type::intersection(expression->type, tn, &expression->type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
-	} else {
-		expression->analyse(analyser, Type::UNKNOWN);
 	}
 
 	analyser->add_var(variable, expression->type, expression, this);
+	type = Type::VOID;
+}
 
-	// return type
-
-	if (req_type == Type::VOID) {
-		type = Type::VOID;
-	} else if (req_type == Type::UNKNOWN) {
-		type = expression->type;
-	} else if (expression->type.can_be_convert_in(req_type)) {
-		type = req_type;
-	} else {
-		analyser->add_error({ SemanticException::TYPE_MISMATCH, expression->line() });
-	}
-	assert(type.is_complete());
+void VariableDeclaration::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	expression->analyse(analyser, Type::UNKNOWN);
+	analyser->add_var(variable, expression->type, expression, this);
 }
 
 jit_value_t VariableDeclaration::compile(Compiler& c) const {
@@ -66,7 +61,6 @@ jit_value_t VariableDeclaration::compile(Compiler& c) const {
 	if (Reference* ref = dynamic_cast<Reference*>(expression)) {
 		jit_value_t val = c.get_var(ref->variable->content).value;
 		c.add_var(variable->content, val, expression->type, true);
-		if (type != Type::VOID) return Compiler::compile_convert(c.F, val, expression->type, type);
 	} else {
 		jit_value_t var = jit_value_create(c.F, expression->type.jit_type());
 		jit_value_t val = expression->compile(c);
@@ -77,8 +71,8 @@ jit_value_t VariableDeclaration::compile(Compiler& c) const {
 
 		c.add_var(variable->content, var, expression->type, false);
 		jit_insn_store(c.F, var, val);
-		if (type != Type::VOID) return Compiler::compile_convert(c.F, var, expression->type, type);
 	}
+	return nullptr;
 }
 
 }

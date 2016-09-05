@@ -27,14 +27,23 @@ unsigned PostfixExpression::line() const {
 	return 0;
 }
 
-void PostfixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type) {
-	expression->analyse(analyser, req_type);
-	if (!expression->type.is_arithmetic()) {
-		analyser->add_error({ SemanticException::TYPE_MISMATCH, expression->line() });
+void PostfixExpression::preanalyse(SemanticAnalyser* analyser)
+{
+	expression->preanalyse(analyser);
+	if (!Type::intersection(expression->type, Type::ARITHMETIC, &expression->type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-
 	type = expression->type;
-	assert(type.is_complete() || !analyser->errors.empty());
+}
+
+void PostfixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	type.make_it_complete();
+
+	expression->analyse(analyser, type);
 }
 
 jit_value_t PostfixExpression::compile(Compiler& c) const {

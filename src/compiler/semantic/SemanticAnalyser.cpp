@@ -22,9 +22,10 @@ using namespace std;
 
 namespace ls {
 
-SemanticAnalyser::SemanticAnalyser() {
+SemanticAnalyser::SemanticAnalyser(const std::vector<Module*>& modules) {
 	program = nullptr;
 	in_program = false;
+	this->modules = modules;
 //	loops.push(0);
 //	variables.push_back(vector<map<std::string, SemanticVar*>> {});
 //	functions_stack.push(nullptr); // The first function is the main function of the program
@@ -33,83 +34,18 @@ SemanticAnalyser::SemanticAnalyser() {
 
 SemanticAnalyser::~SemanticAnalyser() {}
 
-void SemanticAnalyser::analyse(Program* program, Context* context, const std::vector<Module*>& modules) {
-
-	this->program = program;
-	this->modules = modules;
-
-//	enter_function(program->main);
-
-	// Add context variables
-//	for (auto var : context->vars) {
-//		add_var(new Token(var.first), Type(var.second->getRawType()), nullptr, nullptr);
-//	}
-
-//	Type op_type = Type::FUNCTION;
-//	op_type.set_argument_type(0, Type::VAR);
-//	op_type.set_argument_type(1, Type::VAR);
-//	op_type.set_return_type(Type::VAR);
-//	program->system_vars.emplace("+", (void*) &LSVar::ls_add);
-//	add_var(new Token("+"), op_type, nullptr, nullptr);
-//	program->system_vars.insert(pair<string, LSValue*>("-", new LSFunction((void*) &jit_sub, 1, true)));
-//	add_var(new Token("-"), op_type, nullptr, nullptr);
-//	program->system_vars.insert(pair<string, LSValue*>("*", new LSFunction((void*) &jit_mul, 1, true)));
-//	add_var(new Token("*"), op_type, nullptr, nullptr);
-//	program->system_vars.insert(pair<string, LSValue*>("×", new LSFunction((void*) &jit_mul, 1, true)));
-//	add_var(new Token("×"), op_type, nullptr, nullptr);
-//	program->system_vars.insert(pair<string, LSValue*>("/", new LSFunction((void*) &jit_div, 1, true)));
-//	add_var(new Token("/"), op_type, nullptr, nullptr);
-//	program->system_vars.insert(pair<string, LSValue*>("÷", new LSFunction((void*) &jit_div, 1, true)));
-//	add_var(new Token("÷"), op_type, nullptr, nullptr);
-//	program->system_vars.insert(pair<string, LSValue*>("**", new LSFunction((void*) &jit_pow, 1, true)));
-//	add_var(new Token("**"), op_type, nullptr, nullptr);
-//	program->system_vars.insert(pair<string, LSValue*>("%", new LSFunction((void*) &jit_mod, 1, true)));
-//	add_var(new Token("%"), op_type, nullptr, nullptr);
-
-//	NullSTD().include(this, program);
-//	BooleanSTD().include(this, program);
-//	NumberSTD().include(this, program);
-//	StringSTD().include(this, program);
-//	VecSTD().include(this, program);
-//	MapSTD().include(this, program);
-//	SetSTD().include(this, program);
-//	ObjectSTD().include(this, program);
-//	FunctionSTD().include(this, program);
-//	ClassSTD().include(this, program);
-//	SystemSTD().include(this, program);
-
-//	for (Module* module : modules) {
-//		module->include(this, program);
-//	}
-
+void SemanticAnalyser::preanalyse(Program* program)
+{
+	// Gives to each element a type
+	// but this type is not necessarly complete
 	in_program = true;
+	program->main->preanalyse(this);
+}
+
+void SemanticAnalyser::analyse(Program* program)
+{
+	// Fix the uncomplete types
 	program->main->analyse(this, Type::UNKNOWN);
-
-//	program->main->type.set_return_type(Type::UNKNOWN);
-//	program->main->body->analyse(this, Type::UNKNOWN);
-//	if (program->main->type.return_types.size() > 1) { // the body contains return instruction
-//		bool any_void = false;
-//		bool all_void = true;
-//		Type return_type = Type::UNKNOWN;
-//		program->main->type.return_types[0] = program->main->body->type;
-//		for (size_t i = 0; i < program->main->type.return_types.size(); ++i) {
-//			if (program->main->type.return_types[i] == Type::UNREACHABLE) continue;
-//			return_type = Type::get_compatible_type(return_type, program->main->type.return_types[i]);
-//			if (program->main->type.return_types[i] == Type::VOID) any_void = true;
-//			else all_void = false;
-//		}
-//		program->main->type.return_types.clear();
-//		program->main->type.set_return_type(return_type);
-//		program->main->body->analyse(this, return_type); // second pass
-//		if (any_void && !all_void) {
-//			add_error({ SemanticException::TYPE_MISMATCH, program->main->body->line() });
-//		}
-//	} else {
-//		program->main->type.set_return_type(program->main->body->type);
-//	}
-
-//	leave_function();
-//	program->functions = functions;
 }
 
 void SemanticAnalyser::enter_function(Function* f) {

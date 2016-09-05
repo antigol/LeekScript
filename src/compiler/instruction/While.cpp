@@ -26,7 +26,14 @@ unsigned While::line() const
 	return 0;
 }
 
+void While::preanalyse(SemanticAnalyser* analyser)
+{
+	// TODO
+	assert(0);
+}
+
 void While::analyse(SemanticAnalyser* analyser, const Type&) {
+	assert(0);
 
 	condition->analyse(analyser, Type::UNKNOWN);
 	if (condition->type == Type::FUNCTION || condition->type == Type::VOID) {

@@ -1,6 +1,5 @@
 #include "For.hpp"
-
-#include "../instruction/Return.hpp"
+#include "Return.hpp"
 #include "../../vm/LSValue.hpp"
 
 using namespace std;
@@ -39,8 +38,15 @@ unsigned For::line() const
 	return 0;
 }
 
-void For::analyse(SemanticAnalyser* analyser, const Type& req_type) {
+void For::preanalyse(SemanticAnalyser* analyser)
+{
+	// TODO
+	assert(0);
+}
 
+void For::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	assert(0);
 	if (req_type.raw_type == &RawType::VEC) {
 		type = req_type;
 	} else {

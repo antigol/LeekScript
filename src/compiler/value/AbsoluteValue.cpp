@@ -24,18 +24,23 @@ unsigned AbsoluteValue::line() const {
 	return 0;
 }
 
-void AbsoluteValue::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void AbsoluteValue::preanalyse(SemanticAnalyser* analyser)
 {
-	type = Type::VAR;
-	expression->analyse(analyser, Type::VAR);
+	expression->preanalyse(analyser);
 	constant = expression->constant;
 
-	if (!Type::get_intersection(type, req_type, &type)) {
-		stringstream oss;
-		print(oss, 0, false);
-		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
+	if (!Type::intersection(expression->type, Type::VAR, &expression->type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-	assert(type.is_complete() || !analyser->errors.empty());
+
+	type = Type::VAR;
+}
+
+void AbsoluteValue::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	expression->analyse(analyser, Type::VAR);
+	constant = expression->constant;
+	type = Type::VAR;
 }
 
 jit_value_t AbsoluteValue::compile(Compiler& c) const

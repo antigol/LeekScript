@@ -21,7 +21,11 @@ public:
 
 	virtual bool isLeftValue() const override;
 
-	virtual void analyse(SemanticAnalyser*, const Type&) override;
+	virtual void preanalyse(SemanticAnalyser* analyser) override;
+	virtual void will_take(SemanticAnalyser* analyser, const Type& req_type) override;
+	virtual void will_require(SemanticAnalyser* analyser, const Type& req_type) override;
+
+	virtual void analyse(SemanticAnalyser* analyser, const Type& req_type) override;
 
 	virtual jit_value_t compile(Compiler&) const override;
 	virtual jit_value_t compile_l(Compiler&) const override;

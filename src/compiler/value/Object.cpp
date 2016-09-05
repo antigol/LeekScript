@@ -36,7 +36,15 @@ unsigned Object::line() const {
 	return 0;
 }
 
-void Object::analyse(SemanticAnalyser* analyser, const Type&) {
+void Object::preanalyse(SemanticAnalyser* analyser)
+{
+	// TODO
+	assert(0);
+}
+
+void Object::analyse(SemanticAnalyser* analyser, const Type&)
+{
+	assert(0);
 	/*type = Type::OBJECT;
 	for (Value* value : values) {
 		value->analyse(analyser, Type::POINTER);

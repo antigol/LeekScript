@@ -35,41 +35,6 @@ unsigned Block::line() const {
 	return 0;
 }
 
-void Block::analyse(SemanticAnalyser* analyser, const Type& req_type)
-{
-	analyser->enter_block();
-
-	for (size_t i = 0; i < instructions.size(); ++i) {
-		Value* ins = instructions[i];
-
-		if (i == instructions.size() - 1) {
-			// last instruction
-			ins->analyse(analyser, req_type);
-			type = ins->type;
-			analyser->leave_block();
-			return;
-		} else {
-			ins->analyse(analyser, Type::VOID);
-			if (ins->type == Type::UNREACHABLE) {
-				type = Type::UNREACHABLE;
-				analyser->leave_block();
-				return; // no need to compile after a return
-			}
-		}
-	}
-
-	// empty block
-	type = Type::VOID;
-	if (!Type::get_intersection(type, req_type)) {
-		stringstream oss;
-		print(oss, 0, false);
-		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
-	}
-
-	analyser->leave_block();
-	assert(type.is_complete() || !analyser->errors.empty());
-}
-
 void Block::preanalyse(SemanticAnalyser* analyser)
 {
 	analyser->enter_block();
@@ -97,6 +62,37 @@ void Block::preanalyse(SemanticAnalyser* analyser)
 	type = Type::VOID;
 	analyser->leave_block();
 }
+
+void Block::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	analyser->enter_block();
+
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	type.make_it_complete();
+
+	for (size_t i = 0; i < instructions.size(); ++i) {
+		Value* ins = instructions[i];
+
+		if (i == instructions.size() - 1) {
+			// last instruction
+			ins->analyse(analyser, type);
+			analyser->leave_block();
+			return;
+		} else {
+			ins->analyse(analyser, Type::VOID);
+			if (ins->type == Type::UNREACHABLE) {
+				analyser->leave_block();
+				return; // no need to compile after a return
+			}
+		}
+	}
+
+	analyser->leave_block();
+}
+
+
 
 //LSValue* Block_move(LSValue* value) {
 //	/* Move the value if it's a temporary variable

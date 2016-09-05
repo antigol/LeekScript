@@ -25,30 +25,30 @@ unsigned Return::line() const
 	return 0;
 }
 
-void Return::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void Return::preanalyse(SemanticAnalyser* analyser)
 {
 	Function* f = analyser->current_function();
 
 	if (expression) {
-		if (f->type.return_type() == Type::UNKNOWN) { // Actually in PREanalyse
-			expression->preanalyse(analyser);
-
-			f->type.set_return_type(Type::UNKNOWN); // ensure that the vector is not empty
-			f->type.return_types.push_back(expression->type);
-		} else {
-			expression->analyse(analyser, f->type.return_type());
-			if (expression->type != f->type.return_type()) {
-				analyser->add_error({ SemanticException::TYPE_MISMATCH, expression->line() });
-			}
-		}
+		expression->preanalyse(analyser);
+		f->type.return_types.push_back(expression->type);
 	} else {
-		if (f->type.return_type() == Type::UNKNOWN) {
-			f->type.set_return_type(Type::UNKNOWN);
-			f->type.return_types.push_back(Type::VOID);
-		} else {
-			if (f->type.return_type() != Type::VOID) {
-				analyser->add_error({ SemanticException::TYPE_MISMATCH, expression->line() });
-			}
+		f->type.return_types.push_back(Type::VOID);
+	}
+
+	type = Type::UNREACHABLE;
+}
+
+void Return::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	assert(0);
+	Function* f = analyser->current_function();
+
+	if (expression) {
+		expression->analyse(analyser, f->type.return_type());
+	} else {
+		if (!Type::intersection(Type::VOID, f->type.return_type())) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
 	}
 

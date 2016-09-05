@@ -32,15 +32,33 @@ unsigned ObjectAccess::line() const {
 	return 0;
 }
 
+void ObjectAccess::preanalyse(SemanticAnalyser* analyser)
+{
+	// TODO
+	assert(0);
+	try {
+		ulong index = stoul(field->content);
+		object->preanalyse(analyser);
+
+		if (object->type.raw_type == &RawType::TUPLE && index < object->type.elements_types.size()) {
+			type = object->type.elements_types[index];
+		} else {
+			type = Type::VOID;
+		}
+
+	} catch (exception&) {
+		type = Type::VOID;
+	}
+}
+
 void ObjectAccess::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
-	preanalyse(analyser);
-
+	assert(0);
 	try {
 		ulong index = stoul(field->content);
 
 		if (object->type.raw_type == &RawType::TUPLE && index < object->type.elements_types.size()) {
-			if (!Type::get_intersection(type, req_type, &type)) {
+			if (!Type::intersection(type, req_type, &type)) {
 				stringstream oss;
 				print(oss, 0, false);
 				analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
@@ -59,113 +77,8 @@ void ObjectAccess::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	} catch (exception&) {
 		type = Type::VOID;
 	}
-
-/*
-	if (field_string == nullptr) {
-		field_string = new LSString(field->content);
-	}
-
-	object->analyse(analyser, Type::UNKNOWN);
-
-	// General information about the object
-	object_class_name = object->type.clazz;
-	LSClass* object_class = nullptr;
-	if (analyser->program->system_vars.find(object_class_name) != analyser->program->system_vars.end()) {
-		object_class = (LSClass*) analyser->program->system_vars[object_class_name];
-	}
-
-	// Static attribute
-	VariableValue* vv = dynamic_cast<VariableValue*>(object);
-
-	if (object->type.raw_type == &RawType::CLASS and vv != nullptr) {
-
-		class_name = vv->name;
-
-		LSClass* std_class = (LSClass*) analyser->program->system_vars[class_name];
-
-		ModuleStaticField& mod_field = std_class->static_fields[field->content];
-		type = mod_field.type;
-
-		if (mod_field.fun != nullptr) {
-			access_function = mod_field.fun;
-		}
-		field_type = mod_field.type;
-	}
-
-	// Search class attributes
-	if (object_class != nullptr) {
-
-		// Object attribute
-		bool is_field = false;
-		try {
-			type = object_class->fields.at(field->content);
-			is_field = true;
-		} catch (exception& e) {}
-
-		// Otherwise search in class methods
-		if (not is_field) {
-			try {
-				type = object_class->methods.at(field->content)[0].type;
-			} catch (exception& e) {}
-		}
-
-		auto types = analyser->internal_vars[object_class_name]->attr_types;
-
-		if (types.find(field->content) != types.end()) {
-
-//			cout << " oa " << field << endl;
-
-			//type = types[field];
-			//class_attr = true;
-
-			// TODO : the attr must be a function here, not working with other types
-			//attr_addr = ((LSFunction*) std_class->static_fields[field])->function;
-
-			//attr_addr = std_class->getDefaultMethod(field)->function;
-		}
-	}
-
-	if (not access_function and not class_attr) {
-		object->analyse(analyser, Type::POINTER);
-	}
-
-	if (req_type.raw_type->nature() != Nature::UNKNOWN) {
-		type.raw_type->nature() = req_type.raw_type->nature();
-	}
-
-//	cout << "object_access '" << field->content << "' type : " << type << endl;*/
 }
 
-void ObjectAccess::preanalyse(SemanticAnalyser* analyser)
-{
-	try {
-		ulong index = stoul(field->content);
-		object->preanalyse(analyser);
-
-		if (object->type.raw_type == &RawType::TUPLE && index < object->type.elements_types.size()) {
-			type = object->type.elements_types[index];
-		} else {
-			type = Type::VOID;
-		}
-
-	} catch (exception&) {
-		type = Type::VOID;
-	}
-}
-
-/*
-void ObjectAccess::change_type(SemanticAnalyser*, const Type& req_type) {
-	type = req_type;
-}
-
-LSValue* object_access(LSValue* o, LSString* k) {
-	return o->attr(k);
-}
-
-LSValue** object_access_l(LSValue* o, LSString* k) {
-	return o->attrL(k);
-}
-*/
 jit_value_t ObjectAccess::compile(Compiler& c) const
 {
 	try {
@@ -180,39 +93,6 @@ jit_value_t ObjectAccess::compile(Compiler& c) const
 	} catch (exception&) {
 	}
 	return nullptr;
-/*
-	// Special case for custom attributes, accessible via a function
-	if (access_function != nullptr) {
-
-		auto fun = (jit_value_t (*)(jit_function_t)) access_function;
-		jit_value_t res = fun(c.F);
-
-		if (field_type.raw_type->nature() != Nature::LSVALUE and type.raw_type->nature() == Nature::LSVALUE) {
-			return VM::value_to_pointer(c.F, res, type);
-		}
-		return res;
-	}
-
-	if (class_attr) {
-
-		// TODO : only functions!
-		return LS_CREATE_POINTER(c.F, new LSFunction(attr_addr));
-
-	} else {
-
-		jit_value_t o = object->compile(c);
-
-		jit_type_t args_types[2] = {LS_POINTER, LS_POINTER};
-		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_types, 2, 0);
-
-		jit_value_t k = LS_CREATE_POINTER(c.F, field_string);
-		jit_value_t args[] = {o, k};
-
-		jit_value_t res = jit_insn_call_native(c.F, "access", (void*) object_access, sig, args, 2, JIT_CALL_NOTHROW);
-
-		VM::delete_temporary(c.F, o);
-		return res;
-	}*/
 }
 
 jit_value_t ObjectAccess::compile_l(Compiler& c) const
@@ -229,18 +109,6 @@ jit_value_t ObjectAccess::compile_l(Compiler& c) const
 	} catch (exception&) {
 	}
 	return nullptr;
-/*
-	jit_value_t o = object->compile(c);
-
-	jit_type_t args_types[2] = {LS_POINTER, LS_POINTER};
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_types, 2, 0);
-
-	jit_value_t k = LS_CREATE_POINTER(c.F, field_string);
-	jit_value_t args[] = {o, k};
-
-	jit_value_t res = jit_insn_call_native(c.F, "access_l", (void*) object_access_l, sig, args, 2, JIT_CALL_NOTHROW);
-
-	return res;*/
 }
 
 }

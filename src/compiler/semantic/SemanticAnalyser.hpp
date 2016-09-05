@@ -60,10 +60,11 @@ public:
 
 	std::vector<SemanticException> errors;
 
-	SemanticAnalyser();
+	SemanticAnalyser(const std::vector<Module*>& modules);
 	virtual ~SemanticAnalyser();
 
-	void analyse(Program*, Context*, const std::vector<Module*>&);
+	void preanalyse(Program*);
+	void analyse(Program*);
 
 	void enter_function(Function*);
 	void leave_function();

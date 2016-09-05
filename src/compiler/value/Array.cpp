@@ -36,23 +36,6 @@ unsigned Array::line() const {
 	return 0;
 }
 
-void Array::analyse(SemanticAnalyser* analyser, const Type& req_type)
-{
-	preanalyse(analyser);
-
-	if (!Type::get_intersection(type, req_type, &type)) {
-		stringstream oss;
-		print(oss, 0, false);
-		analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
-	}
-	type.make_it_complete();
-
-	for (Value* ex : expressions) {
-		ex->analyse(analyser, type.element_type(0));
-	}
-	assert(type.is_complete() || !analyser->errors.empty());
-}
-
 void Array::preanalyse(SemanticAnalyser* analyser)
 {
 	constant = true;
@@ -70,8 +53,8 @@ void Array::preanalyse(SemanticAnalyser* analyser)
 		ex->preanalyse(analyser);
 		constant = constant && ex->constant;
 
-		if (!Type::get_intersection(element_type, ex->type, &element_type)) {
-			element_type = Type::VOID;
+		if (!Type::intersection(element_type, ex->type, &element_type)) {
+			add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
 		}
 
 #if DEBUG > 0
@@ -83,7 +66,23 @@ void Array::preanalyse(SemanticAnalyser* analyser)
 	cout << " = " << element_type << endl;
 #endif
 
+	for (Value* ex : expressions) {
+		ex->will_require(analyser, element_type);
+	}
+
 	type = Type(&RawType::VEC, { element_type });
+}
+
+void Array::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	type.make_it_complete();
+
+	for (Value* ex : expressions) {
+		ex->analyse(analyser, type.element_type(0));
+	}
 }
 
 jit_value_t Array::compile(Compiler& c) const {
