@@ -86,13 +86,16 @@ void VariableValue::will_require(SemanticAnalyser* analyser, const Type& req_typ
 
 void VariableValue::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
+	var = analyser->get_var(token);
+	if (var == nullptr) return;
+
+	type = var->type.image_conversion();
+
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
 	}
 	type.make_it_complete();
 
-	var = analyser->get_var(token);
-	if (var == nullptr) return;
 
 	left_type = var->type;
 }
