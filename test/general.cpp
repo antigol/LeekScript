@@ -20,7 +20,7 @@ void Test::test_general() {
 	success("	", "<void>"); // tab
 
 	success("null", "null");
-	success("()", "null");
+	success("()", "<tuple>");
 	success("12", "12");
 	success("true", "true");
 	success("false", "false");

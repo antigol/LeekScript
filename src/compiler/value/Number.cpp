@@ -44,6 +44,10 @@ void Number::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
 	preanalyse(analyser);
 
+	if (req_type == Type::VOID) {
+		type = Type::VOID;
+	}
+
 	if (!Type::get_intersection(type, req_type, &type)) {
 		stringstream oss;
 		print(oss, 0, false);
@@ -82,6 +86,9 @@ jit_value_t Number::compile(Compiler& c) const
 	}
 	if (type == Type::I64) {
 		return VM::create_i64(c.F, v);
+	}
+	if (type == Type::VOID) {
+		return nullptr;
 	}
 	assert(0);
 	return nullptr;

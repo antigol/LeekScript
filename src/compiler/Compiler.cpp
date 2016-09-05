@@ -118,7 +118,9 @@ int Compiler::get_current_loop_blocks(int deepness) const {
 jit_value_t Compiler::call_native(jit_function_t F, jit_type_t return_type, std::vector<jit_type_t> args_type, void* function, std::vector<jit_value_t> args)
 {
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, return_type, args_type.data(), args_type.size(), 0);
-	return jit_insn_call_native(F, "", (void*) function, sig, args.data(), args.size(), JIT_CALL_NOTHROW);
+	jit_value_t res = jit_insn_call_native(F, "", (void*) function, sig, args.data(), args.size(), JIT_CALL_NOTHROW);
+	jit_type_free(sig);
+	return res;
 }
 
 bool CP_equal(LSValue* x, LSValue* y) {

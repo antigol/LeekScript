@@ -24,9 +24,15 @@ unsigned String::line() const {
 	return token->line;
 }
 
-void String::analyse(SemanticAnalyser* analyser, const Type& req_type) {
+void String::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
 	type = Type::VAR;
 	constant = true;
+
+	if (req_type == Type::VOID) {
+		type = Type::VOID;
+		return;
+	}
 
 	if (!Type::get_intersection(type, req_type)) {
 		stringstream oss;
@@ -40,8 +46,9 @@ LSValue* String_create(string* s) {
 	return new LSVar(*s);
 }
 
-jit_value_t String::compile(Compiler& c) const {
-
+jit_value_t String::compile(Compiler& c) const
+{
+	if (type == Type::VOID) return nullptr;
 	jit_value_t base = VM::create_ptr(c.F, (void*) &value);
 
 	jit_type_t args_types[1] = {LS_POINTER};

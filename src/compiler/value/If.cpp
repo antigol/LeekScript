@@ -115,7 +115,7 @@ void If::preanalyse(SemanticAnalyser* analyser)
 jit_value_t If::compile(Compiler& c) const {
 
 	jit_value_t res = nullptr;
-	if (type != Type::VOID) {
+	if (type.raw_type->nature() != Nature::VOID) {
 		res = jit_value_create(c.F, type.jit_type());
 	}
 
