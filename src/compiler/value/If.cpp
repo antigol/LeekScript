@@ -55,12 +55,24 @@ void If::preanalyse(SemanticAnalyser* analyser)
 		} else {
 			if (!Type::intersection(then->type, elze->type, &type)) {
 				type = Type::VOID;
+			} else {
+				then->will_require(analyser, type);
+				elze->will_require(analyser, type);
 			}
 		}
 	} else {
 		then->preanalyse(analyser);
 		type = Type::VOID;
 	}
+}
+
+void If::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	then->will_require(analyser, type);
+	if (elze) elze->will_require(analyser, type);
 }
 
 void If::analyse(SemanticAnalyser* analyser, const Type& req_type)

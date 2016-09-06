@@ -60,6 +60,18 @@ void Array::preanalyse(SemanticAnalyser* analyser)
 	type = Type(&RawType::VEC, { element_type });
 }
 
+void Array::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+
+	Type element_type = type.element_type(0);
+	for (Value* ex : expressions) {
+		ex->will_require(analyser, element_type);
+	}
+}
+
 void Array::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {

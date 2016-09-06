@@ -26,6 +26,13 @@ void Nulll::preanalyse(SemanticAnalyser*)
 	type = Type::LSVALUE;
 }
 
+void Nulll::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+}
+
 void Nulll::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {

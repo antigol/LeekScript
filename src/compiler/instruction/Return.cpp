@@ -39,9 +39,13 @@ void Return::preanalyse(SemanticAnalyser* analyser)
 	type = Type::UNREACHABLE;
 }
 
-void Return::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void Return::will_require(SemanticAnalyser* analyser, const Type& req_type)
 {
 	assert(0);
+}
+
+void Return::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
 	Function* f = analyser->current_function();
 
 	if (expression) {

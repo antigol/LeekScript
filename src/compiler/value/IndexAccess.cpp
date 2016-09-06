@@ -42,7 +42,7 @@ unsigned IndexAccess::line() const {
 
 bool IndexAccess::isLeftValue() const
 {
-	return key2 == nullptr;
+	return key2 == nullptr && container->isLeftValue();
 }
 
 void IndexAccess::preanalyse(SemanticAnalyser* analyser)
@@ -77,27 +77,20 @@ void IndexAccess::preanalyse(SemanticAnalyser* analyser)
 
 void IndexAccess::will_take(SemanticAnalyser* analyser, const Type& req_type)
 {
+	if (!isLeftValue()) {
+		add_error(analyser, SemanticException::VALUE_MUST_BE_A_LVALUE);
+		return;
+	}
+
 	Type container_req_type = Type(&RawType::UNKNOWN, { Type(&RawType::VEC, { req_type }), Type(&RawType::MAP, { Type::UNKNOWN, req_type }) });
 
-	if (container->isLeftValue()) {
-		container->will_take(analyser, container_req_type);
-	} else {
-		if (!Type::intersection(container->type, container_req_type, &container->type)) {
-			add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
-		}
-	}
+	((LeftValue*) container)->will_take(analyser, container_req_type);
 
-	// VEC
 	if (container->type.get_raw_type() == &RawType::VEC) {
 		left_type = container->type.element_type(0);
-	}
-
-	// MAP
-	else if (container->type.get_raw_type() == &RawType::MAP) {
+	} else if (container->type.get_raw_type() == &RawType::MAP) {
 		left_type = container->type.element_type(1);
-	}
-
-	else {
+	} else {
 		if (!Type::intersection(left_type, req_type, &left_type)) {
 			add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
 		}

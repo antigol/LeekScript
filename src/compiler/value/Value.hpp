@@ -33,17 +33,11 @@ public:
 	// must go through all the program
 	virtual void preanalyse(SemanticAnalyser* analyser) = 0;
 
-	// When call `will_take` ?
-	//  During preanalyse, call only on leftvalue part
-	//  x = y         called on x
-	//  z = x + y     called on z
-	virtual void will_take(SemanticAnalyser* analyser, const Type& req_type);
-
 	// When call `will_require` ?
 	//  During preanalyse, call on the non left value part
 	//  x = y         called on y
 	//  z = x + y     called on x,y
-	virtual void will_require(SemanticAnalyser* analyser, const Type& req_type);
+	virtual void will_require(SemanticAnalyser* analyser, const Type& req_type) = 0;
 
 ///////////////// ANALYSE ////////////////////
 

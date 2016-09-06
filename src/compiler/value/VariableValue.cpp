@@ -44,7 +44,7 @@ void VariableValue::will_take(SemanticAnalyser* analyser, const Type& req_type)
 		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
 	}
 	if (var->scope == VarScope::LOCAL) {
-		var->vd->expression->type = var->type;
+		var->vd->var_type = var->type;
 	}
 	if (var->scope == VarScope::PARAMETER) {
 		var->function->type.arguments_types[var->index] = var->type;
@@ -74,8 +74,9 @@ void VariableValue::will_require(SemanticAnalyser* analyser, const Type& req_typ
 		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
 	}
 
+	// save otherwise the type will be lost for the analyse
 	if (var->scope == VarScope::LOCAL) {
-		var->vd->expression->type = var->type;
+		var->vd->var_type = var->type;
 	}
 	if (var->scope == VarScope::PARAMETER) {
 		var->function->type.arguments_types[var->index] = var->type;

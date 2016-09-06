@@ -8,6 +8,7 @@ namespace ls {
 
 VariableDeclaration::VariableDeclaration() {
 	global = false;
+	expression = nullptr;
 	typeName = nullptr;
 }
 
@@ -24,8 +25,11 @@ void VariableDeclaration::print(ostream& os, int indent, bool debug) const {
 		os << " : ";
 		typeName->print(os);
 	}
-	os << " = ";
-	expression->print(os, indent, debug);
+	if (debug) os << " " << var_type;
+	if (expression) {
+		os << " = ";
+		expression->print(os, indent, debug);
+	}
 }
 
 unsigned VariableDeclaration::line() const
@@ -35,42 +39,58 @@ unsigned VariableDeclaration::line() const
 
 void VariableDeclaration::preanalyse(SemanticAnalyser* analyser)
 {
-	expression->preanalyse(analyser);
+	if (expression) {
+		expression->preanalyse(analyser);
 
-	if (typeName) {
-		Type tn = typeName->getInternalType(analyser);
+		if (typeName) {
+			Type tn = typeName->getInternalType(analyser);
 
-		// restrict expression types
-		if (!Type::intersection(expression->type, tn, &expression->type)) {
-			add_error(analyser, SemanticException::TYPE_MISMATCH);
+			// restrict expression types
+			if (!Type::intersection(expression->type, tn, &expression->type)) {
+				add_error(analyser, SemanticException::TYPE_MISMATCH);
+			}
 		}
+
+		var_type = expression->type;
+	} else {
+		var_type = Type::UNKNOWN;
 	}
 
-	analyser->add_var(variable, expression->type, expression, this);
+	analyser->add_var(variable, var_type, expression, this);
 	type = Type::VOID;
+}
+
+void VariableDeclaration::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+	assert(0);
 }
 
 void VariableDeclaration::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
-	expression->analyse(analyser, Type::UNKNOWN);
-	analyser->add_var(variable, expression->type, expression, this);
+	var_type.make_it_complete();
+
+	if (expression) {
+		expression->analyse(analyser, var_type);
+	}
+
+	analyser->add_var(variable, var_type, expression, this);
 }
 
-jit_value_t VariableDeclaration::compile(Compiler& c) const {
+jit_value_t VariableDeclaration::compile(Compiler& c) const
+{
+	jit_value_t var = jit_value_create(c.F, var_type.jit_type());
+	c.add_var(variable->content, var, var_type, false);
 
-	if (Reference* ref = dynamic_cast<Reference*>(expression)) {
-		jit_value_t val = c.get_var(ref->variable->content).value;
-		c.add_var(variable->content, val, expression->type, true);
-	} else {
-		jit_value_t var = jit_value_create(c.F, expression->type.jit_type());
+	if (expression) {
 		jit_value_t val = expression->compile(c);
 
 		if (expression->type.must_manage_memory()) {
 			val = VM::move_inc_obj(c.F, val);
 		}
 
-		c.add_var(variable->content, var, expression->type, false);
 		jit_insn_store(c.F, var, val);
+	} else {
+		jit_insn_store(c.F, var, VM::create_default(c.F, var_type));
 	}
 	return nullptr;
 }

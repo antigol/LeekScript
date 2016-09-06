@@ -50,6 +50,13 @@ void Number::preanalyse(SemanticAnalyser* analyser)
 	}
 }
 
+void Number::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+}
+
 void Number::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {

@@ -37,6 +37,11 @@ void Reference::preanalyse(SemanticAnalyser* analyser)
 	assert(0);
 }
 
+void Reference::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+
+}
+
 void Reference::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	assert(0);
 /*

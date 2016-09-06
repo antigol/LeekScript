@@ -29,11 +29,16 @@ void AbsoluteValue::preanalyse(SemanticAnalyser* analyser)
 	expression->preanalyse(analyser);
 	constant = expression->constant;
 
-	if (!Type::intersection(expression->type, Type::VAR, &expression->type)) {
-		add_error(analyser, SemanticException::TYPE_MISMATCH);
-	}
+	expression->will_require(analyser, Type::VAR);
 
 	type = Type::VAR;
+}
+
+void AbsoluteValue::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (!Type::intersection(type, req_type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
 }
 
 void AbsoluteValue::analyse(SemanticAnalyser* analyser, const Type& req_type)

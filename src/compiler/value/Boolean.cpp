@@ -30,6 +30,13 @@ void Boolean::preanalyse(SemanticAnalyser*)
 	type = Type(&RawType::UNKNOWN, { Type::BOOLEAN, Type::VAR, Type::I32, Type::I64 });
 }
 
+void Boolean::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+}
+
 void Boolean::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {

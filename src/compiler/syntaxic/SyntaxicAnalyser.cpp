@@ -265,8 +265,10 @@ VariableDeclaration* SyntaxicAnalyser::eatVariableDeclaration() {
 		vd->typeName = eatTypeName();
 	}
 
-	eat(TokenType::EQUAL);
-	vd->expression = eatExpression();
+	if (t->type == TokenType::EQUAL) {
+		eat();
+		vd->expression = eatExpression();
+	}
 	return vd;
 }
 

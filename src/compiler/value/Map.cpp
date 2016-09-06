@@ -50,6 +50,11 @@ void Map::preanalyse(SemanticAnalyser* analyser)
 	assert(0);
 }
 
+void Map::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+
+}
+
 void Map::analyse(SemanticAnalyser* analyser, const Type&) {
 	assert(0);
 /*

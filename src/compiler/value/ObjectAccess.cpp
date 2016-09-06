@@ -51,6 +51,16 @@ void ObjectAccess::preanalyse(SemanticAnalyser* analyser)
 	}
 }
 
+void ObjectAccess::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+
+}
+
+void ObjectAccess::will_take(SemanticAnalyser* analyser, const Type& req_type)
+{
+
+}
+
 void ObjectAccess::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
 	assert(0);

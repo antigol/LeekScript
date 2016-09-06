@@ -42,6 +42,11 @@ void FunctionCall::preanalyse(SemanticAnalyser* analyser)
 	assert(0);
 }
 
+void FunctionCall::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+
+}
+
 void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
 	assert(0);

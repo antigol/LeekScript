@@ -31,6 +31,11 @@ void Continue::preanalyse(SemanticAnalyser* analyser)
 	type = Type::UNREACHABLE;
 }
 
+void Continue::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+	assert(0);
+}
+
 void Continue::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
 	preanalyse(analyser);

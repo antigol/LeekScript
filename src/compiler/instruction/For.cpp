@@ -44,6 +44,11 @@ void For::preanalyse(SemanticAnalyser* analyser)
 	assert(0);
 }
 
+void For::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+
+}
+
 void For::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
 	assert(0);

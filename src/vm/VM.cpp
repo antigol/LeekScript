@@ -59,9 +59,9 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 //	Type t1 = Type(&RawType::UNKNOWN, { Type::I32, Type::F64 });
 //	Type t2 = Type::I32;
 
-	Type re;
-	cout << Type::intersection(t1, t2, &re) << endl;
-	cout << re << endl << endl;
+//	Type re;
+//	cout << Type::intersection(t1, t2, &re) << endl;
+//	cout << re << endl << endl;
 
 	// Reset
 	LSValue::obj_count = 0;
@@ -351,12 +351,13 @@ LSVec<T>* VM_create_vec(int32_t cap) {
 jit_value_t VM::create_vec(jit_function_t F, const Type& element_type, int cap) {
 	jit_value_t s = create_i32(F, cap);
 
-	if (element_type == Type::I32) return Compiler::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<int32_t>, { s });
-	if (element_type == Type::F64) return Compiler::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<double>, { s });
+	if (element_type == Type::BOOLEAN) return Compiler::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<int32_t>, { s });
+	if (element_type == Type::I32)     return Compiler::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<int32_t>, { s });
+	if (element_type == Type::F64)     return Compiler::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<double>, { s });
 	if (element_type.raw_type->nature() == Nature::LSVALUE)
-								   return Compiler::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<LSValue*>, { s });
+									   return Compiler::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<LSValue*>, { s });
 	if (element_type.raw_type == &RawType::FUNCTION)
-								   return Compiler::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<void*>, { s });
+									   return Compiler::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<void*>, { s });
 	assert(0);
 }
 

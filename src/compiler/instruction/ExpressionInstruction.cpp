@@ -27,6 +27,11 @@ void ExpressionInstruction::preanalyse(SemanticAnalyser* analyser)
 	type = value->type;
 }
 
+void ExpressionInstruction::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+	value->will_require(analyser, req_type);
+}
+
 void ExpressionInstruction::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	if (req_type == Type::VOID) {
 		value->analyse(analyser, Type::UNKNOWN);

@@ -29,6 +29,11 @@ void ArrayFor::preanalyse(SemanticAnalyser* analyser)
 	assert(0);
 }
 
+void ArrayFor::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+
+}
+
 void ArrayFor::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	assert(0);
 	forr->analyse(analyser, Type::VEC);

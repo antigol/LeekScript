@@ -36,6 +36,16 @@ void Tuple::preanalyse(SemanticAnalyser* analyser)
 	}
 }
 
+void Tuple::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	for (size_t i = 0; i < elements.size(); ++i) {
+		elements[i]->will_require(analyser, type.element_type(i));
+	}
+}
+
 void Tuple::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {

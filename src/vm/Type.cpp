@@ -25,11 +25,11 @@ const RawType RawType::VOID       ("void",        "?",        "void",     0,    
 const RawType RawType::UNREACHABLE("unreachable", "?",        "",         0,                nullptr,           Nature::VOID,     13);
 const RawType RawType::LSVALUE    ("lsvalue",     "?",        "?",        sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  14);
 const RawType RawType::VAR        ("var",         "Variable", "variable", sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  5);
-const RawType RawType::BOOLEAN    ("bool",        "Boolean",  "boolean",  sizeof (int32_t), jit_type_int,      Nature::VALUE,    2);
-const RawType RawType::I32        ("i32",         "Number",   "number",   sizeof (int32_t), jit_type_int,      Nature::VALUE,    0);
+const RawType RawType::BOOLEAN    ("bool",        "Boolean",  "boolean",  sizeof (int32_t), jit_type_int,      Nature::VALUE,    0);
+const RawType RawType::I32        ("i32",         "Number",   "number",   sizeof (int32_t), jit_type_int,      Nature::VALUE,    1);
 const RawType RawType::I64        ("i64",         "Number",   "number",   sizeof (int64_t), jit_type_long,     Nature::VALUE,    3);
 const RawType RawType::F32        ("f32",         "Number",   "number",   sizeof (float),   jit_type_float32,  Nature::VALUE,    4);
-const RawType RawType::F64        ("f64",         "Number",   "number",   sizeof (double),  jit_type_float64,  Nature::VALUE,    1);
+const RawType RawType::F64        ("f64",         "Number",   "number",   sizeof (double),  jit_type_float64,  Nature::VALUE,    2);
 const RawType RawType::VEC        ("vec",         "Vec",      "vec",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  6);
 const RawType RawType::MAP        ("map",         "Map",      "map",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  7);
 const RawType RawType::SET        ("set",         "Set",      "set",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  8);
@@ -95,11 +95,26 @@ const RawType* Type::get_raw_type() const
 }
 
 Type Type::return_type() const {
-	// TODO unknown proof
-	if (return_types.size() == 0) {
+	if (raw_type != &RawType::UNKNOWN) {
+		if (0 < return_types.size()) {
+			return return_types[0];
+		}
 		return Type::UNKNOWN;
 	}
-	return return_types[0];
+	if (get_raw_type() != &RawType::UNKNOWN) {
+		set<Type> elements;
+		for (const Type& type : elements_types) {
+			const Type& t = type.return_type();
+			if (t.raw_type == &RawType::UNKNOWN) {
+				if (t.elements_types.empty()) return Type::UNKNOWN;
+				elements.insert(t.elements_types.begin(), t.elements_types.end());
+			} else {
+				elements.insert(t);
+			}
+		}
+		return Type(&RawType::UNKNOWN, vector<Type>(elements.begin(), elements.end()));
+	}
+	return Type::UNKNOWN;
 }
 
 void Type::set_return_type(const Type& type) {
@@ -141,12 +156,12 @@ Type Type::element_type(size_t i) const {
 	if (get_raw_type() != &RawType::UNKNOWN) {
 		set<Type> elements;
 		for (const Type& type : elements_types) {
-			const Type& eti = type.element_type(i);
-			if (eti.raw_type == &RawType::UNKNOWN) {
-				if (eti.elements_types.empty()) return Type::UNKNOWN;
-				elements.insert(eti.elements_types.begin(), eti.elements_types.end());
+			const Type& t = type.element_type(i);
+			if (t.raw_type == &RawType::UNKNOWN) {
+				if (t.elements_types.empty()) return Type::UNKNOWN;
+				elements.insert(t.elements_types.begin(), t.elements_types.end());
 			} else {
-				elements.insert(eti);
+				elements.insert(t);
 			}
 		}
 		return Type(&RawType::UNKNOWN, vector<Type>(elements.begin(), elements.end()));
@@ -175,7 +190,7 @@ void Type::make_it_complete()
 {
 	if (raw_type == &RawType::UNKNOWN) {
 		if (elements_types.empty()) {
-			*this = Type::I32; // smallset id of rawtypes
+			*this = Type::BOOLEAN; // smallset id of rawtypes
 		} else {
 			*this = elements_types[0];
 			make_it_complete();

@@ -48,6 +48,11 @@ void Foreach::preanalyse(SemanticAnalyser* analyser)
 	assert(0);
 }
 
+void Foreach::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+
+}
+
 void Foreach::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
 	assert(0);

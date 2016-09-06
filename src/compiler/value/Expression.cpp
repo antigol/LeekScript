@@ -111,22 +111,19 @@ void Expression::preanalyse(SemanticAnalyser* analyser)
 	}
 
 	if (op->type == TokenType::EQUAL) {
-		if (!v1->isLeftValue()) {
+
+		LeftValue* l1 = dynamic_cast<LeftValue*>(v1);
+		if (l1->isLeftValue()) {
+			l1->preanalyse(analyser);
+			v2->preanalyse(analyser);
+
+			l1->will_take(analyser, v2->type);
+
+			type = l1->type;
+		} else {
 			v1->add_error(analyser, SemanticException::VALUE_MUST_BE_A_LVALUE);
 		}
 
-		v1->preanalyse(analyser);
-		v2->preanalyse(analyser);
-
-		Type result;
-		if (!Type::intersection(((LeftValue*) v1)->left_type, v2->type, &result)) {
-			add_error(analyser, SemanticException::TYPE_MISMATCH);
-		}
-
-		v1->will_take(analyser, result);
-		v2->will_require(analyser, result);
-
-		type = v1->type;
 
 	} else if (op->type == TokenType::PLUS) {
 
@@ -150,6 +147,23 @@ void Expression::preanalyse(SemanticAnalyser* analyser)
 		v2->will_require(analyser, result);
 
 		type = result.image_conversion();
+	}
+}
+
+void Expression::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+
+	if (op->type == TokenType::EQUAL) {
+		v1->will_require(analyser, type);
+		v2->will_require(analyser, ((LeftValue*) v1)->left_type);
+
+	} else if (op->type == TokenType::PLUS) {
+		v1->will_require(analyser, type);
+		v2->will_require(analyser, type);
+
 	}
 }
 

@@ -57,6 +57,11 @@ void Match::preanalyse(SemanticAnalyser* analyser)
 	assert(0);
 }
 
+void Match::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+
+}
+
 void Match::analyse(ls::SemanticAnalyser* analyser, const Type& req_type)
 {
 	assert(0);

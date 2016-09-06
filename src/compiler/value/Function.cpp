@@ -119,8 +119,17 @@ void Function::preanalyse(SemanticAnalyser* analyser)
 	}
 	type.return_types.clear();
 	type.set_return_type(return_type);
+	body->will_require(analyser, return_type);
 
 	analyser->leave_function();
+}
+
+void Function::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	body->will_require(analyser, type.return_type());
 }
 
 void Function::analyse(SemanticAnalyser* analyser, const Type& req_type)
@@ -135,7 +144,7 @@ void Function::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		analyser->add_parameter(arguments[i], type.argument_type(i));
 	}
 
-	body->analyse(analyser, type.return_type());
+	body->analyse(analyser, Type::UNKNOWN);
 
 	analyser->leave_function();
 }

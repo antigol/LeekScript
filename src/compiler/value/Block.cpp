@@ -63,6 +63,21 @@ void Block::preanalyse(SemanticAnalyser* analyser)
 	analyser->leave_block();
 }
 
+void Block::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (type != Type::UNREACHABLE) {
+		if (!instructions.empty()) {
+			Value* last = instructions.back();
+			last->will_require(analyser, req_type);
+			type = last->type;
+		} else {
+			if (!Type::intersection(Type::VOID, req_type)) {
+				add_error(analyser, SemanticException::TYPE_MISMATCH);
+			}
+		}
+	}
+}
+
 void Block::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
 	analyser->enter_block();
@@ -94,19 +109,6 @@ void Block::analyse(SemanticAnalyser* analyser, const Type& req_type)
 
 
 
-//LSValue* Block_move(LSValue* value) {
-//	/* Move the value if it's a temporary variable
-//	 * or if it's only attached to the current block.
-//	 */
-//	if (value == nullptr) return nullptr;
-//	if (value->refs <= 1) {
-//		value->refs = 0;
-//		return value;
-//	}
-//	return value->clone();
-//}
-
-
 jit_value_t Block::compile(Compiler& c) const {
 
 	c.enter_block();
@@ -118,10 +120,7 @@ jit_value_t Block::compile(Compiler& c) const {
 		}
 		if (i == instructions.size() - 1 && instructions[i]->type.raw_type->nature() != Nature::VOID) {
 			if (type.must_manage_memory()) {
-//				jit_type_t args[1] = { LS_POINTER };
-//				jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args, 1, 0);
-//				jit_value_t ret = jit_insn_call_native(c.F, "true_move", (void*) Block_move, sig, &val, 1, JIT_CALL_NOTHROW);
-				jit_value_t ret = VM::move_obj(c.F, val);
+				jit_value_t ret = VM::move_obj(c.F, val); // TODO add true move by checking the variable scope
 				c.leave_block(c.F);
 				return ret;
 			} else {
@@ -132,9 +131,6 @@ jit_value_t Block::compile(Compiler& c) const {
 	}
 	c.leave_block(c.F);
 
-	if (type == Type::VAR) {
-		return VM::create_null(c.F);
-	}
 	return nullptr;
 }
 

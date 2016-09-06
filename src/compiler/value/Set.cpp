@@ -33,6 +33,11 @@ void Set::preanalyse(SemanticAnalyser* analyser)
 	assert(0);
 }
 
+void Set::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+
+}
+
 void Set::analyse(SemanticAnalyser* analyser, const Type&)
 {
 	assert(0);

@@ -30,20 +30,20 @@ unsigned PostfixExpression::line() const {
 void PostfixExpression::preanalyse(SemanticAnalyser* analyser)
 {
 	expression->preanalyse(analyser);
-	if (!Type::intersection(expression->type, Type::ARITHMETIC, &expression->type)) {
-		add_error(analyser, SemanticException::TYPE_MISMATCH);
-	}
+	expression->will_require(analyser, Type::ARITHMETIC);
+	type = expression->type;
+}
+
+void PostfixExpression::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+	expression->will_require(analyser, req_type);
 	type = expression->type;
 }
 
 void PostfixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
-	if (!Type::intersection(type, req_type, &type)) {
-		add_error(analyser, SemanticException::TYPE_MISMATCH);
-	}
-	type.make_it_complete();
-
 	expression->analyse(analyser, type);
+	type = expression->type;
 }
 
 jit_value_t PostfixExpression::compile(Compiler& c) const {
