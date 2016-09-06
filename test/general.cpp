@@ -64,6 +64,9 @@ void Test::test_general() {
 	success("let x = []; let y = [[1.5], x]; y[0][0]", "1.5");
 	success("let x = [] let y = null [x,y]", "[[], null]");
 	success("let x = if true [0] else ['a'];  x[0] = 1 x", "[1]");
+	success("let x = [] x.push('a') x", "['a']");
+	success("let x = [[[]]] x[0][0].push('a') x", "[[['a']]]");
+	success("let x = [] x.push([]) x[0].push(1) x", "[[1]]");
 
 //	success("'foo' ?? 'bar'", "'foo'");
 //	success("null ?? 'bar'", "'bar'");

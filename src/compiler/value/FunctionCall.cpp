@@ -94,14 +94,8 @@ void FunctionCall::will_require(SemanticAnalyser* analyser, const Type& req_type
 
 void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
-	if (!Type::intersection(type, req_type, &type)) {
-		add_error(analyser, SemanticException::TYPE_MISMATCH);
-	}
-
 	ObjectAccess* oa = dynamic_cast<ObjectAccess*>(function);
 	if (oa != nullptr) {
-
-		type.make_it_complete();
 
 		// TODO faire comme c'est prévu dans will_require
 		oa->object->analyse(analyser, Type::UNKNOWN);
@@ -123,6 +117,11 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type)
 
 		for (size_t i = 0; i < arguments.size(); ++i) {
 			arguments[i]->analyse(analyser, methods[0].type.argument_type(i + 1));
+		}
+
+		type = methods[0].type.return_type().image_conversion();
+		if (!Type::intersection(type, req_type, &type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
 
 	} else {

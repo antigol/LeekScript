@@ -68,7 +68,7 @@ void VariableDeclaration::will_require(SemanticAnalyser* analyser, const Type& r
 }
 
 void VariableDeclaration::analyse(SemanticAnalyser* analyser, const Type& req_type)
-{
+{	
 	var_type.make_it_complete();
 
 	if (expression) {

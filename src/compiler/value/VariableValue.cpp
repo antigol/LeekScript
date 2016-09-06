@@ -18,9 +18,9 @@ VariableValue::~VariableValue() {}
 
 void VariableValue::print(ostream& os, int, bool debug) const {
 	os << token->content;
-	if (debug) {
-		os << " " << type;
-	}
+//	if (debug) {
+//		os << " " << type;
+//	}
 }
 
 unsigned VariableValue::line() const {

@@ -64,12 +64,14 @@ public:
 	const RawType* raw_type;
 	uint32_t ph;
 
+	std::set<Type> alternative_types;
 	std::vector<Type> elements_types;
 	std::vector<Type> return_types;
 	std::vector<Type> arguments_types;
 
 	Type();
 	explicit Type(const RawType* raw_type);
+	Type(const std::set<Type>& alternative_types);
 	Type(const RawType* raw_type, const std::vector<Type>& elements_types);
 
 	Type place_holder(int id) const;
@@ -107,7 +109,7 @@ public:
 
 	static bool intersection(const Type& t1, const Type& t2, Type* result = nullptr);
 private:
-	Type* copy_iterator(Type* type, Type* it);
+	Type* copy_iterator(const Type* type, const Type* it);
 	static int get_intersection_private(Type* t1, Type& f1, Type* t2, Type& f2, Type* tr, Type& fr);
 	static int get_intersection_private_placeholder_free(const Type* t1, const Type* t2, Type* tr);
 public:

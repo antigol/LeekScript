@@ -82,7 +82,7 @@ void IndexAccess::will_take(SemanticAnalyser* analyser, const Type& req_type)
 		return;
 	}
 
-	Type container_req_type = Type(&RawType::UNKNOWN, { Type(&RawType::VEC, { req_type }), Type(&RawType::MAP, { Type::UNKNOWN, req_type }) });
+	Type container_req_type = Type({ Type(&RawType::VEC, { req_type }), Type(&RawType::MAP, { Type::UNKNOWN, req_type }) });
 
 	((LeftValue*) container)->will_take(analyser, container_req_type);
 
@@ -102,7 +102,7 @@ void IndexAccess::will_take(SemanticAnalyser* analyser, const Type& req_type)
 void IndexAccess::will_require(SemanticAnalyser* analyser, const Type& req_type)
 {
 	Type fiber_req_type = req_type.fiber_conversion();
-	Type container_req_type = Type(&RawType::UNKNOWN, { Type(&RawType::VEC, { fiber_req_type }), Type(&RawType::MAP, { Type::UNKNOWN, fiber_req_type }) });
+	Type container_req_type = Type({ Type(&RawType::VEC, { fiber_req_type }), Type(&RawType::MAP, { Type::UNKNOWN, fiber_req_type }) });
 
 	container->will_require(analyser, container_req_type);
 
@@ -133,7 +133,7 @@ void IndexAccess::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	type.make_it_complete();
 
 	Type fiber = type.fiber_conversion();
-	container->analyse(analyser, Type(&RawType::UNKNOWN, { Type(&RawType::VEC, { fiber }), Type(&RawType::MAP, { Type::UNKNOWN, fiber }) }));
+	container->analyse(analyser, Type({ Type(&RawType::VEC, { fiber }), Type(&RawType::MAP, { Type::UNKNOWN, fiber }) }));
 
 
 	// VEC

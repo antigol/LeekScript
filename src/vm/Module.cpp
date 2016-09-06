@@ -48,6 +48,7 @@ vector<Method> Module::get_method_implementation(const string& name, const Type&
 			for (const Method& method_impl : method.impl) {
 				Type completed_type;
 				if (Type::intersection(proposal_type, method_impl.type, &completed_type)) {
+//					cout << proposal_type << " INTER " << method_impl.type << " = " << completed_type << endl;
 					matching_methods.push_back(Method(completed_type, method_impl.addr));
 				}
 			}
