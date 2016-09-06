@@ -62,7 +62,9 @@ void VariableDeclaration::preanalyse(SemanticAnalyser* analyser)
 
 void VariableDeclaration::will_require(SemanticAnalyser* analyser, const Type& req_type)
 {
-	assert(0);
+	if (!Type::intersection(type, req_type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
 }
 
 void VariableDeclaration::analyse(SemanticAnalyser* analyser, const Type& req_type)

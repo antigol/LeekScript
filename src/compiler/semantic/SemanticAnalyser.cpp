@@ -96,12 +96,28 @@ bool SemanticAnalyser::in_loop(int deepness) const {
 	return loops.top() >= deepness;
 }
 
-Module*SemanticAnalyser::module_by_name(const string& name) const
+Module* SemanticAnalyser::module_by_name(const string& name) const
 {
 	for (size_t i = 0; i < modules.size(); ++i) {
 		if (modules[i]->name == name) return modules[i];
 	}
 	return nullptr;
+}
+
+vector<Method> SemanticAnalyser::get_method(const string& name, const Type& return_type, const Type& this_type, const std::vector<Type>& args_types) const
+{
+	string clazz = this_type.get_raw_type()->clazz();
+	if (clazz.empty()) {
+		vector<Method> methods;
+		for (Module* module : modules) {
+			vector<Method> x = module->get_method_implementation(name, return_type, this_type, args_types);
+			methods.insert(methods.end(), x.begin(), x.end());
+		}
+		return methods;
+	} else {
+		Module* module = module_by_name(clazz);
+		return module->get_method_implementation(name, return_type, this_type, args_types);
+	}
 }
 
 SemanticVar* SemanticAnalyser::add_parameter(Token* v, Type type) {

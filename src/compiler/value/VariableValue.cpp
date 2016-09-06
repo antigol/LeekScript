@@ -43,6 +43,7 @@ void VariableValue::will_take(SemanticAnalyser* analyser, const Type& req_type)
 	if (!Type::intersection(var->type, req_type, &var->type)) {
 		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
 	}
+
 	if (var->scope == VarScope::LOCAL) {
 		var->vd->var_type = var->type;
 	}

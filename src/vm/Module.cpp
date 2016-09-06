@@ -34,24 +34,26 @@ void Module::method(const string& name, initializer_list<Method> impl) {
 	methods.push_back(ModuleMethod(name, impl));
 }
 
-Method Module::get_method_implementation(const string& name, const Type& obj_type, const Type& return_type, const std::vector<Type> args) const
+vector<Method> Module::get_method_implementation(const string& name, const Type& return_type, const Type& this_type, const std::vector<Type> args_types) const
 {
 	Type proposal_type = Type::FUNCTION;
 	proposal_type.set_return_type(return_type);
-	proposal_type.set_argument_type(0, obj_type);
-	for (const Type& a : args) proposal_type.add_argument_type(a);
+	proposal_type.set_argument_type(0, this_type);
+	for (const Type& a : args_types) proposal_type.add_argument_type(a);
+
+	vector<Method> matching_methods;
 
 	for (const ModuleMethod& method : methods) {
 		if (method.name == name) {
 			for (const Method& method_impl : method.impl) {
 				Type completed_type;
 				if (Type::intersection(proposal_type, method_impl.type, &completed_type)) {
-					return Method(completed_type, method_impl.addr);
+					matching_methods.push_back(Method(completed_type, method_impl.addr));
 				}
 			}
 		}
 	}
-	return Method(Type::VOID, nullptr);
+	return matching_methods;
 }
 
 //void Module::static_method(string name, initializer_list<StaticMethod> impl) {

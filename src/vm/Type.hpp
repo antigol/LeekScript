@@ -82,7 +82,7 @@ public:
 
 	void add_argument_type(const Type& type);
 	void set_argument_type(size_t index, const Type& type);
-	const Type& argument_type(size_t index) const;
+	Type argument_type(size_t i) const;
 
 	Type element_type(size_t i) const;
 	void set_element_type(size_t index, const Type&);
@@ -111,6 +111,9 @@ private:
 	static int get_intersection_private(Type* t1, Type& f1, Type* t2, Type& f2, Type* tr, Type& fr);
 	static int get_intersection_private_placeholder_free(const Type* t1, const Type* t2, Type* tr);
 public:
+
+	static Type union_of(const Type& t1, const Type& t2);
+	static Type union_of(const std::vector<Type>& types);
 
 	static std::string get_nature_name(const Nature& nature);
 	static std::string get_nature_symbol(const Nature& nature);

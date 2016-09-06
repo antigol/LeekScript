@@ -46,11 +46,11 @@ void Array::preanalyse(SemanticAnalyser* analyser)
 		ex->preanalyse(analyser);
 		constant = constant && ex->constant;
 
-		cout << element_type << " + " << ex->type << " = ";
+//		cout << element_type << " + " << ex->type << " = ";
 		if (!Type::intersection(element_type, ex->type, &element_type)) {
 			add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
 		}
-		cout << element_type << endl;
+//		cout << element_type << endl;
 	}
 
 	for (Value* ex : expressions) {

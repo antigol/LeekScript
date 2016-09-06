@@ -56,8 +56,8 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 //	Type t1 = Type(&RawType::TUPLE, { Type::UNKNOWN.place_holder(1), Type::UNKNOWN.place_holder(1) });
 //	Type t2 = Type(&RawType::TUPLE, { Type::I32,                     Type::UNKNOWN });
 
-//	Type t1 = Type(&RawType::UNKNOWN, { Type::I32, Type::F64 });
-//	Type t2 = Type::I32;
+//	Type t1 = Type(&RawType::VEC, { Type(&RawType::UNKNOWN, { Type::I32, Type::F64 }) });
+//	Type t2 = Type::UNKNOWN;
 
 //	Type re;
 //	cout << Type::intersection(t1, t2, &re) << endl;

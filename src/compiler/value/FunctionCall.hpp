@@ -14,7 +14,7 @@ public:
 	Value* function;
 	std::vector<Value*> arguments;
 
-	Method method;
+	std::vector<Method> methods;
 
 	FunctionCall();
 	virtual ~FunctionCall();

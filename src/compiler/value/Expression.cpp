@@ -179,7 +179,7 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	if (op->type == TokenType::EQUAL) {
 
 		v1->analyse(analyser, req_type);
-		v2->analyse(analyser, Type::UNKNOWN);
+		v2->analyse(analyser, ((LeftValue*) v1)->left_type);
 		type = v1->type;
 
 	} else if (op->type == TokenType::PLUS) {
