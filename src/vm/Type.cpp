@@ -197,7 +197,7 @@ Type Type::element_type(size_t i) const {
 
 void Type::set_element_type(size_t index, const Type& type) {
 	// TODO unknown proof
-	assert(raw_type == &RawType::FUNCTION);
+	assert(raw_type != &RawType::UNKNOWN);
 	while (elements_types.size() <= index) {
 		elements_types.push_back(Type::UNKNOWN);
 	}
@@ -432,7 +432,7 @@ bool Type::intersection(const Type& t1, const Type& t2, Type* result)
 		b = get_intersection_private(&f1, f1, &f2, f2, &r, r) > 0;
 	}
 
-	if (b) cout << "INTER " << t1 << " <<>> " << t2 << " = " << r << endl;
+//	if (b) cout << "INTER " << t1 << " <<>> " << t2 << " = " << r << endl;
 
 	if (result) {
 		if (b) {

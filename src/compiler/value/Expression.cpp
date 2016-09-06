@@ -161,8 +161,9 @@ void Expression::will_require(SemanticAnalyser* analyser, const Type& req_type)
 		v2->will_require(analyser, ((LeftValue*) v1)->left_type);
 
 	} else if (op->type == TokenType::PLUS) {
-		v1->will_require(analyser, type);
-		v2->will_require(analyser, type);
+		Type fiber = type.fiber_conversion();
+		v1->will_require(analyser, fiber);
+		v2->will_require(analyser, fiber);
 
 	}
 }
@@ -184,18 +185,14 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 
 	} else if (op->type == TokenType::PLUS) {
 
+		v1->analyse(analyser, Type::UNKNOWN);
+		v2->analyse(analyser, v1->type);
+
+		type = v1->type.image_conversion();
 		if (!Type::intersection(type, req_type, &type)) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
 		type.make_it_complete();
-
-		v1->analyse(analyser, Type::UNKNOWN);
-		v2->analyse(analyser, v1->type);
-
-		Type result = v1->type.image_conversion();
-		if (!Type::intersection(result, type)) {
-			add_error(analyser, SemanticException::TYPE_MISMATCH);
-		}
 	}
 }
 

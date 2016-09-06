@@ -26,9 +26,15 @@ void Foreach::print(ostream& os, int indent, bool debug) const {
 
 	if (key != nullptr) {
 		os << key->content;
+		if (debug) {
+			os << " " << key_type;
+		}
 		os << " : ";
 	}
 	os << value->content;
+	if (debug) {
+		os << " " << value_type;
+	}
 
 	os << " in ";
 	container->print(os, indent + 1, debug);
@@ -44,37 +50,25 @@ unsigned Foreach::line() const
 
 void Foreach::preanalyse(SemanticAnalyser* analyser)
 {
-	// TODO
-	assert(0);
-}
-
-void Foreach::will_require(SemanticAnalyser* analyser, const Type& req_type)
-{
-
-}
-
-void Foreach::analyse(SemanticAnalyser* analyser, const Type& req_type)
-{
-	assert(0);
-
-	if (req_type.raw_type == &RawType::VEC) {
-		type = req_type;
-	} else {
+	if (type.raw_type != &RawType::VEC) {
 		type = Type::VOID;
 	}
 
 	analyser->enter_block();
 
-	container->analyse(analyser, Type::UNKNOWN);
+	container->preanalyse(analyser);
+	container->will_require(analyser, Type({ Type::VEC, Type::MAP, Type::SET }));
 
-	if (container->type.raw_type == &RawType::VEC || container->type.raw_type == &RawType::SET) {
+
+	if (container->type.get_raw_type() == &RawType::VEC || container->type.get_raw_type() == &RawType::SET) {
 		key_type = Type::I32; // If no key type in array key = 0, 1, 2...
 		value_type = container->type.element_type(0);
-	} else if (container->type.raw_type == &RawType::MAP) {
+	} else if (container->type.get_raw_type() == &RawType::MAP) {
 		key_type = container->type.element_type(0);
 		value_type = container->type.element_type(1);
 	} else {
-		analyser->add_error({ SemanticException::TYPE_MISMATCH });
+		key_type = Type::UNKNOWN;
+		value_type = Type::UNKNOWN;
 	}
 
 	if (key != nullptr) {
@@ -82,21 +76,71 @@ void Foreach::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	}
 	value_var = analyser->add_var(value, value_type, nullptr, nullptr);
 
-
 	analyser->enter_loop();
-	if (type == Type::VOID) {
-		body->analyse(analyser, Type::VOID);
-	} else {
-		body->analyse(analyser, type.element_type(0));
-		if (type.element_type(0) == Type::UNKNOWN) {
-			type.set_element_type(0, body->type);
-		} else if (type.element_type(0) != body->type) {
-			analyser->add_error({ SemanticException::TYPE_MISMATCH });
+
+	body->preanalyse(analyser);
+
+	if (type.raw_type == &RawType::VEC) {
+		if (body->type == Type::VOID || body->type == Type::UNREACHABLE) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
+
+		type.set_element_type(0, body->type);
 	}
+
 	analyser->leave_loop();
 	analyser->leave_block();
-	assert(type.is_complete());
+}
+
+void Foreach::will_require(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+
+	if (type.raw_type == &RawType::VEC) {
+		body->will_require(analyser, type.element_type(0));
+		type.set_element_type(0, body->type);
+	}
+}
+
+void Foreach::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+
+	analyser->enter_block();
+
+	container->analyse(analyser, Type::UNKNOWN);
+
+	if (container->type.get_raw_type() == &RawType::VEC || container->type.get_raw_type() == &RawType::SET) {
+		key_type = Type::I32; // If no key type in array key = 0, 1, 2...
+		value_type = container->type.element_type(0);
+	} else if (container->type.get_raw_type() == &RawType::MAP) {
+		key_type = container->type.element_type(0);
+		value_type = container->type.element_type(1);
+	} else {
+		container->add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+
+	if (key != nullptr) {
+		key_var = analyser->add_var(key, key_type, nullptr, nullptr);
+	}
+	value_var = analyser->add_var(value, value_type, nullptr, nullptr);
+
+	analyser->enter_loop();
+
+
+	if (type.raw_type == &RawType::VEC) {
+		body->analyse(analyser, type.element_type(0));
+		type.set_element_type(0, body->type);
+	} else {
+		body->analyse(analyser, Type::VOID);
+	}
+
+	analyser->leave_loop();
+	analyser->leave_block();
 }
 
 /*

@@ -48,7 +48,7 @@ void VariableValue::will_take(SemanticAnalyser* analyser, const Type& req_type)
 	if (tmp != var->type) {
 		var->type = tmp;
 
-		if (var->scope == VarScope::LOCAL) {
+		if (var->scope == VarScope::LOCAL && var->vd) {
 			var->vd->var_type = var->type;
 		}
 		if (var->scope == VarScope::PARAMETER) {
@@ -81,7 +81,7 @@ void VariableValue::will_require(SemanticAnalyser* analyser, const Type& req_typ
 	}
 
 	// save otherwise the type will be lost for the analyse
-	if (var->scope == VarScope::LOCAL) {
+	if (var->scope == VarScope::LOCAL && var->vd) {
 		var->vd->var_type = var->type;
 	}
 	if (var->scope == VarScope::PARAMETER) {

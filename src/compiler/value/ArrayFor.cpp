@@ -24,19 +24,20 @@ unsigned ArrayFor::line() const {
 
 void ArrayFor::preanalyse(SemanticAnalyser* analyser)
 {
+	forr->type = Type::VEC;
 	forr->preanalyse(analyser);
-	// TODO
-	assert(0);
+	type = forr->type;
 }
 
 void ArrayFor::will_require(SemanticAnalyser* analyser, const Type& req_type)
 {
-
+	forr->will_require(analyser, req_type);
+	type = forr->type;
 }
 
-void ArrayFor::analyse(SemanticAnalyser* analyser, const Type& req_type) {
-	assert(0);
-	forr->analyse(analyser, Type::VEC);
+void ArrayFor::analyse(SemanticAnalyser* analyser, const Type& req_type)
+{
+	forr->analyse(analyser, req_type);
 	type = forr->type;
 	assert(type.is_complete() || !analyser->errors.empty());
 }

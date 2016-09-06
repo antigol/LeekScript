@@ -24,7 +24,8 @@ unsigned ExpressionInstruction::line() const
 void ExpressionInstruction::preanalyse(SemanticAnalyser* analyser)
 {
 	value->preanalyse(analyser);
-	type = Type({ value->type, Type::VOID});
+	if (value->type == Type::UNREACHABLE) type = Type::UNREACHABLE;
+	else type = Type({ value->type, Type::VOID});
 }
 
 void ExpressionInstruction::will_require(SemanticAnalyser* analyser, const Type& req_type)
@@ -32,25 +33,29 @@ void ExpressionInstruction::will_require(SemanticAnalyser* analyser, const Type&
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-
 	if (type != Type::VOID) {
 		value->will_require(analyser, type);
+		if (value->type == Type::UNREACHABLE) type = Type::UNREACHABLE;
 		type = Type({ value->type, Type::VOID});
 	}
 }
 
 void ExpressionInstruction::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
-	if (!Type::intersection(type, req_type, &type)) {
-		add_error(analyser, SemanticException::TYPE_MISMATCH);
-	}
-
-	if (type == Type::VOID) {
+	if (type == Type::UNREACHABLE) {
 		value->analyse(analyser, Type::UNKNOWN);
-		if (value->type == Type::UNREACHABLE) type = Type::UNREACHABLE;
 	} else {
-		value->analyse(analyser, type);
-		type = value->type;
+		if (!Type::intersection(type, req_type, &type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+
+		if (type == Type::VOID) {
+			value->analyse(analyser, Type::UNKNOWN);
+			if (value->type == Type::UNREACHABLE) type = Type::UNREACHABLE;
+		} else {
+			value->analyse(analyser, type);
+			type = value->type;
+		}
 	}
 	assert(type.is_complete() || !analyser->errors.empty());
 }

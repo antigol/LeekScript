@@ -90,6 +90,7 @@ void FunctionCall::preanalyse(SemanticAnalyser* analyser)
 		for (size_t i = 0; i < arguments.size(); ++i) {
 			Value* a = arguments[i];
 			a->will_require(analyser, req_fun_type.argument_type(i));
+			req_fun_type.set_argument_type(i, a->type);
 		}
 		function->will_require(analyser, req_fun_type);
 
@@ -153,11 +154,12 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		Type req_fun_type = function->type;
 		req_fun_type.set_return_type(type.fiber_conversion());
 
-		function->analyse(analyser, req_fun_type);
 		for (size_t i = 0; i < arguments.size(); ++i) {
 			Value* a = arguments[i];
 			a->analyse(analyser, function->type.argument_type(i));
+			req_fun_type.set_argument_type(i, a->type);
 		}
+		function->analyse(analyser, req_fun_type);
 
 		type = function->type.return_type().image_conversion();
 	}

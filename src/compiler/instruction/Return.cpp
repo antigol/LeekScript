@@ -55,6 +55,7 @@ void Return::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		if (!Type::intersection(Type::VOID, f->type.return_type())) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
+		f->type.set_return_type(Type::VOID);
 	}
 
 	type = Type::UNREACHABLE;

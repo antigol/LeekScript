@@ -130,7 +130,7 @@ void Function::will_require(SemanticAnalyser* analyser, const Type& req_type)
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-	body->will_require(analyser, type.return_type());
+//	body->will_require(analyser, type.return_type());
 //	if (body->type != Type::UNREACHABLE) {
 //		type.set_return_type(body->type);
 //	}
@@ -152,11 +152,14 @@ void Function::analyse(SemanticAnalyser* analyser, const Type& req_type)
 
 	body->analyse(analyser, body->type != Type::UNREACHABLE ? return_type : Type::UNREACHABLE);
 
-	if (body->type != Type::UNREACHABLE && !Type::intersection(body->type, type.return_type(), &return_type)) {
-		add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
-	}
+	if (body->type != Type::UNREACHABLE) type.set_return_type(body->type);
 
-	type.set_return_type(return_type);
+//	if (body->type != Type::UNREACHABLE && !Type::intersection(body->type, type.return_type(), &return_type)) {
+//		add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
+//	}
+
+//	type.set_return_type(return_type);
+//	type.make_it_complete();
 
 	analyser->leave_function();
 }
