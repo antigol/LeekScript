@@ -10,6 +10,7 @@ VariableDeclaration::VariableDeclaration() {
 	global = false;
 	expression = nullptr;
 	typeName = nullptr;
+	var_type = Type::UNKNOWN;
 }
 
 VariableDeclaration::~VariableDeclaration() {
@@ -68,11 +69,16 @@ void VariableDeclaration::will_require(SemanticAnalyser* analyser, const Type& r
 }
 
 void VariableDeclaration::analyse(SemanticAnalyser* analyser, const Type& req_type)
-{	
-	var_type.make_it_complete();
+{
+	if (!Type::intersection(Type::VOID, req_type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
 
 	if (expression) {
 		expression->analyse(analyser, var_type);
+		var_type = expression->type;
+	} else {
+		var_type.make_it_complete();
 	}
 
 	analyser->add_var(variable, var_type, expression, this);

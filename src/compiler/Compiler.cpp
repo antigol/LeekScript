@@ -198,7 +198,7 @@ jit_value_t Compiler::compile_eq(jit_function_t F, jit_value_t v1, const Type& t
 
 jit_value_t Compiler::compile_convert(jit_function_t F, jit_value_t v, const Type& t_in, const Type& t_out)
 {
-	if (t_in == t_out) return v;
+	if (t_in == t_out || v == nullptr) return v;
 	if (t_out == Type::VAR) {
 		return VM::value_to_lsvalue(F, v, t_in);
 	}

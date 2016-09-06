@@ -85,7 +85,6 @@ void Block::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-	type.make_it_complete();
 
 	for (size_t i = 0; i < instructions.size(); ++i) {
 		Value* ins = instructions[i];
@@ -93,11 +92,13 @@ void Block::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		if (i == instructions.size() - 1) {
 			// last instruction
 			ins->analyse(analyser, type);
+			type = ins->type;
 			analyser->leave_block();
 			return;
 		} else {
 			ins->analyse(analyser, Type::VOID);
 			if (ins->type == Type::UNREACHABLE) {
+				type = Type::UNREACHABLE;
 				analyser->leave_block();
 				return; // no need to compile after a return
 			}

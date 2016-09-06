@@ -50,6 +50,9 @@ void Function::print(std::ostream& os, int indent, bool debug) const {
 //			os << "@";
 //		}
 		os << arguments[i]->content;
+		if (debug) {
+			os << " " << type.argument_type(i);
+		}
 		if (i < typeNames.size() && typeNames[i]) {
 			os << ": ";
 			typeNames[i]->print(os);
@@ -62,17 +65,15 @@ void Function::print(std::ostream& os, int indent, bool debug) const {
 //		}
 	}
 
+	os << ") ";
+	if (debug) {
+		os << type.return_type();
+	}
+	os << " → ";
 	if (returnType) {
-		os << ")→ ";
 		returnType->print(os);
 	}
-
-	os << ") → ";
 	body->print(os, indent, debug);
-
-	if (debug) {
-		os << " " << type;
-	}
 }
 
 unsigned Function::line() const {
@@ -130,6 +131,9 @@ void Function::will_require(SemanticAnalyser* analyser, const Type& req_type)
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 	body->will_require(analyser, type.return_type());
+//	if (body->type != Type::UNREACHABLE) {
+//		type.set_return_type(body->type);
+//	}
 }
 
 void Function::analyse(SemanticAnalyser* analyser, const Type& req_type)
@@ -137,14 +141,22 @@ void Function::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
+	Type return_type = type.return_type();
 	type.make_it_complete();
+	type.set_return_type(return_type);
 
 	analyser->enter_function(this);
 	for (size_t i = 0; i < arguments.size(); ++i) {
 		analyser->add_parameter(arguments[i], type.argument_type(i));
 	}
 
-	body->analyse(analyser, Type::UNKNOWN);
+	body->analyse(analyser, body->type != Type::UNREACHABLE ? return_type : Type::UNREACHABLE);
+
+	if (body->type != Type::UNREACHABLE && !Type::intersection(body->type, type.return_type(), &return_type)) {
+		add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
+	}
+
+	type.set_return_type(return_type);
 
 	analyser->leave_function();
 }

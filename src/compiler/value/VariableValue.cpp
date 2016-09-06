@@ -40,19 +40,24 @@ void VariableValue::will_take(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (var == nullptr) return;
 
-	if (!Type::intersection(var->type, req_type, &var->type)) {
+	Type tmp;
+	if (!Type::intersection(var->type, req_type, &tmp)) {
 		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
 	}
 
-	if (var->scope == VarScope::LOCAL) {
-		var->vd->var_type = var->type;
-	}
-	if (var->scope == VarScope::PARAMETER) {
-		var->function->type.arguments_types[var->index] = var->type;
-	}
+	if (tmp != var->type) {
+		var->type = tmp;
 
-	left_type = var->type;
-	type = var->type.image_conversion();
+		if (var->scope == VarScope::LOCAL) {
+			var->vd->var_type = var->type;
+		}
+		if (var->scope == VarScope::PARAMETER) {
+			var->function->type.arguments_types[var->index] = var->type;
+		}
+
+		left_type = var->type;
+		type = var->type.image_conversion();
+	}
 }
 
 void VariableValue::will_require(SemanticAnalyser* analyser, const Type& req_type)

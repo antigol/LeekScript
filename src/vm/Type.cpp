@@ -432,11 +432,11 @@ bool Type::intersection(const Type& t1, const Type& t2, Type* result)
 		b = get_intersection_private(&f1, f1, &f2, f2, &r, r) > 0;
 	}
 
+	if (b) cout << "INTER " << t1 << " <<>> " << t2 << " = " << r << endl;
+
 	if (result) {
 		if (b) {
 			*result = r;
-		} else {
-			*result = Type::VOID;
 		}
 	}
 	return b;

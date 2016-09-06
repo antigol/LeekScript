@@ -130,7 +130,6 @@ void IndexAccess::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-	type.make_it_complete();
 
 	Type fiber = type.fiber_conversion();
 	container->analyse(analyser, Type({ Type(&RawType::VEC, { fiber }), Type(&RawType::MAP, { Type::UNKNOWN, fiber }) }));
@@ -151,6 +150,12 @@ void IndexAccess::analyse(SemanticAnalyser* analyser, const Type& req_type)
 
 		left_type = container->type.element_type(1);
 	}
+
+	type = left_type.image_conversion();
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	type.make_it_complete();
 }
 
 

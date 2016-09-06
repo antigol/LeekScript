@@ -50,6 +50,7 @@ void Return::analyse(SemanticAnalyser* analyser, const Type& req_type)
 
 	if (expression) {
 		expression->analyse(analyser, f->type.return_type());
+		f->type.set_return_type(expression->type);
 	} else {
 		if (!Type::intersection(Type::VOID, f->type.return_type())) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
