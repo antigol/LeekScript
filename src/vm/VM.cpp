@@ -47,11 +47,21 @@ extern std::map<LSValue*, LSValue*> objs;
 
 string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 
-//	Type t1 = Type(&RawType::TUPLE, { Type::UNKNOWN.place_holder(1), Type(&RawType::VEC, { Type::UNKNOWN.place_holder(1) }), Type::UNKNOWN.place_holder(2), Type::UNKNOWN.place_holder(2) });
+//	Type t1 = Type(&RawType::TUPLE, { Type::UNKNOWN.place_holder(1),                                    Type(&RawType::VEC, { Type::UNKNOWN.place_holder(1) }), Type::UNKNOWN.place_holder(2), Type::UNKNOWN.place_holder(2) });
 //	Type t2 = Type(&RawType::TUPLE, { Type(&RawType::UNKNOWN, { Type::I32, Type::F64, Type::LSVALUE }), Type(&RawType::VEC, { Type::UNKNOWN.place_holder(1) }), Type::UNKNOWN.place_holder(1), Type::VAR });
-//	Type re;
-//	cout << Type::get_intersection(t1, t2, &re) << endl;
-//	cout << re << endl << endl;
+
+//	Type t1 = Type(&RawType::TUPLE, { Type::UNKNOWN.place_holder(1),                                    Type(&RawType::MAP, { Type(&RawType::UNKNOWN, { Type::I32, Type::F64, Type::LSVALUE }), Type::UNKNOWN.place_holder(1) }), Type::UNKNOWN.place_holder(2), Type::UNKNOWN.place_holder(2) });
+//	Type t2 = Type(&RawType::TUPLE, { Type(&RawType::UNKNOWN, { Type::I32, Type::F64, Type::LSVALUE }), Type(&RawType::MAP, { Type::I32,                                                        Type::UNKNOWN.place_holder(1) }), Type::UNKNOWN.place_holder(1), Type::VAR });
+
+//	Type t1 = Type(&RawType::TUPLE, { Type::UNKNOWN.place_holder(1), Type::UNKNOWN.place_holder(1) });
+//	Type t2 = Type(&RawType::TUPLE, { Type::I32,                     Type::UNKNOWN });
+
+//	Type t1 = Type(&RawType::UNKNOWN, { Type::I32, Type::F64 });
+//	Type t2 = Type::I32;
+
+	Type re;
+	cout << Type::intersection(t1, t2, &re) << endl;
+	cout << re << endl << endl;
 
 	// Reset
 	LSValue::obj_count = 0;

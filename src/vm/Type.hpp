@@ -84,16 +84,19 @@ public:
 	void set_argument_type(size_t index, const Type& type);
 	const Type& argument_type(size_t index) const;
 
-	const Type& element_type(size_t i) const;
+	Type element_type(size_t i) const;
 	void set_element_type(size_t index, const Type&);
 
 	bool is_complete() const;
 	void make_it_complete();
 
+private:
 	void replace_place_holder_type(uint32_t id, const Type& type);
 	void replace_place_holder_id(uint32_t old_id, uint32_t new_id);
 	std::set<uint32_t> place_holder_set() const;
 	void clean_place_holders();
+	bool is_placeholder_free() const;
+public:
 
 	size_t bytes() const;
 	jit_type_t jit_type() const;
@@ -105,7 +108,8 @@ public:
 	static bool intersection(const Type& t1, const Type& t2, Type* result = nullptr);
 private:
 	Type* copy_iterator(Type* type, Type* it);
-	static int get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type* tr, Type& fr);
+	static int get_intersection_private(Type* t1, Type& f1, Type* t2, Type& f2, Type* tr, Type& fr);
+	static int get_intersection_private_placeholder_free(const Type* t1, const Type* t2, Type* tr);
 public:
 
 	static std::string get_nature_name(const Nature& nature);

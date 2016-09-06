@@ -25,11 +25,11 @@ const RawType RawType::VOID       ("void",        "?",        "void",     0,    
 const RawType RawType::UNREACHABLE("unreachable", "?",        "",         0,                nullptr,           Nature::VOID,     13);
 const RawType RawType::LSVALUE    ("lsvalue",     "?",        "?",        sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  14);
 const RawType RawType::VAR        ("var",         "Variable", "variable", sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  5);
-const RawType RawType::BOOLEAN    ("bool",        "Boolean",  "boolean",  sizeof (int32_t), jit_type_int,      Nature::VALUE,    0);
-const RawType RawType::I32        ("i32",         "Number",   "number",   sizeof (int32_t), jit_type_int,      Nature::VALUE,    1);
-const RawType RawType::I64        ("i64",         "Number",   "number",   sizeof (int64_t), jit_type_long,     Nature::VALUE,    2);
-const RawType RawType::F32        ("f32",         "Number",   "number",   sizeof (float),   jit_type_float32,  Nature::VALUE,    3);
-const RawType RawType::F64        ("f64",         "Number",   "number",   sizeof (double),  jit_type_float64,  Nature::VALUE,    4);
+const RawType RawType::BOOLEAN    ("bool",        "Boolean",  "boolean",  sizeof (int32_t), jit_type_int,      Nature::VALUE,    2);
+const RawType RawType::I32        ("i32",         "Number",   "number",   sizeof (int32_t), jit_type_int,      Nature::VALUE,    0);
+const RawType RawType::I64        ("i64",         "Number",   "number",   sizeof (int64_t), jit_type_long,     Nature::VALUE,    3);
+const RawType RawType::F32        ("f32",         "Number",   "number",   sizeof (float),   jit_type_float32,  Nature::VALUE,    4);
+const RawType RawType::F64        ("f64",         "Number",   "number",   sizeof (double),  jit_type_float64,  Nature::VALUE,    1);
 const RawType RawType::VEC        ("vec",         "Vec",      "vec",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  6);
 const RawType RawType::MAP        ("map",         "Map",      "map",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  7);
 const RawType RawType::SET        ("set",         "Set",      "set",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  8);
@@ -131,21 +131,27 @@ const Type& Type::argument_type(size_t index) const {
 	return arguments_types[index];
 }
 
-const Type& Type::element_type(size_t i) const {
+Type Type::element_type(size_t i) const {
 	if (raw_type != &RawType::UNKNOWN) {
 		if (i < elements_types.size()) {
 			return elements_types[i];
 		}
 		return Type::UNKNOWN;
 	}
-	if (elements_types.empty()) return Type::UNKNOWN;
-
-	const Type& el = elements_types[0].element_type(i);
-	for (size_t i = 1; i < elements_types.size(); ++i) {
-		const Type& eli = elements_types[i].element_type(i);
-		if (el != eli) return Type::UNKNOWN;
+	if (get_raw_type() != &RawType::UNKNOWN) {
+		set<Type> elements;
+		for (const Type& type : elements_types) {
+			const Type& eti = type.element_type(i);
+			if (eti.raw_type == &RawType::UNKNOWN) {
+				if (eti.elements_types.empty()) return Type::UNKNOWN;
+				elements.insert(eti.elements_types.begin(), eti.elements_types.end());
+			} else {
+				elements.insert(eti);
+			}
+		}
+		return Type(&RawType::UNKNOWN, vector<Type>(elements.begin(), elements.end()));
 	}
-	return el;
+	return Type::UNKNOWN;
 }
 
 void Type::set_element_type(size_t index, const Type& type) {
@@ -169,15 +175,15 @@ void Type::make_it_complete()
 {
 	if (raw_type == &RawType::UNKNOWN) {
 		if (elements_types.empty()) {
-			*this = Type::I32;
+			*this = Type::I32; // smallset id of rawtypes
 		} else {
 			*this = elements_types[0];
 			make_it_complete();
 		}
 		return;
 	}
-	if (*this == Type::LSVALUE) {
-		*this = Type::VAR;
+	if (raw_type == &RawType::LSVALUE) {
+		*this = Type::VAR; // smallset id of lsvalue rawtypes
 		return;
 	}
 	for (Type& x : elements_types)  x.make_it_complete();
@@ -192,7 +198,7 @@ void Type::replace_place_holder_type(uint32_t id, const Type& type)
 	if (id == 0) return;
 	if (ph == id) {
 		*this = type;
-		ph = id;
+		if (raw_type == &RawType::UNKNOWN || raw_type == &RawType::LSVALUE) ph = id;
 	}
 	for (Type& x : elements_types)  x.replace_place_holder_type(id, type);
 	for (Type& x : return_types)    x.replace_place_holder_type(id, type);
@@ -233,6 +239,21 @@ void Type::clean_place_holders()
 	for (Type& x : elements_types)  x.clean_place_holders();
 	for (Type& x : return_types)    x.clean_place_holders();
 	for (Type& x : arguments_types) x.clean_place_holders();
+}
+
+bool Type::is_placeholder_free() const
+{
+	if (ph > 0) return false;
+	for (const Type& x : elements_types) {
+		if (!x.is_placeholder_free()) return false;
+	}
+	for (const Type& x : return_types) {
+		if (!x.is_placeholder_free()) return false;
+	}
+	for (const Type& x : arguments_types) {
+		if (!x.is_placeholder_free()) return false;
+	}
+	return true;
 }
 
 size_t Type::bytes() const
@@ -346,22 +367,30 @@ bool Type::intersection(const Type& t1, const Type& t2, Type* result)
 	 * empty set => false
 	 * non empty set => true
 	 */
-	Type f1 = t1;
-	Type f2 = t2;
-
-	// Avoid place holders collisions
-	set<uint32_t> phs1 = f1.place_holder_set();
-	set<uint32_t> phs2 = f2.place_holder_set();
-	uint32_t i = 1;
-	for (auto it = phs1.begin(); it != phs1.end(); ++it) {
-		f1.replace_place_holder_id(*it, i++);
-	}
-	for (auto it = phs2.begin(); it != phs2.end(); ++it) {
-		f2.replace_place_holder_id(*it, i++);
-	}
 
 	Type r;
-	bool b = get_intersection_private(&f1, &f2, f1, f2, &r, r) > 0;
+	bool b;
+
+	if (t1.is_placeholder_free() && t2.is_placeholder_free()) {
+		b = get_intersection_private_placeholder_free(&t1, &t2, &r) > 0;
+	} else {
+		Type f1 = t1;
+		Type f2 = t2;
+
+		// Avoid place holders collisions
+		set<uint32_t> phs1 = f1.place_holder_set();
+		set<uint32_t> phs2 = f2.place_holder_set();
+		uint32_t i = 1;
+		for (auto it = phs1.begin(); it != phs1.end(); ++it) {
+			f1.replace_place_holder_id(*it, i++);
+		}
+		for (auto it = phs2.begin(); it != phs2.end(); ++it) {
+			f2.replace_place_holder_id(*it, i++);
+		}
+
+		b = get_intersection_private(&f1, f1, &f2, f2, &r, r) > 0;
+	}
+
 	if (result) {
 		if (b) {
 			r.clean_place_holders();
@@ -391,10 +420,15 @@ Type* Type::copy_iterator(Type* type, Type* it)
 	return nullptr;
 }
 
-int Type::get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type* tr, Type& fr)
+int Type::get_intersection_private(Type* t1, Type& f1, Type* t2, Type& f2, Type* tr, Type& fr)
 {
 	if (t1->raw_type == &RawType::UNKNOWN && !t1->elements_types.empty()) {
-		set<Type> elements_types;
+
+		if (t1->is_placeholder_free() && t2->is_placeholder_free()) {
+			return get_intersection_private_placeholder_free(t1, t2, tr);
+		}
+
+		set<Type> results;
 		for (size_t i = 0; i < t1->elements_types.size(); ++i) {
 			Type cf1 = f1;
 			Type* ct1 = cf1.copy_iterator(&f1, t1);
@@ -405,31 +439,31 @@ int Type::get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type*
 			*ct1 = t1->elements_types[i];
 
 			Type r;
-			if (get_intersection_private(&cf1, &cf2, cf1, cf2, &r, r) > 0) {
-				if (r == Type::UNKNOWN) {
-					fr = Type::UNKNOWN;
-					return 2;
-				}
+			if (get_intersection_private(&cf1, cf1, &cf2, cf2, &r, r) > 0) {
 				if (r.raw_type == &RawType::UNKNOWN) {
-					elements_types.insert(r.elements_types.begin(), r.elements_types.end());
+					if (r.elements_types.empty()) {
+						fr = Type::UNKNOWN;
+						return 2;
+					}
+					results.insert(r.elements_types.begin(), r.elements_types.end());
 				} else {
-					elements_types.insert(r);
+					results.insert(r);
 				}
 			}
 		}
-		if (elements_types.empty()) return 0;
-		else if (elements_types.size() == 1) {
-			fr = *elements_types.begin();
+		if (results.empty()) return 0;
+		else if (results.size() == 1) {
+			fr = *results.begin();
 		} else {
-			fr = Type(&RawType::UNKNOWN, vector<Type>(elements_types.begin(), elements_types.end()));
+			fr = Type(&RawType::UNKNOWN, vector<Type>(results.begin(), results.end()));
 		}
 		return 2; // the very end
 	}
 	if (t2->raw_type == &RawType::UNKNOWN && !t2->elements_types.empty()) {
-		return get_intersection_private(t2, t1, f2, f1, tr, fr);
+		return get_intersection_private(t2, f2, t1, f1, tr, fr);
 	}
 
-	if (*t1 == Type::UNKNOWN) {
+	if (t1->raw_type == &RawType::UNKNOWN) {
 		*tr = *t2;
 		if (t1->ph > 0) tr->ph = t1->ph;
 
@@ -446,11 +480,11 @@ int Type::get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type*
 		fr.replace_place_holder_type(new_ph, *t2);
 		return 1;
 	}
-	if (*t2 == Type::UNKNOWN) {
-		return get_intersection_private(t2, t1, f2, f1, tr, fr);
+	if (t2->raw_type == &RawType::UNKNOWN) {
+		return get_intersection_private(t2, f2, t1, f1, tr, fr);
 	}
 
-	if (*t1 == Type::LSVALUE) {
+	if (t1->raw_type == &RawType::LSVALUE) {
 		if (t2->raw_type->nature() == Nature::LSVALUE) {
 			*tr = *t2;
 			if (t1->ph > 0) tr->ph = t1->ph;
@@ -470,8 +504,8 @@ int Type::get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type*
 		}
 		return 0;
 	}
-	if (*t2 == Type::LSVALUE) {
-		return get_intersection_private(t2, t1, f2, f1, tr, fr);
+	if (t2->raw_type == &RawType::LSVALUE) {
+		return get_intersection_private(t2, f2, t1, f1, tr, fr);
 	}
 
 	if (t1->raw_type != t2->raw_type) return 0;
@@ -480,21 +514,102 @@ int Type::get_intersection_private(Type* t1, Type* t2, Type& f1, Type& f2, Type*
 	if (t1->elements_types.size() != t2->elements_types.size()) return 0;
 	tr->elements_types.resize(t1->elements_types.size());
 	for (size_t i = 0; i < t1->elements_types.size(); ++i) {
-		int res = get_intersection_private(&t1->elements_types[i], &t2->elements_types[i], f1, f2, &tr->elements_types[i], fr);
+		int res = get_intersection_private(&t1->elements_types[i], f1, &t2->elements_types[i], f2, &tr->elements_types[i], fr);
 		if (res != 1) return res;
 	}
 
 	if (t1->return_types.size() != t2->return_types.size()) return 0;
 	tr->return_types.resize(t1->return_types.size());
 	for (size_t i = 0; i < t1->return_types.size(); ++i) {
-		int res = get_intersection_private(&t1->return_types[i], &t2->return_types[i], f1, f2, &tr->return_types[i], fr);
+		int res = get_intersection_private(&t1->return_types[i], f1, &t2->return_types[i], f2, &tr->return_types[i], fr);
 		if (res != 1) return res;
 	}
 
 	if (t1->arguments_types.size() != t2->arguments_types.size()) return 0;
 	tr->arguments_types.resize(t1->arguments_types.size());
 	for (size_t i = 0; i < t1->arguments_types.size(); ++i) {
-		int res = get_intersection_private(&t1->arguments_types[i], &t2->arguments_types[i], f1, f2, &tr->arguments_types[i], fr);
+		int res = get_intersection_private(&t1->arguments_types[i], f1, &t2->arguments_types[i], f2, &tr->arguments_types[i], fr);
+		if (res != 1) return res;
+	}
+
+	return 1;
+}
+
+int Type::get_intersection_private_placeholder_free(const Type* t1, const Type* t2, Type* tr)
+{
+	if (t1->raw_type == &RawType::UNKNOWN && !t1->elements_types.empty()) {
+		set<Type> results;
+		for (const Type& type : t1->elements_types) {
+			Type tmp;
+			if (get_intersection_private_placeholder_free(&type, t2, &tmp) > 0) {
+				if (tmp.raw_type == &RawType::UNKNOWN) {
+					if (tmp.elements_types.empty()) {
+						*tr = Type::UNKNOWN;
+						return 1;
+					}
+					results.insert(tmp.elements_types.begin(), tmp.elements_types.end());
+				} else {
+					results.insert(tmp);
+				}
+			}
+		}
+		if (results.empty()) return 0;
+		else if (results.size() == 1) {
+			*tr = *results.begin();
+		} else {
+			*tr = Type(&RawType::UNKNOWN, vector<Type>(results.begin(), results.end()));
+		}
+		return 1;
+	}
+	if (t2->raw_type == &RawType::UNKNOWN && !t2->elements_types.empty()) {
+		return get_intersection_private_placeholder_free(t2, t1, tr);
+	}
+
+	if (*t1 == Type::UNKNOWN) {
+		*tr = *t2;
+		return 1;
+	}
+	if (*t2 == Type::UNKNOWN) {
+		*tr = *t1;
+		return 1;
+	}
+
+	if (*t1 == Type::LSVALUE) {
+		if (t2->raw_type->nature() == Nature::LSVALUE) {
+			*tr = *t2;
+			return 1;
+		}
+		return 0;
+	}
+	if (*t2 == Type::LSVALUE) {
+		if (t1->raw_type->nature() == Nature::LSVALUE) {
+			*tr = *t1;
+			return 1;
+		}
+		return 0;
+	}
+
+	if (t1->raw_type != t2->raw_type) return 0;
+	tr->raw_type = t1->raw_type;
+
+	if (t1->elements_types.size() != t2->elements_types.size()) return 0;
+	tr->elements_types.resize(t1->elements_types.size());
+	for (size_t i = 0; i < t1->elements_types.size(); ++i) {
+		int res = get_intersection_private_placeholder_free(&t1->elements_types[i], &t2->elements_types[i], &tr->elements_types[i]);
+		if (res != 1) return res;
+	}
+
+	if (t1->return_types.size() != t2->return_types.size()) return 0;
+	tr->return_types.resize(t1->return_types.size());
+	for (size_t i = 0; i < t1->return_types.size(); ++i) {
+		int res = get_intersection_private_placeholder_free(&t1->return_types[i], &t2->return_types[i], &tr->return_types[i]);
+		if (res != 1) return res;
+	}
+
+	if (t1->arguments_types.size() != t2->arguments_types.size()) return 0;
+	tr->arguments_types.resize(t1->arguments_types.size());
+	for (size_t i = 0; i < t1->arguments_types.size(); ++i) {
+		int res = get_intersection_private_placeholder_free(&t1->arguments_types[i], &t2->arguments_types[i], &tr->arguments_types[i]);
 		if (res != 1) return res;
 	}
 
@@ -542,10 +657,10 @@ bool Type::operator ==(const Type& type) const {
 bool Type::operator <(const Type& type) const
 {
 	if (*raw_type != *type.raw_type) return *raw_type < *type.raw_type;
-	if (ph != type.ph) return ph < type.ph;
 	if (elements_types != type.elements_types) return std::lexicographical_compare(elements_types.begin(), elements_types.end(), type.elements_types.begin(), type.elements_types.end());
 	if (return_types != type.return_types) return std::lexicographical_compare(return_types.begin(), return_types.end(), type.return_types.begin(), type.return_types.end());
-	return std::lexicographical_compare(arguments_types.begin(), arguments_types.end(), type.arguments_types.begin(), type.arguments_types.end());
+	if (arguments_types != type.arguments_types) return std::lexicographical_compare(arguments_types.begin(), arguments_types.end(), type.arguments_types.begin(), type.arguments_types.end());
+	return ph < type.ph;
 }
 
 ostream& operator << (ostream& os, const Type& type) {

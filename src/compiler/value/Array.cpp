@@ -42,29 +42,16 @@ void Array::preanalyse(SemanticAnalyser* analyser)
 
 	Type element_type = Type::UNKNOWN;
 
-#if DEBUG > 0
-	cout << "#Array ";
-	print(cout, 0, false);
-	cout << "  ";
-	bool first = true;
-#endif
-
 	for (Value* ex : expressions) {
 		ex->preanalyse(analyser);
 		constant = constant && ex->constant;
 
+		cout << element_type << " + " << ex->type << " = ";
 		if (!Type::intersection(element_type, ex->type, &element_type)) {
 			add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
 		}
-
-#if DEBUG > 0
-		if (first) first = false; else cout << " + ";
-		cout << ex->type;
-#endif
+		cout << element_type << endl;
 	}
-#if DEBUG > 0
-	cout << " = " << element_type << endl;
-#endif
 
 	for (Value* ex : expressions) {
 		ex->will_require(analyser, element_type);
