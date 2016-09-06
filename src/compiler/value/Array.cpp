@@ -77,11 +77,12 @@ void Array::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-	type.make_it_complete();
 
 	for (Value* ex : expressions) {
 		ex->analyse(analyser, type.element_type(0));
+		type.set_element_type(0, ex->type);
 	}
+	type.make_it_complete();
 }
 
 jit_value_t Array::compile(Compiler& c) const {

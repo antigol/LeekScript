@@ -71,6 +71,11 @@ void Test::test_general() {
 //	success("let x let y x = y y = 1 x", "0");
 	success("let f = a,i -> a[i]; f([1],0)", "1");
 
+	success("(x->x+x)(5)", "10");
+	success("[x->x+x][0](5)", "10");
+	success("let f = [x->x+x] f[0](5)", "10");
+	success("let f = [] f.push(x->x+x) f[0](5)", "10");
+
 //	success("'foo' ?? 'bar'", "'foo'");
 //	success("null ?? 'bar'", "'bar'");
 //	success("let a = 'foo' a ?? 'bar'", "'foo'");

@@ -213,15 +213,20 @@ bool Type::is_complete() const
 	return true;
 }
 
-void Type::make_it_complete()
+void Type::make_it_complete(bool promote_primitive)
 {
 	if (raw_type == &RawType::UNKNOWN) {
 		if (alternative_types.empty()) {
-			*this = Type::BOOLEAN; // smallset id of rawtypes
+			*this = promote_primitive ? Type::BOOLEAN : Type::VAR;
 		} else {
-			Type tmp = *alternative_types.begin();
-			*this = tmp;
-			make_it_complete();
+			if (promote_primitive) {
+				Type tmp = *alternative_types.begin();
+				*this = tmp;
+			} else {
+				Type tmp = *alternative_types.rbegin();
+				*this = tmp;
+			}
+			make_it_complete(promote_primitive);
 		}
 		return;
 	}
@@ -229,9 +234,9 @@ void Type::make_it_complete()
 		*this = Type::VAR; // smallset id of lsvalue rawtypes
 		return;
 	}
-	for (Type& x : elements_types)  x.make_it_complete();
-	for (Type& x : return_types)    x.make_it_complete();
-	for (Type& x : arguments_types) x.make_it_complete();
+	for (Type& x : elements_types)  x.make_it_complete(promote_primitive);
+	for (Type& x : return_types)    x.make_it_complete(!promote_primitive);
+	for (Type& x : arguments_types) x.make_it_complete(promote_primitive);
 
 	assert(is_complete());
 }

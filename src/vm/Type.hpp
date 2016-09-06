@@ -90,7 +90,7 @@ public:
 	void set_element_type(size_t index, const Type&);
 
 	bool is_complete() const;
-	void make_it_complete();
+	void make_it_complete(bool promote_primitive = true);
 
 private:
 	void replace_place_holder_type(uint32_t id, const Type& type);
