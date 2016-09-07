@@ -93,7 +93,7 @@ void Match::analyse(ls::SemanticAnalyser* analyser, const Type& req_type)
 			break;
 		}
 	}
-	type.make_it_complete();
+	type.make_it_pure();
 
 	for (Value* ret : returns) {
 		ret->analyse(analyser, type);

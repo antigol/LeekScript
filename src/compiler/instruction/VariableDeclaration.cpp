@@ -78,7 +78,7 @@ void VariableDeclaration::analyse(SemanticAnalyser* analyser, const Type& req_ty
 		expression->analyse(analyser, var_type);
 		var_type = expression->type;
 	} else {
-		var_type.make_it_complete();
+		var_type.make_it_pure();
 	}
 
 	analyser->add_var(variable, var_type, expression, this);

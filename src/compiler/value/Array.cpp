@@ -82,7 +82,7 @@ void Array::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		ex->analyse(analyser, type.element_type(0));
 		type.set_element_type(0, ex->type);
 	}
-	type.make_it_complete();
+	type.make_it_pure();
 }
 
 jit_value_t Array::compile(Compiler& c) const {

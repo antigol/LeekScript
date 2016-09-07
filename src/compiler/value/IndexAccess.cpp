@@ -96,33 +96,29 @@ void IndexAccess::will_take(SemanticAnalyser* analyser, const Type& req_type)
 		}
 	}
 
-	type = left_type.image_conversion();
+	if (!Type::intersection(type, left_type.image_conversion(), &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
 }
 
 void IndexAccess::will_require(SemanticAnalyser* analyser, const Type& req_type)
 {
-	Type fiber_req_type = req_type.fiber_conversion();
-	Type container_req_type = Type({ Type(&RawType::VEC, { fiber_req_type }), Type(&RawType::MAP, { Type::UNKNOWN, fiber_req_type }) });
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+
+	Type fiber = type.fiber_conversion();
+	Type container_req_type = Type({ Type(&RawType::VEC, { fiber }), Type(&RawType::MAP, { Type::UNKNOWN, fiber }) });
 
 	container->will_require(analyser, container_req_type);
 
-	// VEC
 	if (container->type.get_raw_type() == &RawType::VEC) {
 		left_type = container->type.element_type(0);
-	}
-
-	// MAP
-	else if (container->type.get_raw_type() == &RawType::MAP) {
+	} else if (container->type.get_raw_type() == &RawType::MAP) {
 		left_type = container->type.element_type(1);
+	} else {
+		left_type = Type::UNKNOWN;
 	}
-
-	else {
-		if (!Type::intersection(left_type, req_type, &left_type)) {
-			add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
-		}
-	}
-
-	type = left_type.image_conversion();
 }
 
 void IndexAccess::analyse(SemanticAnalyser* analyser, const Type& req_type)
@@ -133,7 +129,6 @@ void IndexAccess::analyse(SemanticAnalyser* analyser, const Type& req_type)
 
 	Type fiber = type.fiber_conversion();
 	container->analyse(analyser, Type({ Type(&RawType::VEC, { fiber }), Type(&RawType::MAP, { Type::UNKNOWN, fiber }) }));
-
 
 	// VEC
 	if (container->type.raw_type == &RawType::VEC) {
@@ -151,11 +146,7 @@ void IndexAccess::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		left_type = container->type.element_type(1);
 	}
 
-	type = left_type.image_conversion();
-	if (!Type::intersection(type, req_type, &type)) {
-		add_error(analyser, SemanticException::TYPE_MISMATCH);
-	}
-	type.make_it_complete();
+	type.make_it_pure();
 }
 
 
@@ -171,6 +162,7 @@ LSValue* IA_vec_lsptr(LSVec<LSValue*>* vec, uint32_t i) {
 	if (vec->refs == 0) {
 		(*vec)[i] = nullptr;
 		delete vec;
+		r->refs--;
 	}
 	return r;
 }

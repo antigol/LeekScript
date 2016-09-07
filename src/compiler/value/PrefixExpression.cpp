@@ -70,7 +70,7 @@ void PrefixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 			analyser->add_error({ SemanticException::TYPE_MISMATCH });
 		}
 	}
-	assert(type.is_complete() || !analyser->errors.empty());
+	assert(type.is_pure() || !analyser->errors.empty());
 }
 
 int32_t PE_not(LSValue* value) {

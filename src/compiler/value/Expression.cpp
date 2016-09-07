@@ -130,18 +130,23 @@ void Expression::preanalyse(SemanticAnalyser* analyser)
 		v1->preanalyse(analyser);
 		v2->preanalyse(analyser);
 
+//		cout << "Expr " << v1->type << " + " << v2->type << " = ";
 
-		if (!Type::intersection(v1->type, Type::ARITHMETIC, &v1->type)) {
+		Type type1, type2;
+
+		if (!Type::intersection(v1->type, Type::ARITHMETIC, &type1)) {
 			v1->add_error(analyser, SemanticException::MUST_BE_ARITHMETIC_TYPE);
 		}
-		if (!Type::intersection(v2->type, Type::ARITHMETIC, &v2->type)) {
+		if (!Type::intersection(v2->type, Type::ARITHMETIC, &type2)) {
 			v2->add_error(analyser, SemanticException::MUST_BE_ARITHMETIC_TYPE);
 		}
 
 		Type result;
-		if (!Type::intersection(v1->type, v2->type, &result)) {
+		if (!Type::intersection(type1, type2, &result)) {
 			add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
 		}
+
+//		cout << result << endl;
 
 		v1->will_require(analyser, result);
 		v2->will_require(analyser, result);
@@ -152,6 +157,12 @@ void Expression::preanalyse(SemanticAnalyser* analyser)
 
 void Expression::will_require(SemanticAnalyser* analyser, const Type& req_type)
 {
+	if (op == nullptr) {
+		v1->will_require(analyser, req_type);
+		type = v1->type;
+		return;
+	}
+
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
@@ -164,7 +175,12 @@ void Expression::will_require(SemanticAnalyser* analyser, const Type& req_type)
 		Type fiber = type.fiber_conversion();
 		v1->will_require(analyser, fiber);
 		v2->will_require(analyser, fiber);
-
+		Type result;
+		if (!Type::intersection(v1->type, v2->type, &result)) {
+			add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
+		}
+		v1->will_require(analyser, result);
+		v2->will_require(analyser, result);
 	}
 }
 
@@ -192,7 +208,7 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		if (!Type::intersection(type, req_type, &type)) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
-		type.make_it_complete();
+		type.make_it_pure();
 	}
 }
 

@@ -57,7 +57,7 @@ void ExpressionInstruction::analyse(SemanticAnalyser* analyser, const Type& req_
 			type = value->type;
 		}
 	}
-	assert(type.is_complete() || !analyser->errors.empty());
+	assert(type.is_pure() || !analyser->errors.empty());
 }
 
 jit_value_t ExpressionInstruction::compile(Compiler& c) const {

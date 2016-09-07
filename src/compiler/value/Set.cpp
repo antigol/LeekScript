@@ -65,7 +65,7 @@ void Set::analyse(SemanticAnalyser* analyser, const Type&)
 
 	type = Type(&RawType::SET, Nature::LSVALUE, element_type);
 	*/
-	assert(type.is_complete() || !analyser->errors.empty());
+	assert(type.is_pure() || !analyser->errors.empty());
 }
 /*
 LSSet<LSValue*>* Set_create_ptr() { return new LSSet<LSValue*>(); }

@@ -101,7 +101,7 @@ void VariableValue::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
 	}
-	type.make_it_complete();
+	type.make_it_pure();
 
 
 	left_type = var->type;

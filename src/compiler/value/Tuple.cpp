@@ -51,7 +51,7 @@ void Tuple::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-	type.make_it_complete();
+	type.make_it_pure();
 
 	for (size_t i = 0; i < elements.size(); ++i) {
 		elements[i]->analyse(analyser, type.element_type(i));

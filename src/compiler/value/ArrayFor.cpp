@@ -39,7 +39,7 @@ void ArrayFor::analyse(SemanticAnalyser* analyser, const Type& req_type)
 {
 	forr->analyse(analyser, req_type);
 	type = forr->type;
-	assert(type.is_complete() || !analyser->errors.empty());
+	assert(type.is_pure() || !analyser->errors.empty());
 }
 
 jit_value_t ArrayFor::compile(Compiler& c) const {

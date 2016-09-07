@@ -142,7 +142,7 @@ void Function::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 	Type return_type = type.return_type();
-	type.make_it_complete();
+	type.make_it_pure();
 	type.set_return_type(return_type);
 
 	analyser->enter_function(this);

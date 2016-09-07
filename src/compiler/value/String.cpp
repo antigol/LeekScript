@@ -42,7 +42,7 @@ void String::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-	type.make_it_complete();
+	type.make_it_pure();
 }
 
 LSValue* String_create(string* s) {

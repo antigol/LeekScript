@@ -102,7 +102,7 @@ void For::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	analyser->leave_block();
 
 	analyser->leave_block();
-	assert(type.is_complete());
+	assert(type.is_pure());
 }
 
 jit_value_t For::compile(Compiler& c) const {
