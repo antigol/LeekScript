@@ -74,6 +74,8 @@ void FunctionCall::preanalyse(SemanticAnalyser* analyser)
 
 	} else {
 
+		function->preanalyse(analyser);
+
 		Type req_fun_type = Type::FUNCTION;
 		for (Value* a : arguments) {
 			a->preanalyse(analyser);
@@ -81,23 +83,21 @@ void FunctionCall::preanalyse(SemanticAnalyser* analyser)
 		}
 		req_fun_type.set_return_type(Type::UNKNOWN);
 
-		function->preanalyse(analyser);
-
-		cout << "FC " << req_fun_type << " + " << function->type << " = ";
-
-		if (!Type::intersection(function->type, req_fun_type, &req_fun_type)) {
-			add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
-		}
-
-		cout << req_fun_type << " --> ";
-
-		for (size_t i = 0; i < arguments.size(); ++i) {
-			Value* a = arguments[i];
-			a->will_require(analyser, req_fun_type.argument_type(i));
-			req_fun_type.set_argument_type(i, a->type);
-		}
-		cout << req_fun_type << endl;
+		Type old_fun_type = function->type;
 		function->will_require(analyser, req_fun_type);
+
+		while (old_fun_type != function->type) {
+			// The function.type has changed !
+			req_fun_type = function->type;
+			for (size_t i = 0; i < arguments.size(); ++i) {
+				Value* a = arguments[i];
+				a->will_require(analyser, req_fun_type.argument_type(i));
+				req_fun_type.set_argument_type(i, a->type);
+			}
+
+			old_fun_type = function->type;
+			function->will_require(analyser, req_fun_type);
+		}
 
 		// Convertion
 		type = function->type.return_type().image_conversion();

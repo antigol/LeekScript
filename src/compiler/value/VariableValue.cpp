@@ -64,10 +64,6 @@ void VariableValue::will_require(SemanticAnalyser* analyser, const Type& req_typ
 {
 	if (var == nullptr) return;
 
-	// update type in case var->type has changed
-	if (!Type::intersection(type, var->type.image_conversion(), &type)) {
-		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
-	}
 
 	// Example input
 	// req_type == var
@@ -80,15 +76,29 @@ void VariableValue::will_require(SemanticAnalyser* analyser, const Type& req_typ
 
 	cout << "VV wr type=" << type << " req=" << req_type << " var->type=" << var->type << endl;
 
+	// update type in case var->type has changed
+	if (!Type::intersection(type, var->type.image_conversion(), &type)) {
+		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
+	}
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
 	}
+
 	if (!Type::intersection(type.fiber_conversion(), var->type, &var->type)) {
 		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
 	}
 
 	// save otherwise the type will be lost for the analyse
 	if (var->scope == VarScope::LOCAL && var->vd) {
+		if (var->vd->expression) {
+			var->vd->expression->will_require(analyser, var->type);
+			if (!Type::intersection(var->type, var->vd->expression->type, &var->type)) {
+				add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
+			}
+			if (!Type::intersection(type, var->type, &type)) {
+				add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
+			}
+		}
 		var->vd->var_type = var->type;
 	}
 	if (var->scope == VarScope::PARAMETER) {
