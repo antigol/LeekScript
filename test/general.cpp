@@ -69,7 +69,7 @@ void Test::test_general() {
 	success("let x = [[[]]] x[0][0].push('a') x", "[[['a']]]");
 	success("let x = [] x.push([]) x[0].push(1) x", "[[1]]");
 
-//	success("let x let y x = y y = 1 x", "0");
+	success("let x let y x = y y = 1 x", "0");
 	success("let f = a,i -> a[i]; f([1],0)", "1");
 
 	success("(x->x+x)(5)", "10");

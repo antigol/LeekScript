@@ -36,11 +36,11 @@ unsigned FunctionCall::line() const {
 	return 0;
 }
 
-void FunctionCall::preanalyse(SemanticAnalyser* analyser)
+void FunctionCall::analyse_help(SemanticAnalyser* analyser)
 {
 	ObjectAccess* oa = dynamic_cast<ObjectAccess*>(function);
 	if (oa != nullptr) {
-		oa->object->preanalyse(analyser);
+		oa->object->analyse(analyser);
 		if (!oa->object->isLeftValue()) {
 			oa->object->add_error(analyser, SemanticException::VALUE_MUST_BE_A_LVALUE);
 			return;
@@ -48,7 +48,8 @@ void FunctionCall::preanalyse(SemanticAnalyser* analyser)
 
 		vector<Type> args_types;
 		for (size_t i = 0; i < arguments.size(); ++i) {
-			arguments[i]->preanalyse(analyser);
+			Value* a = arguments[i];
+			a->analyse(analyser);
 			args_types.push_back(arguments[i]->type);
 		}
 
@@ -66,37 +67,38 @@ void FunctionCall::preanalyse(SemanticAnalyser* analyser)
 
 		oa->type = generic_method; // only for debug
 
-		((LeftValue*) oa->object)->will_take(analyser, generic_method.argument_type(0));
+		((LeftValue*) oa->object)->reanalyse_l(analyser, generic_method.argument_type(0));
 		for (size_t i = 0; i < arguments.size(); ++i) {
-			arguments[i]->will_require(analyser, generic_method.argument_type(i + 1));
+			Value* a = arguments[i];
+			a->reanalyse(analyser, generic_method.argument_type(i + 1));
 		}
 		type = generic_method.return_type().image_conversion();
 
 	} else {
 
-		function->preanalyse(analyser);
+		function->analyse(analyser);
 
 		Type req_fun_type = Type::FUNCTION;
 		for (Value* a : arguments) {
-			a->preanalyse(analyser);
+			a->analyse(analyser);
 			req_fun_type.add_argument_type(a->type);
 		}
 		req_fun_type.set_return_type(Type::UNKNOWN);
 
 		Type old_fun_type = function->type;
-		function->will_require(analyser, req_fun_type);
+		function->reanalyse(analyser, req_fun_type);
 
 		while (old_fun_type != function->type) {
 			// The function.type has changed !
 			req_fun_type = function->type;
 			for (size_t i = 0; i < arguments.size(); ++i) {
 				Value* a = arguments[i];
-				a->will_require(analyser, req_fun_type.argument_type(i));
+				a->reanalyse(analyser, req_fun_type.argument_type(i));
 				req_fun_type.set_argument_type(i, a->type);
 			}
 
 			old_fun_type = function->type;
-			function->will_require(analyser, req_fun_type);
+			function->reanalyse(analyser, req_fun_type);
 		}
 
 		// Convertion
@@ -104,7 +106,7 @@ void FunctionCall::preanalyse(SemanticAnalyser* analyser)
 	}
 }
 
-void FunctionCall::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void FunctionCall::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
@@ -116,13 +118,38 @@ void FunctionCall::will_require(SemanticAnalyser* analyser, const Type& req_type
 		// recalculer le type generic
 		// relancer will_require et will_take
 	} else {
-		Type req_fun_type = function->type;
+		Type req_fun_type = Type::FUNCTION;
+		for (size_t i = 0; i < arguments.size(); ++i) {
+			Value* a = arguments[i];
+			a->reanalyse(analyser, req_fun_type.argument_type(i));
+			req_fun_type.set_argument_type(i, a->type);
+		}
 		req_fun_type.set_return_type(type.fiber_conversion());
-		function->will_require(analyser, req_fun_type);
+
+		Type old_fun_type = function->type;
+		function->reanalyse(analyser, req_fun_type);
+
+		while (old_fun_type != function->type) {
+			// The function.type has changed !
+			req_fun_type = function->type;
+			for (size_t i = 0; i < arguments.size(); ++i) {
+				Value* a = arguments[i];
+				a->reanalyse(analyser, req_fun_type.argument_type(i));
+				req_fun_type.set_argument_type(i, a->type);
+			}
+
+			old_fun_type = function->type;
+			function->reanalyse(analyser, req_fun_type);
+		}
+
+		// Convertion
+		if (!Type::intersection(type, function->type.return_type().image_conversion(), &type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
 	}
 }
 
-void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void FunctionCall::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
@@ -131,7 +158,7 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	ObjectAccess* oa = dynamic_cast<ObjectAccess*>(function);
 	if (oa != nullptr) {
 
-		oa->object->analyse(analyser, Type::UNKNOWN);
+		oa->object->finalize(analyser, Type::UNKNOWN);
 
 		vector<Type> args_types;
 		for (Value* a : arguments) {
@@ -149,7 +176,8 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		oa->type = methods[0].type; // only for debug
 
 		for (size_t i = 0; i < arguments.size(); ++i) {
-			arguments[i]->analyse(analyser, methods[0].type.argument_type(i + 1));
+			Value* a = arguments[i];
+			a->finalize(analyser, methods[0].type.argument_type(i + 1));
 		}
 
 		if (!Type::intersection(type, methods[0].type.return_type().image_conversion(), &type)) {
@@ -163,10 +191,10 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type)
 
 		for (size_t i = 0; i < arguments.size(); ++i) {
 			Value* a = arguments[i];
-			a->analyse(analyser, function->type.argument_type(i));
+			a->finalize(analyser, function->type.argument_type(i));
 			req_fun_type.set_argument_type(i, a->type);
 		}
-		function->analyse(analyser, req_fun_type);
+		function->finalize(analyser, req_fun_type);
 
 		if (!Type::intersection(type, function->type.return_type().image_conversion(), &type)) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);

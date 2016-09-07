@@ -4,19 +4,17 @@
 namespace ls {
 
 Value::Value() {
-	type = Type::UNKNOWN;
 	constant = false;
+
+	// important initialisation
+	type = Type::UNKNOWN;
+	analysed = false;
 }
 
 Value::~Value() {}
 
 bool Value::isLeftValue() const {
 	return false;
-}
-
-void Value::preanalyse(SemanticAnalyser* analyser)
-{
-	analyse(analyser, Type::UNKNOWN);
 }
 
 void Value::add_error(SemanticAnalyser* analyser, SemanticException::Type error_type)

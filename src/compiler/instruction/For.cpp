@@ -38,18 +38,18 @@ unsigned For::line() const
 	return 0;
 }
 
-void For::preanalyse(SemanticAnalyser* analyser)
+void For::analyse_help(SemanticAnalyser* analyser)
 {
 	// TODO
 	assert(0);
 }
 
-void For::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void For::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 
 }
 
-void For::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void For::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	assert(0);
 	if (req_type.raw_type == &RawType::VEC) {
@@ -58,11 +58,11 @@ void For::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		type = Type::VOID;
 	}
 
-	analyser->enter_block();
+	analyser->enter_block(this);
 
 	// Init
 	for (Value* ins : inits) {
-		ins->analyse(analyser, Type::VOID);
+		ins->finalize(analyser, Type::VOID);
 		if (dynamic_cast<Return*>(ins)) {
 			analyser->leave_block();
 			return;
@@ -70,7 +70,7 @@ void For::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	}
 
 	// Condition
-	condition->analyse(analyser, Type::UNKNOWN);
+	condition->finalize(analyser, Type::UNKNOWN);
 	if (condition->type == Type::FUNCTION || condition->type == Type::VOID) {
 		stringstream oss;
 		condition->print(oss);
@@ -80,9 +80,9 @@ void For::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	// Body
 	analyser->enter_loop();
 	if (type == Type::VOID) {
-		body->analyse(analyser, Type::VOID);
+		body->finalize(analyser, Type::VOID);
 	} else {
-		body->analyse(analyser, type.element_type(0));
+		body->finalize(analyser, type.element_type(0));
 		if (type.element_type(0) == Type::UNKNOWN) {
 			type.set_element_type(0, body->type);
 		} else if (type.element_type(0) != body->type) {
@@ -92,9 +92,9 @@ void For::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	analyser->leave_loop();
 
 	// Increment
-	analyser->enter_block();
+	analyser->enter_block(this);
 	for (Value* ins : increments) {
-		ins->analyse(analyser, Type::VOID);
+		ins->finalize(analyser, Type::VOID);
 		if (dynamic_cast<Return*>(ins)) {
 			break;
 		}

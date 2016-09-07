@@ -44,18 +44,18 @@ unsigned Map::line() const {
 	return 0;
 }
 
-void Map::preanalyse(SemanticAnalyser* analyser)
+void Map::analyse_help(SemanticAnalyser* analyser)
 {
 	// TODO
 	assert(0);
 }
 
-void Map::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void Map::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 
 }
 
-void Map::analyse(SemanticAnalyser* analyser, const Type&) {
+void Map::finalize_help(SemanticAnalyser* analyser, const Type& req_type) {
 	assert(0);
 /*
 	Type key_type = Type::UNKNOWN;

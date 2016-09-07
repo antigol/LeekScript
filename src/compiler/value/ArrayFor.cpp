@@ -22,22 +22,22 @@ unsigned ArrayFor::line() const {
 	return 0;
 }
 
-void ArrayFor::preanalyse(SemanticAnalyser* analyser)
+void ArrayFor::analyse_help(SemanticAnalyser* analyser)
 {
 	forr->type = Type::VEC;
-	forr->preanalyse(analyser);
+	forr->analyse(analyser);
 	type = forr->type;
 }
 
-void ArrayFor::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void ArrayFor::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-	forr->will_require(analyser, req_type);
+	forr->reanalyse(analyser, req_type);
 	type = forr->type;
 }
 
-void ArrayFor::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void ArrayFor::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-	forr->analyse(analyser, req_type);
+	forr->finalize(analyser, req_type);
 	type = forr->type;
 	assert(type.is_pure() || !analyser->errors.empty());
 }

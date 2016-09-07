@@ -26,26 +26,23 @@ SemanticAnalyser::SemanticAnalyser(const std::vector<Module*>& modules) {
 	program = nullptr;
 	in_program = false;
 	this->modules = modules;
-//	loops.push(0);
-//	variables.push_back(vector<map<std::string, SemanticVar*>> {});
-//	functions_stack.push(nullptr); // The first function is the main function of the program
-//	parameters.push_back(map<std::string, SemanticVar*> {});
 }
 
 SemanticAnalyser::~SemanticAnalyser() {}
 
-void SemanticAnalyser::preanalyse(Program* program)
+void SemanticAnalyser::analyse(Program* program)
 {
 	// Gives to each element a type
 	// but this type is not necessarly complete
 	in_program = true;
-	program->main->preanalyse(this);
+	program->main->analyse(this);
+	program->main->reanalyse(this, Type::UNKNOWN);
 }
 
-void SemanticAnalyser::analyse(Program* program)
+void SemanticAnalyser::finalize(Program* program)
 {
 	// Fix the uncomplete types
-	program->main->analyse(this, Type::UNKNOWN);
+	program->main->finalize(this, Type::UNKNOWN); // TODO do not recreate variables enter_block and so on
 }
 
 void SemanticAnalyser::enter_function(Function* f) {
@@ -69,19 +66,31 @@ void SemanticAnalyser::leave_function() {
 	loops.pop();
 }
 
-void SemanticAnalyser::enter_block() {
+void SemanticAnalyser::enter_block(Value* block) {
 	variables.back().push_back(map<std::string, SemanticVar*> {});
+	block_stack.push(block);
 }
 
 void SemanticAnalyser::leave_block() {
 	variables.back().pop_back();
+	block_stack.pop();
 }
 
 Function* SemanticAnalyser::current_function() const {
 	if (functions_stack.empty()) {
+		assert(0);
 		return nullptr;
 	}
 	return functions_stack.top();
+}
+
+Value*SemanticAnalyser::current_block() const
+{
+	if (block_stack.empty()) {
+		assert(0);
+		return nullptr;
+	}
+	return block_stack.top();
 }
 
 void SemanticAnalyser::enter_loop() {
@@ -120,9 +129,28 @@ vector<Method> SemanticAnalyser::get_method(const string& name, const Type& retu
 	}
 }
 
-SemanticVar* SemanticAnalyser::add_parameter(Token* v, Type type) {
+SemanticVar* SemanticAnalyser::add_var(Token* v, Type type, Value* block, VariableDeclaration* vd) {
 
-	SemanticVar* arg = new SemanticVar(v->content, VarScope::PARAMETER, type, parameters.back().size(), nullptr, nullptr, current_function());
+	// Internal variable, before execution
+	if (!in_program) {
+		SemanticVar* var = new SemanticVar(v->content, VarScope::INTERNAL, type, 0, block, vd, current_function());
+		internal_vars.insert(pair<string, SemanticVar*>(v->content, var));
+		return var;
+	}
+
+	if (variables.back().back().find(v->content) != variables.back().back().end()) {
+		add_error({ SemanticException::VARIABLE_ALREADY_DEFINED, v->line, v->content });
+	}
+
+	SemanticVar* var = new SemanticVar(v->content, VarScope::LOCAL, type, 0, block, vd, current_function());
+
+	variables.back().back().insert(pair<string, SemanticVar*>(v->content, var));
+	return var;
+}
+
+SemanticVar* SemanticAnalyser::add_parameter(Token* v, Type type, Value* block) {
+
+	SemanticVar* arg = new SemanticVar(v->content, VarScope::PARAMETER, type, parameters.back().size(), block, nullptr, current_function());
 	parameters.back().insert(pair<string, SemanticVar*>(v->content, arg));
 	return arg;
 }
@@ -164,31 +192,6 @@ SemanticVar* SemanticAnalyser::get_var_direct(std::string name) {
 	} catch (exception& e) {}
 	return nullptr;
 }
-
-SemanticVar* SemanticAnalyser::add_var(Token* v, Type type, Value* value, VariableDeclaration* vd) {
-
-	// Internal variable, before execution
-	if (!in_program) {
-		internal_vars.insert(pair<string, SemanticVar*>(
-			v->content,
-			new SemanticVar(v->content, VarScope::INTERNAL, type, 0, value, vd, current_function())
-		));
-		return internal_vars.at(v->content);
-	}
-
-	if (variables.back().back().find(v->content) != variables.back().back().end()) {
-		add_error({SemanticException::Type::VARIABLE_ALREADY_DEFINED, v->line, v->content});
-	}
-	variables.back().back().insert(pair<string, SemanticVar*>(
-		v->content,
-		new SemanticVar(v->content, VarScope::LOCAL, type, 0, value, vd, current_function())
-	));
-	return variables.back().back().at(v->content);
-}
-
-//void SemanticAnalyser::add_function(Function* l) {
-//	functions.push_back(l);
-//}
 
 map<string, SemanticVar*>& SemanticAnalyser::get_local_vars() {
 	return variables.back().back();

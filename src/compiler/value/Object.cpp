@@ -36,18 +36,18 @@ unsigned Object::line() const {
 	return 0;
 }
 
-void Object::preanalyse(SemanticAnalyser* analyser)
+void Object::analyse_help(SemanticAnalyser* analyser)
 {
 	// TODO
 	assert(0);
 }
 
-void Object::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void Object::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 
 }
 
-void Object::analyse(SemanticAnalyser* analyser, const Type&)
+void Object::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	assert(0);
 	/*type = Type::OBJECT;

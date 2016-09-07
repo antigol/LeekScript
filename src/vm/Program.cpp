@@ -71,13 +71,13 @@ double Program::compile(VM& vm, const std::string& ctx, const ExecMode mode) {
 	Context context { ctx };
 
 	SemanticAnalyser sem(vm.modules);
-	sem.preanalyse(this);
+	sem.analyse(this);
 #if DEBUG > 0
 	cout << "preanalyse: "; print(cout, true);
 #endif
 
 	if (sem.errors.empty()) {
-		sem.analyse(this);
+		sem.finalize(this);
 #if DEBUG > 0
 	cout << "analyse: "; print(cout, true);
 #endif

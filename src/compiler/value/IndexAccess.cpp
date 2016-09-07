@@ -45,29 +45,28 @@ bool IndexAccess::isLeftValue() const
 	return key2 == nullptr && container->isLeftValue();
 }
 
-void IndexAccess::preanalyse(SemanticAnalyser* analyser)
+void IndexAccess::analyse_help(SemanticAnalyser* analyser)
 {
-	container->preanalyse(analyser);
-	container->will_require(analyser, Type::INDEXABLE);
+	container->analyse(analyser);
+	container->reanalyse(analyser, Type::INDEXABLE);
 
-	key->preanalyse(analyser);
-	if (key2) key2->preanalyse(analyser);
+	key->analyse(analyser);
+	if (key2) key2->analyse(analyser);
 
 	left_type = Type::UNKNOWN;
-	type = Type::UNKNOWN;
 
 	// VEC
 	if (container->type.get_raw_type() == &RawType::VEC) {
-		key->will_require(analyser, Type::I32);
-		if (key2) key2->will_require(analyser, Type::I32);
+		key->reanalyse(analyser, Type::I32);
+		if (key2) key2->reanalyse(analyser, Type::I32);
 
 		left_type = container->type.element_type(0);
 	}
 
 	// MAP
 	if (container->type.get_raw_type() == &RawType::MAP) {
-		key->will_require(analyser, container->type.element_type(0));
-		if (key2) key2->will_require(analyser, container->type.element_type(0));
+		key->reanalyse(analyser, container->type.element_type(0));
+		if (key2) key2->reanalyse(analyser, container->type.element_type(0));
 
 		left_type = container->type.element_type(1);
 	}
@@ -75,7 +74,7 @@ void IndexAccess::preanalyse(SemanticAnalyser* analyser)
 	type = left_type.image_conversion();
 }
 
-void IndexAccess::will_take(SemanticAnalyser* analyser, const Type& req_type)
+void IndexAccess::reanalyse_l_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!isLeftValue()) {
 		add_error(analyser, SemanticException::VALUE_MUST_BE_A_LVALUE);
@@ -84,7 +83,7 @@ void IndexAccess::will_take(SemanticAnalyser* analyser, const Type& req_type)
 
 	Type container_req_type = Type({ Type(&RawType::VEC, { req_type }), Type(&RawType::MAP, { Type::UNKNOWN, req_type }) });
 
-	((LeftValue*) container)->will_take(analyser, container_req_type);
+	((LeftValue*) container)->reanalyse_l(analyser, container_req_type);
 
 	if (container->type.get_raw_type() == &RawType::VEC) {
 		left_type = container->type.element_type(0);
@@ -101,7 +100,7 @@ void IndexAccess::will_take(SemanticAnalyser* analyser, const Type& req_type)
 	}
 }
 
-void IndexAccess::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void IndexAccess::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	cout << "IA wr " << type << " + " << req_type << " = ";
 
@@ -114,19 +113,17 @@ void IndexAccess::will_require(SemanticAnalyser* analyser, const Type& req_type)
 	Type fiber = type.fiber_conversion();
 	Type container_req_type = Type({ Type(&RawType::VEC, { fiber }), Type(&RawType::MAP, { Type::UNKNOWN, fiber }) });
 
-	container->will_require(analyser, container_req_type);
+	container->reanalyse(analyser, container_req_type);
 
 	if (container->type.get_raw_type() == &RawType::VEC) {
 		left_type = container->type.element_type(0);
-		key->will_require(analyser, Type::I32);
-		if (key2) key2->will_require(analyser, Type::I32);
+		key->reanalyse(analyser, Type::I32);
+		if (key2) key2->reanalyse(analyser, Type::I32);
 	} else if (container->type.get_raw_type() == &RawType::MAP) {
 		left_type = container->type.element_type(1);
 		Type key_type = container->type.element_type(0);
-		key->will_require(analyser, key_type);
-		if (key2) key2->will_require(analyser, key_type);
-	} else {
-		left_type = Type::UNKNOWN;
+		key->reanalyse(analyser, key_type);
+		if (key2) key2->reanalyse(analyser, key_type);
 	}
 
 	if (!Type::intersection(type, left_type.image_conversion(), &type)) {
@@ -134,27 +131,27 @@ void IndexAccess::will_require(SemanticAnalyser* analyser, const Type& req_type)
 	}
 }
 
-void IndexAccess::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void IndexAccess::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 
 	Type fiber = type.fiber_conversion();
-	container->analyse(analyser, Type({ Type(&RawType::VEC, { fiber }), Type(&RawType::MAP, { Type::UNKNOWN, fiber }) }));
+	container->finalize(analyser, Type({ Type(&RawType::VEC, { fiber }), Type(&RawType::MAP, { Type::UNKNOWN, fiber }) }));
 
 	// VEC
 	if (container->type.raw_type == &RawType::VEC) {
-		key->analyse(analyser, Type::I32);
-		if (key2) key2->analyse(analyser, Type::I32);
+		key->finalize(analyser, Type::I32);
+		if (key2) key2->finalize(analyser, Type::I32);
 
 		left_type = container->type.element_type(0);
 	}
 
 	// MAP
 	if (container->type.raw_type == &RawType::MAP) {
-		key->analyse(analyser, container->type.element_type(0));
-		if (key2) key2->analyse(analyser, container->type.element_type(0));
+		key->finalize(analyser, container->type.element_type(0));
+		if (key2) key2->finalize(analyser, container->type.element_type(0));
 
 		left_type = container->type.element_type(1);
 	}

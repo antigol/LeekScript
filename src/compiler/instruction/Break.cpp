@@ -24,7 +24,7 @@ unsigned Break::line() const
 	return 0;
 }
 
-void Break::preanalyse(SemanticAnalyser* analyser)
+void Break::analyse_help(SemanticAnalyser* analyser)
 {
 	// break must be in a loop
 	if (!analyser->in_loop(deepness)) {
@@ -33,14 +33,14 @@ void Break::preanalyse(SemanticAnalyser* analyser)
 	type = Type::UNREACHABLE;
 }
 
-void Break::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void Break::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	assert(0);
 }
 
-void Break::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void Break::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-	preanalyse(analyser);
+	analyse(analyser);
 }
 
 jit_value_t Break::compile(Compiler& c) const {

@@ -27,22 +27,22 @@ unsigned PostfixExpression::line() const {
 	return 0;
 }
 
-void PostfixExpression::preanalyse(SemanticAnalyser* analyser)
+void PostfixExpression::analyse_help(SemanticAnalyser* analyser)
 {
-	expression->preanalyse(analyser);
-	expression->will_require(analyser, Type::ARITHMETIC);
+	expression->analyse(analyser);
+	expression->reanalyse(analyser, Type::ARITHMETIC);
 	type = expression->type;
 }
 
-void PostfixExpression::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void PostfixExpression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-	expression->will_require(analyser, req_type);
+	expression->reanalyse(analyser, req_type);
 	type = expression->type;
 }
 
-void PostfixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void PostfixExpression::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-	expression->analyse(analyser, type);
+	expression->finalize(analyser, type);
 	type = expression->type;
 }
 

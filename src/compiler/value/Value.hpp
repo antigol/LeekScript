@@ -27,34 +27,32 @@ public:
 
 	virtual unsigned line() const = 0;
 
-///////////////// PREANALYSE ////////////////////
 
-	// `type` must represant all possible outputs (conversions included)
-	// must go through all the program
-	virtual void preanalyse(SemanticAnalyser* analyser) = 0;
+	inline void analyse(SemanticAnalyser* analyser) {
+		analyse_help(analyser);
+		analysed = true;
+	}
 
-	// When call `will_require` ?
-	//  During preanalyse, call on the non left value part
-	//  x = y         called on y
-	//  z = x + y     called on x,y
-	virtual void will_require(SemanticAnalyser* analyser, const Type& req_type) = 0;
+	inline void reanalyse(SemanticAnalyser* analyser, const Type& req_type) {
+		if (analysed) reanalyse_help(analyser, req_type);
+	}
 
-///////////////// ANALYSE ////////////////////
-
-	// this method must leave `type` in a complete state (i.e. type.is_complete())
-	// this method must respect `req_type` (i.e. Type::get_intersection(type, req_type))
-	//  otherwise it must generate an error
-	// must go through all the program
-	virtual void analyse(SemanticAnalyser* analyser, const Type& req_type) = 0;
-
-///////////////// COMPILATION ////////////////////
+	void finalize(SemanticAnalyser* analyser, const Type& req_type) {
+		finalize_help(analyser, req_type);
+		analysed = false;
+	}
 
 	virtual jit_value_t compile(Compiler&) const = 0;
 
-
-
 	void add_error(SemanticAnalyser* analyser, SemanticException::Type error_type);
 	static std::string tabs(int indent);
+
+protected:
+	virtual void analyse_help(SemanticAnalyser* analyser) = 0;
+	virtual void reanalyse_help(SemanticAnalyser* analyser, const Type& req_type) = 0;
+	virtual void finalize_help(SemanticAnalyser* analyser, const Type& req_type) = 0;
+
+	bool analysed;
 };
 
 }

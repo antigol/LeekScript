@@ -80,7 +80,7 @@ unsigned Function::line() const {
 	return 0;
 }
 
-void Function::preanalyse(SemanticAnalyser* analyser)
+void Function::analyse_help(SemanticAnalyser* analyser)
 {
 	type = Type::FUNCTION;
 
@@ -101,7 +101,7 @@ void Function::preanalyse(SemanticAnalyser* analyser)
 	analyser->enter_function(this);
 	arguments_vars.clear();
 	for (size_t i = 0; i < arguments.size(); ++i) {
-		arguments_vars.push_back(analyser->add_parameter(arguments[i], type.argument_type(i)));
+		arguments_vars.push_back(analyser->add_parameter(arguments[i], type.argument_type(i), this));
 	}
 
 	type.set_return_type(Type::UNKNOWN);
@@ -111,7 +111,7 @@ void Function::preanalyse(SemanticAnalyser* analyser)
 	// The following call will modify
 	// type.return_types (return instruction)
 	// type.arguments_type (parameters)
-	body->preanalyse(analyser);
+	body->analyse(analyser);
 	oss << type << endl;
 	cout << oss.str();
 
@@ -126,7 +126,7 @@ void Function::preanalyse(SemanticAnalyser* analyser)
 	}
 	type.return_types.clear();
 	type.set_return_type(return_type);
-	body->will_require(analyser, return_type);
+	body->reanalyse(analyser, return_type);
 
 	// update return type
 	if (!Type::intersection(return_type, body->type, &return_type)) {
@@ -137,7 +137,7 @@ void Function::preanalyse(SemanticAnalyser* analyser)
 	analyser->leave_function();
 }
 
-void Function::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void Function::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	cout << "FUN wr " << type << " + " << req_type << " = ";
 
@@ -149,10 +149,15 @@ void Function::will_require(SemanticAnalyser* analyser, const Type& req_type)
 	cout << type << " --> ";
 
 	for (size_t i = 0; i < arguments.size(); ++i) {
-		arguments_vars[i]->type = type.argument_type(i);
+		Type arg_type = type.argument_type(i);
+		if (!Type::intersection(arg_type, arguments_vars[i]->type, &arg_type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+		arguments_vars[i]->type = arg_type;
+		type.set_argument_type(i, arg_type);
 	}
 
-	body->will_require(analyser, type.return_type());
+	body->reanalyse(analyser, type.return_type());
 
 	// update return type
 	Type return_type = type.return_type();
@@ -164,7 +169,7 @@ void Function::will_require(SemanticAnalyser* analyser, const Type& req_type)
 	cout << type << endl;
 }
 
-void Function::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void Function::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
@@ -175,10 +180,10 @@ void Function::analyse(SemanticAnalyser* analyser, const Type& req_type)
 
 	analyser->enter_function(this);
 	for (size_t i = 0; i < arguments.size(); ++i) {
-		analyser->add_parameter(arguments[i], type.argument_type(i));
+		analyser->add_parameter(arguments[i], type.argument_type(i), this);
 	}
 
-	body->analyse(analyser, body->type != Type::UNREACHABLE ? return_type : Type::UNREACHABLE);
+	body->finalize(analyser, body->type != Type::UNREACHABLE ? return_type : Type::UNREACHABLE);
 
 	if (body->type != Type::UNREACHABLE) type.set_return_type(body->type);
 

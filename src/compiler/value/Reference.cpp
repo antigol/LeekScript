@@ -31,18 +31,18 @@ unsigned Reference::line() const {
 	return 0;
 }
 
-void Reference::preanalyse(SemanticAnalyser* analyser)
+void Reference::analyse_help(SemanticAnalyser* analyser)
 {
 	// TODO
 	assert(0);
 }
 
-void Reference::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void Reference::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 
 }
 
-void Reference::analyse(SemanticAnalyser* analyser, const Type& req_type) {
+void Reference::finalize_help(SemanticAnalyser* analyser, const Type& req_type) {
 	assert(0);
 /*
 	var = analyser->get_var(variable);

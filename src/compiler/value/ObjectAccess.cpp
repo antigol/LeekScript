@@ -32,13 +32,13 @@ unsigned ObjectAccess::line() const {
 	return 0;
 }
 
-void ObjectAccess::preanalyse(SemanticAnalyser* analyser)
+void ObjectAccess::analyse_help(SemanticAnalyser* analyser)
 {
 	// TODO
 	assert(0);
 	try {
 		ulong index = stoul(field->content);
-		object->preanalyse(analyser);
+		object->analyse(analyser);
 
 		if (object->type.raw_type == &RawType::TUPLE && index < object->type.elements_types.size()) {
 			type = object->type.elements_types[index];
@@ -51,17 +51,17 @@ void ObjectAccess::preanalyse(SemanticAnalyser* analyser)
 	}
 }
 
-void ObjectAccess::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void ObjectAccess::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 
 }
 
-void ObjectAccess::will_take(SemanticAnalyser* analyser, const Type& req_type)
+void ObjectAccess::reanalyse_l_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 
 }
 
-void ObjectAccess::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void ObjectAccess::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	assert(0);
 	try {
@@ -77,7 +77,7 @@ void ObjectAccess::analyse(SemanticAnalyser* analyser, const Type& req_type)
 			tuple_type.elements_types.resize(object->type.elements_types.size(), Type::UNKNOWN);
 			tuple_type.elements_types[index] = type;
 
-			object->analyse(analyser, tuple_type);
+			object->finalize(analyser, tuple_type);
 
 			type = object->type.elements_types[index];
 		} else {

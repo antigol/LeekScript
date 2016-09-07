@@ -25,12 +25,12 @@ unsigned Return::line() const
 	return 0;
 }
 
-void Return::preanalyse(SemanticAnalyser* analyser)
+void Return::analyse_help(SemanticAnalyser* analyser)
 {
 	Function* f = analyser->current_function();
 
 	if (expression) {
-		expression->preanalyse(analyser);
+		expression->analyse(analyser);
 		f->type.return_types.push_back(expression->type);
 	} else {
 		f->type.return_types.push_back(Type::VOID);
@@ -39,17 +39,17 @@ void Return::preanalyse(SemanticAnalyser* analyser)
 	type = Type::UNREACHABLE;
 }
 
-void Return::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void Return::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	assert(0);
 }
 
-void Return::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void Return::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	Function* f = analyser->current_function();
 
 	if (expression) {
-		expression->analyse(analyser, f->type.return_type());
+		expression->finalize(analyser, f->type.return_type());
 		f->type.set_return_type(expression->type);
 	} else {
 		if (!Type::intersection(Type::VOID, f->type.return_type())) {

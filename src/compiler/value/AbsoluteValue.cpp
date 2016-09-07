@@ -24,26 +24,26 @@ unsigned AbsoluteValue::line() const {
 	return 0;
 }
 
-void AbsoluteValue::preanalyse(SemanticAnalyser* analyser)
+void AbsoluteValue::analyse_help(SemanticAnalyser* analyser)
 {
-	expression->preanalyse(analyser);
+	expression->analyse(analyser);
 	constant = expression->constant;
 
-	expression->will_require(analyser, Type::VAR);
+	expression->reanalyse(analyser, Type::VAR);
 
 	type = Type::VAR;
 }
 
-void AbsoluteValue::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void AbsoluteValue::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 }
 
-void AbsoluteValue::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void AbsoluteValue::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-	expression->analyse(analyser, Type::VAR);
+	expression->finalize(analyser, Type::VAR);
 	constant = expression->constant;
 	type = Type::VAR;
 }

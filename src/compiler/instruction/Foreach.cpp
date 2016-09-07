@@ -48,16 +48,16 @@ unsigned Foreach::line() const
 	return 0;
 }
 
-void Foreach::preanalyse(SemanticAnalyser* analyser)
+void Foreach::analyse_help(SemanticAnalyser* analyser)
 {
 	if (type.raw_type != &RawType::VEC) {
 		type = Type::VOID;
 	}
 
-	analyser->enter_block();
+	analyser->enter_block(this);
 
-	container->preanalyse(analyser);
-	container->will_require(analyser, Type({ Type::VEC, Type::MAP, Type::SET }));
+	container->analyse(analyser);
+	container->reanalyse(analyser, Type({ Type::VEC, Type::MAP, Type::SET }));
 
 
 	if (container->type.get_raw_type() == &RawType::VEC || container->type.get_raw_type() == &RawType::SET) {
@@ -72,13 +72,13 @@ void Foreach::preanalyse(SemanticAnalyser* analyser)
 	}
 
 	if (key != nullptr) {
-		key_var = analyser->add_var(key, key_type, nullptr, nullptr);
+		key_var = analyser->add_var(key, key_type, this, nullptr);
 	}
-	value_var = analyser->add_var(value, value_type, nullptr, nullptr);
+	value_var = analyser->add_var(value, value_type, this, nullptr);
 
 	analyser->enter_loop();
 
-	body->preanalyse(analyser);
+	body->analyse(analyser);
 
 	if (type.raw_type == &RawType::VEC) {
 		if (body->type == Type::VOID || body->type == Type::UNREACHABLE) {
@@ -92,27 +92,27 @@ void Foreach::preanalyse(SemanticAnalyser* analyser)
 	analyser->leave_block();
 }
 
-void Foreach::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void Foreach::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 
 	if (type.raw_type == &RawType::VEC) {
-		body->will_require(analyser, type.element_type(0));
+		body->reanalyse(analyser, type.element_type(0));
 		type.set_element_type(0, body->type);
 	}
 }
 
-void Foreach::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void Foreach::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 
-	analyser->enter_block();
+	analyser->enter_block(this);
 
-	container->analyse(analyser, Type::UNKNOWN);
+	container->finalize(analyser, Type::UNKNOWN);
 
 	if (container->type.get_raw_type() == &RawType::VEC || container->type.get_raw_type() == &RawType::SET) {
 		key_type = Type::I32; // If no key type in array key = 0, 1, 2...
@@ -125,18 +125,18 @@ void Foreach::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	}
 
 	if (key != nullptr) {
-		key_var = analyser->add_var(key, key_type, nullptr, nullptr);
+		key_var = analyser->add_var(key, key_type, this, nullptr);
 	}
-	value_var = analyser->add_var(value, value_type, nullptr, nullptr);
+	value_var = analyser->add_var(value, value_type, this, nullptr);
 
 	analyser->enter_loop();
 
 
 	if (type.raw_type == &RawType::VEC) {
-		body->analyse(analyser, type.element_type(0));
+		body->finalize(analyser, type.element_type(0));
 		type.set_element_type(0, body->type);
 	} else {
-		body->analyse(analyser, Type::VOID);
+		body->finalize(analyser, Type::VOID);
 	}
 
 	analyser->leave_loop();

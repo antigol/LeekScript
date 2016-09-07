@@ -14,14 +14,14 @@ public:
 
 	virtual bool isLeftValue() const override;
 
-	// When call `will_take` ?
-	//  During preanalyse, call only on leftvalue part
-	//  x = y         called on x
-	//  z = x + y     called on z
-	virtual void will_take(SemanticAnalyser* analyser, const Type& req_type) = 0;
-
+	inline void reanalyse_l(SemanticAnalyser* analyser, const Type& req_type) {
+		if (analysed) reanalyse_l_help(analyser, req_type);
+	}
 
 	virtual jit_value_t compile_l(Compiler&) const = 0;
+
+protected:
+	virtual void reanalyse_l_help(SemanticAnalyser* analyser, const Type& req_type) = 0;
 };
 
 }

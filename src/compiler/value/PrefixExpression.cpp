@@ -34,18 +34,18 @@ unsigned PrefixExpression::line() const {
 	return 0;
 }
 
-void PrefixExpression::preanalyse(SemanticAnalyser* analyser)
+void PrefixExpression::analyse_help(SemanticAnalyser* analyser)
 {
 	// TODO
 	assert(0);
 }
 
-void PrefixExpression::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void PrefixExpression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 
 }
 
-void PrefixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void PrefixExpression::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	assert(0);
 	if (operatorr->type == TokenType::PLUS_PLUS
@@ -53,7 +53,7 @@ void PrefixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		|| operatorr->type == TokenType::MINUS
 		|| operatorr->type == TokenType::TILDE) {
 
-		expression->analyse(analyser, req_type);
+		expression->finalize(analyser, req_type);
 //		if (!expression->type.is_arithmetic()) {
 //			analyser->add_error({ SemanticException::TYPE_MISMATCH, expression->line() });
 //		}
@@ -61,7 +61,7 @@ void PrefixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		type = expression->type;
 
 	} else if (operatorr->type == TokenType::NOT) {
-		expression->analyse(analyser, Type::UNKNOWN);
+		expression->finalize(analyser, Type::UNKNOWN);
 		type = Type::BOOLEAN;
 
 		if (req_type == Type::VAR) {

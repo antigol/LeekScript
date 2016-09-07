@@ -40,7 +40,7 @@ unsigned Number::line() const {
 	return token->line;
 }
 
-void Number::preanalyse(SemanticAnalyser* analyser)
+void Number::analyse_help(SemanticAnalyser* analyser)
 {
 	constant = true;
 	if (value.find('.') != string::npos) {
@@ -50,14 +50,14 @@ void Number::preanalyse(SemanticAnalyser* analyser)
 	}
 }
 
-void Number::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void Number::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 }
 
-void Number::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void Number::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);

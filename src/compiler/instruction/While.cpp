@@ -26,28 +26,28 @@ unsigned While::line() const
 	return 0;
 }
 
-void While::preanalyse(SemanticAnalyser* analyser)
+void While::analyse_help(SemanticAnalyser* analyser)
 {
 	// TODO
 	assert(0);
 }
 
-void While::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void While::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 
 }
 
-void While::analyse(SemanticAnalyser* analyser, const Type&) {
+void While::finalize_help(SemanticAnalyser* analyser, const Type& req_type) {
 	assert(0);
 
-	condition->analyse(analyser, Type::UNKNOWN);
+	condition->finalize(analyser, Type::UNKNOWN);
 	if (condition->type == Type::FUNCTION || condition->type == Type::VOID) {
 		stringstream oss;
 		condition->print(oss);
 		analyser->add_error({ SemanticException::TYPE_MISMATCH, condition->line(), oss.str() });
 	}
 	analyser->enter_loop();
-	body->analyse(analyser, Type::VOID);
+	body->finalize(analyser, Type::VOID);
 	analyser->leave_loop();
 
 	type = Type::VOID;

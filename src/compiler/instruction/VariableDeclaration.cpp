@@ -38,50 +38,59 @@ unsigned VariableDeclaration::line() const
 	return 0;
 }
 
-void VariableDeclaration::preanalyse(SemanticAnalyser* analyser)
+void VariableDeclaration::analyse_help(SemanticAnalyser* analyser)
 {
+	var_type = Type::UNKNOWN;
+
+	if (typeName) {
+		var_type = typeName->getInternalType(analyser);
+	}
 	if (expression) {
-		expression->preanalyse(analyser);
-
-		if (typeName) {
-			Type tn = typeName->getInternalType(analyser);
-
-			// restrict expression types
-			if (!Type::intersection(expression->type, tn, &expression->type)) {
-				add_error(analyser, SemanticException::TYPE_MISMATCH);
-			}
+		expression->analyse(analyser);
+		if (var_type != Type::UNKNOWN) {
+			expression->reanalyse(analyser, var_type);
 		}
-
 		var_type = expression->type;
-	} else {
-		var_type = Type::UNKNOWN;
 	}
 
-	analyser->add_var(variable, var_type, expression, this);
+	var = analyser->add_var(variable, var_type, analyser->current_block(), this);
 	type = Type::VOID;
 }
 
-void VariableDeclaration::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void VariableDeclaration::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
+
+	if (!Type::intersection(var_type, var->type, &var_type)) {
+		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
+	}
+	var->type = var_type;
+
+	if (expression) {
+		expression->reanalyse(analyser, var_type);
+		if (!Type::intersection(var_type, expression->type, &var_type)) {
+			add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
+		}
+		var->type = var_type; // TODO should work only with var->type  ==>  must before remove analyser stuff in finalize
+	}
 }
 
-void VariableDeclaration::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void VariableDeclaration::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-	if (!Type::intersection(Type::VOID, req_type)) {
+	if (!Type::intersection(type, req_type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 
 	if (expression) {
-		expression->analyse(analyser, var_type);
+		expression->finalize(analyser, var_type);
 		var_type = expression->type;
 	} else {
 		var_type.make_it_pure();
 	}
 
-	analyser->add_var(variable, var_type, expression, this);
+	analyser->add_var(variable, var_type, analyser->current_block(), this);
 }
 
 jit_value_t VariableDeclaration::compile(Compiler& c) const

@@ -21,48 +21,55 @@ unsigned ExpressionInstruction::line() const
 	return 0;
 }
 
-void ExpressionInstruction::preanalyse(SemanticAnalyser* analyser)
+void ExpressionInstruction::analyse_help(SemanticAnalyser* analyser)
 {
-	value->preanalyse(analyser);
+	value->analyse(analyser);
 	if (value->type == Type::UNREACHABLE) type = Type::UNREACHABLE;
 	else type = Type({ value->type, Type::VOID});
 }
 
-void ExpressionInstruction::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void ExpressionInstruction::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	cout << "EI wr " << type << " + " << req_type << " = ";
 
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-	cout << type << " --> ";
-	if (!Type::intersection(type, Type::VOID)) {
-		cout << "value.wr(type)" << endl;
-		value->will_require(analyser, type);
+	cout << type << " => ";
+	if (Type::intersection(type, Type::VOID)) {
+		cout << "ask UNKNOWN" << endl;
+		value->reanalyse(analyser, Type::UNKNOWN); // because of the void we cannot require anything
+		if (value->type == Type::UNREACHABLE) {
+			type = Type::UNREACHABLE;
+		} else {
+			if (!Type::intersection(type, Type({ Type::VOID, value->type }), &type)) {
+				add_error(analyser, SemanticException::TYPE_MISMATCH);
+			}
+		}
 	} else {
-		cout << "value.wr(??)" << endl;
-		value->will_require(analyser, Type::UNKNOWN); // because of the void we cannot require anything
+		cout << "ask type" << endl;
+		value->reanalyse(analyser, type);
+		// tip! If value returns UNREACHABLE type will naturaly become UNREACHABLE via the intersection
+		if (!Type::intersection(type, value->type, &type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
 	}
-	if (!Type::intersection(type, value->type, &type)) {
-		add_error(analyser, SemanticException::TYPE_MISMATCH);
-	}
-	if (value->type == Type::UNREACHABLE) type = Type::UNREACHABLE;
 }
 
-void ExpressionInstruction::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void ExpressionInstruction::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (type == Type::UNREACHABLE) {
-		value->analyse(analyser, Type::UNKNOWN);
+		value->finalize(analyser, Type::UNKNOWN);
 	} else {
 		if (!Type::intersection(type, req_type, &type)) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
 
 		if (type == Type::VOID) {
-			value->analyse(analyser, Type::UNKNOWN);
+			value->finalize(analyser, Type::UNKNOWN);
 			if (value->type == Type::UNREACHABLE) type = Type::UNREACHABLE;
 		} else {
-			value->analyse(analyser, type);
+			value->finalize(analyser, type);
 			type = value->type;
 		}
 	}

@@ -22,7 +22,7 @@ unsigned Continue::line() const
 	return 0;
 }
 
-void Continue::preanalyse(SemanticAnalyser* analyser)
+void Continue::analyse_help(SemanticAnalyser* analyser)
 {
 	// break must be in a loop
 	if (!analyser->in_loop(deepness)) {
@@ -31,14 +31,14 @@ void Continue::preanalyse(SemanticAnalyser* analyser)
 	type = Type::UNREACHABLE;
 }
 
-void Continue::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void Continue::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	assert(0);
 }
 
-void Continue::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void Continue::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-	preanalyse(analyser);
+	analyse(analyser);
 }
 
 jit_value_t Continue::compile(Compiler& c) const {

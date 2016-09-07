@@ -20,20 +20,20 @@ unsigned Nulll::line() const {
 	return 0;
 }
 
-void Nulll::preanalyse(SemanticAnalyser*)
+void Nulll::analyse_help(SemanticAnalyser*)
 {
 	constant = true;
 	type = Type::LSVALUE;
 }
 
-void Nulll::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void Nulll::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 }
 
-void Nulll::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void Nulll::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);

@@ -27,18 +27,18 @@ unsigned Set::line() const {
 	return 0;
 }
 
-void Set::preanalyse(SemanticAnalyser* analyser)
+void Set::analyse_help(SemanticAnalyser* analyser)
 {
 	// TODO
 	assert(0);
 }
 
-void Set::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void Set::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 
 }
 
-void Set::analyse(SemanticAnalyser* analyser, const Type&)
+void Set::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	assert(0);
 /*

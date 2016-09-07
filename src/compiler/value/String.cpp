@@ -24,20 +24,20 @@ unsigned String::line() const {
 	return token->line;
 }
 
-void String::preanalyse(SemanticAnalyser* analyser)
+void String::analyse_help(SemanticAnalyser* analyser)
 {
 	constant = true;
 	type = Type::VAR;
 }
 
-void String::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void String::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 }
 
-void String::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void String::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);

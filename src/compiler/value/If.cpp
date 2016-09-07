@@ -39,15 +39,15 @@ unsigned If::line() const {
 	return 0;
 }
 
-void If::preanalyse(SemanticAnalyser* analyser)
+void If::analyse_help(SemanticAnalyser* analyser)
 {
-	condition->preanalyse(analyser);
-	condition->will_require(analyser, Type::LOGIC);
+	condition->analyse(analyser);
+	condition->reanalyse(analyser, Type::LOGIC);
 
-	then->preanalyse(analyser);
+	then->analyse(analyser);
 
 	if (elze) {
-		elze->preanalyse(analyser);
+		elze->analyse(analyser);
 
 		if (then->type == Type::UNREACHABLE) { // then contains return instruction
 			type = elze->type;
@@ -57,8 +57,8 @@ void If::preanalyse(SemanticAnalyser* analyser)
 			if (!Type::intersection(then->type, elze->type, &type)) {
 				type = Type::VOID;
 			} else {
-				then->will_require(analyser, type);
-				elze->will_require(analyser, type);
+				then->reanalyse(analyser, type);
+				elze->reanalyse(analyser, type);
 			}
 		}
 	} else {
@@ -66,15 +66,15 @@ void If::preanalyse(SemanticAnalyser* analyser)
 	}
 }
 
-void If::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void If::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 redo:
-	then->will_require(analyser, type);
+	then->reanalyse(analyser, type);
 	if (elze) {
-		elze->will_require(analyser, type);
+		elze->reanalyse(analyser, type);
 
 		if (then->type == Type::UNREACHABLE) { // then contains return instruction
 			type = elze->type;
@@ -91,19 +91,19 @@ redo:
 	}
 }
 
-void If::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void If::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-	condition->analyse(analyser, Type::UNKNOWN);
+	condition->finalize(analyser, Type::UNKNOWN);
 
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-	type.make_it_pure();
 
-	then->analyse(analyser, type);
+	then->finalize(analyser, type);
+	type = then->type;
 
 	if (elze) {
-		elze->analyse(analyser, type);
+		elze->finalize(analyser, type);
 	}
 }
 

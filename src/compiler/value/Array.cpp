@@ -36,14 +36,14 @@ unsigned Array::line() const {
 	return 0;
 }
 
-void Array::preanalyse(SemanticAnalyser* analyser)
+void Array::analyse_help(SemanticAnalyser* analyser)
 {
 	constant = true;
 
 	Type element_type = Type::UNKNOWN;
 
 	for (Value* ex : expressions) {
-		ex->preanalyse(analyser);
+		ex->analyse(analyser);
 		constant = constant && ex->constant;
 
 //		cout << element_type << " + " << ex->type << " = ";
@@ -54,13 +54,13 @@ void Array::preanalyse(SemanticAnalyser* analyser)
 	}
 
 	for (Value* ex : expressions) {
-		ex->will_require(analyser, element_type);
+		ex->reanalyse(analyser, element_type);
 	}
 
 	type = Type(&RawType::VEC, { element_type });
 }
 
-void Array::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void Array::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
@@ -68,7 +68,7 @@ void Array::will_require(SemanticAnalyser* analyser, const Type& req_type)
 
 	Type element_type = type.element_type(0);
 	for (Value* ex : expressions) {
-		ex->will_require(analyser, element_type);
+		ex->reanalyse(analyser, element_type);
 		if (!Type::intersection(element_type, ex->type, &element_type)) {
 			add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
 		}
@@ -76,7 +76,7 @@ void Array::will_require(SemanticAnalyser* analyser, const Type& req_type)
 	type = Type(&RawType::VEC, { element_type });
 }
 
-void Array::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void Array::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
@@ -84,7 +84,7 @@ void Array::analyse(SemanticAnalyser* analyser, const Type& req_type)
 
 	Type element_type = type.element_type(0);
 	for (Value* ex : expressions) {
-		ex->analyse(analyser, element_type);
+		ex->finalize(analyser, element_type);
 		element_type = ex->type;
 	}
 	type = Type(&RawType::VEC, { element_type });

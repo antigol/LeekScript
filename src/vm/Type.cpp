@@ -383,6 +383,7 @@ bool Type::intersection(const Type& t1, const Type& t2, Type* result)
 	 * UNKNOWN with alternative is a set of elements
 	 * LSVALUE is the set of types of nature lsvalue (infinite set)
 	 * All the other types are considered as signlet
+	 * intersection of any X with UNREACHABLE gives X
 	 *
 	 * no place holders => cartesian product between sets (elements, arguments, ...)
 	 * with place holders => one by one product between sets (elements, arguments, ...)
@@ -610,6 +611,27 @@ int Type::priv_intersection_ph(Type* t1, Type& f1, Type* t2, Type& f2, Type* tr,
 		return priv_intersection_ph(t2, f2, t1, f1, tr, fr);
 	}
 
+	if (t2->raw_type == &RawType::UNREACHABLE) {
+		*tr = *t2;
+		if (t1->ph > 0) tr->ph = t1->ph;
+
+		// in case t1 && t2 are both ph > 0
+		uint32_t old_ph = t2->ph;
+		uint32_t new_ph = tr->ph;
+		f1.replace_place_holder_id(old_ph, new_ph);
+		f2.replace_place_holder_id(old_ph, new_ph);
+		fr.replace_place_holder_id(old_ph, new_ph);
+
+		// update ph types
+		f1.replace_place_holder_type(new_ph, *t2);
+		f2.replace_place_holder_type(new_ph, *t2);
+		fr.replace_place_holder_type(new_ph, *t2);
+		return 1;
+	}
+	if (t1->raw_type == &RawType::UNREACHABLE) {
+		return priv_intersection_ph(t2, f2, t1, f1, tr, fr);
+	}
+
 	if (t1->raw_type != t2->raw_type) return 0;
 	tr->raw_type = t1->raw_type;
 
@@ -715,6 +737,15 @@ int Type::priv_intersection_phfree(const Type* t1, const Type* t2, Type* tr)
 			return 1;
 		}
 		return 0;
+	}
+
+	if (t2->raw_type == &RawType::UNREACHABLE) {
+		*tr = *t2;
+		return 1;
+	}
+	if (t1->raw_type == &RawType::UNREACHABLE) {
+		*tr = *t1;
+		return 1;
 	}
 
 	if (t1->raw_type != t2->raw_type) return 0;

@@ -13,6 +13,7 @@ namespace ls {
 class Program;
 class Module;
 class Method;
+class Block;
 class Function;
 class VariableValue;
 class Context;
@@ -30,17 +31,14 @@ public:
 	std::string name;
 	VarScope scope;
 	Type type;
-	std::map<std::string, Type> attr_types;
 	int index;
-	Value* value;
+	Value* block; // In which the variable has been declared
 	VariableDeclaration* vd;
-	Function* function; // In which function the variable is declared
+	Function* function; // In which the variable has been declared
 
-	SemanticVar(std::string name, VarScope scope, Type type, int index, Value* value,
+	SemanticVar(std::string name, VarScope scope, Type type, int index, Value* block,
 		VariableDeclaration* vd, Function* function) :
-		name(name), scope(scope), type(type), index(index), value(value), vd(vd), function(function) {}
-
-	void must_be_pointer(SemanticAnalyser*);
+		name(name), scope(scope), type(type), index(index), block(block), vd(vd), function(function) {}
 };
 
 class SemanticAnalyser {
@@ -55,7 +53,7 @@ public:
 	std::vector<std::vector<std::map<std::string, SemanticVar*>>> variables;
 	std::vector<std::map<std::string, SemanticVar*>> parameters;
 
-//	std::vector<Function*> functions;
+	std::stack<Value*> block_stack;
 	std::stack<Function*> functions_stack;
 	std::stack<int> loops;
 
@@ -64,15 +62,16 @@ public:
 	SemanticAnalyser(const std::vector<Module*>& modules);
 	virtual ~SemanticAnalyser();
 
-	void preanalyse(Program*);
 	void analyse(Program*);
+	void finalize(Program*);
 
 	void enter_function(Function*);
 	void leave_function();
-	void enter_block();
+	void enter_block(Value* block);
 	void leave_block();
 	void add_function(Function*);
 	Function* current_function() const;
+	Value* current_block() const;
 
 	void enter_loop();
 	void leave_loop();
@@ -81,8 +80,8 @@ public:
 	Module* module_by_name(const std::string& name) const;
 	std::vector<Method> get_method(const std::string& name, const Type& return_type, const Type& this_type, const std::vector<Type>& args_types) const;
 
-	SemanticVar* add_var(Token*, Type, Value*, VariableDeclaration*);
-	SemanticVar* add_parameter(Token*, Type);
+	SemanticVar* add_var(Token*, Type, Value* block, VariableDeclaration*);
+	SemanticVar* add_parameter(Token*, Type, Value* block);
 
 	SemanticVar* get_var(Token* name);
 	SemanticVar* get_var_direct(std::string name);

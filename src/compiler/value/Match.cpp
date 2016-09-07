@@ -51,21 +51,21 @@ unsigned Match::line() const {
 	return 0;
 }
 
-void Match::preanalyse(SemanticAnalyser* analyser)
+void Match::analyse_help(SemanticAnalyser* analyser)
 {
 	// TODO
 	assert(0);
 }
 
-void Match::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void Match::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 
 }
 
-void Match::analyse(ls::SemanticAnalyser* analyser, const Type& req_type)
+void Match::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	assert(0);
-	value->analyse(analyser, Type::UNKNOWN);
+	value->finalize(analyser, Type::UNKNOWN);
 	if (value->type == Type::FUNCTION || value->type == Type::VOID) {
 		stringstream oss;
 		value->print(oss);
@@ -75,17 +75,17 @@ void Match::analyse(ls::SemanticAnalyser* analyser, const Type& req_type)
 	for (auto& ps : pattern_list) {
 		for (Pattern& p : ps) {
 			if (p.begin) {
-				p.begin->analyse(analyser, Type::UNKNOWN);
+				p.begin->finalize(analyser, Type::UNKNOWN);
 			}
 			if (p.end) {
-				p.end->analyse(analyser, Type::UNKNOWN);
+				p.end->finalize(analyser, Type::UNKNOWN);
 			}
 		}
 	}
 
 	type = req_type;
 	for (Value* ret : returns) {
-		ret->preanalyse(analyser);
+		ret->analyse(analyser);
 		if (!Type::intersection(type, ret->type, &type)) {
 			stringstream oss;
 			ret->print(oss);
@@ -96,7 +96,7 @@ void Match::analyse(ls::SemanticAnalyser* analyser, const Type& req_type)
 	type.make_it_pure();
 
 	for (Value* ret : returns) {
-		ret->analyse(analyser, type);
+		ret->finalize(analyser, type);
 	}
 }
 

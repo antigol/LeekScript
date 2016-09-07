@@ -24,20 +24,20 @@ unsigned Boolean::line() const {
 	return 0;
 }
 
-void Boolean::preanalyse(SemanticAnalyser*)
+void Boolean::analyse_help(SemanticAnalyser* analyser)
 {
 	constant = true;
 	type = Type({ Type::BOOLEAN, Type::VAR, Type::I32 });
 }
 
-void Boolean::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void Boolean::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 }
 
-void Boolean::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void Boolean::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);

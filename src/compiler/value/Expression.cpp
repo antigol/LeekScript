@@ -101,11 +101,11 @@ unsigned Expression::line() const {
 	return 0;
 }
 
-void Expression::preanalyse(SemanticAnalyser* analyser)
+void Expression::analyse_help(SemanticAnalyser* analyser)
 {
 	// No operator : just analyse v1 and return
 	if (op == nullptr) {
-		v1->preanalyse(analyser);
+		v1->analyse(analyser);
 		type = v1->type;
 		return;
 	}
@@ -114,10 +114,10 @@ void Expression::preanalyse(SemanticAnalyser* analyser)
 
 		LeftValue* l1 = dynamic_cast<LeftValue*>(v1);
 		if (l1->isLeftValue()) {
-			l1->preanalyse(analyser);
-			v2->preanalyse(analyser);
+			l1->analyse(analyser);
+			v2->analyse(analyser);
 
-			l1->will_take(analyser, v2->type);
+			l1->reanalyse_l(analyser, v2->type);
 
 			type = l1->type;
 		} else {
@@ -127,8 +127,8 @@ void Expression::preanalyse(SemanticAnalyser* analyser)
 
 	} else if (op->type == TokenType::PLUS) {
 
-		v1->preanalyse(analyser);
-		v2->preanalyse(analyser);
+		v1->analyse(analyser);
+		v2->analyse(analyser);
 
 		cout << "EX " << v1->type << " + " << v2->type << " = ";
 
@@ -148,40 +148,45 @@ void Expression::preanalyse(SemanticAnalyser* analyser)
 
 		cout << result << endl;
 
-		v1->will_require(analyser, result);
-		v2->will_require(analyser, result);
+		v1->reanalyse(analyser, result);
+		v2->reanalyse(analyser, result);
 
 		type = result.image_conversion();
 	}
 }
 
-void Expression::will_require(SemanticAnalyser* analyser, const Type& req_type)
+void Expression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	cout << "EX wr type=" << type << " req=" << req_type << endl;
 	if (op == nullptr) {
-		v1->will_require(analyser, req_type);
+		v1->reanalyse(analyser, req_type);
 		type = v1->type;
 		return;
 	}
 
-	if (!Type::intersection(type, req_type, &type)) {
-		add_error(analyser, SemanticException::TYPE_MISMATCH);
-	}
 
 	if (op->type == TokenType::EQUAL) {
-		v1->will_require(analyser, type);
-		v2->will_require(analyser, ((LeftValue*) v1)->left_type);
+		LeftValue* l1 = dynamic_cast<LeftValue*>(v1);
+
+		l1->reanalyse(analyser, req_type);
+		type = l1->type;
+
+		v2->reanalyse(analyser, l1->left_type);
+		l1->reanalyse_l(analyser, v2->type);
 
 	} else if (op->type == TokenType::PLUS) {
+		if (!Type::intersection(type, req_type, &type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
 		Type fiber = type.fiber_conversion();
-		v1->will_require(analyser, fiber); // (a...) tricky : v1->type might be updated from fonction argument modification
-		v2->will_require(analyser, fiber);
+		v1->reanalyse(analyser, fiber); // (a...) tricky : v1->type might be updated from fonction argument modification
+		v2->reanalyse(analyser, fiber);
 		Type result;
 		if (!Type::intersection(v1->type, v2->type, &result)) {
 			add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
 		}
-		v1->will_require(analyser, result);
-		v2->will_require(analyser, result);
+		v1->reanalyse(analyser, result);
+		v2->reanalyse(analyser, result);
 
 		// (...z) therefore this instruction is useful
 		if (!Type::intersection(type, result.image_conversion(), &type)) {
@@ -191,28 +196,27 @@ void Expression::will_require(SemanticAnalyser* analyser, const Type& req_type)
 
 }
 
-void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type)
+void Expression::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	// No operator : just analyse v1 and return
 	if (op == nullptr) {
-		v1->analyse(analyser, req_type);
+		v1->finalize(analyser, req_type);
 		type = v1->type;
 		return;
 	}
 
 	if (op->type == TokenType::EQUAL) {
 
-		v1->analyse(analyser, req_type);
-		v2->analyse(analyser, ((LeftValue*) v1)->left_type);
+		v1->finalize(analyser, req_type);
+		v2->finalize(analyser, ((LeftValue*) v1)->left_type);
 		type = v1->type;
 
 	} else if (op->type == TokenType::PLUS) {
 
-		v1->analyse(analyser, Type::UNKNOWN);
-		v2->analyse(analyser, v1->type);
+		v1->finalize(analyser, req_type.fiber_conversion());
+		v2->finalize(analyser, v1->type);
 
-		type = v1->type.image_conversion();
-		if (!Type::intersection(type, req_type, &type)) {
+		if (!Type::intersection(type, v1->type.image_conversion(), &type)) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
 		type.make_it_pure();
