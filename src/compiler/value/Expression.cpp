@@ -130,7 +130,7 @@ void Expression::preanalyse(SemanticAnalyser* analyser)
 		v1->preanalyse(analyser);
 		v2->preanalyse(analyser);
 
-//		cout << "Expr " << v1->type << " + " << v2->type << " = ";
+		cout << "EX " << v1->type << " + " << v2->type << " = ";
 
 		Type type1, type2;
 
@@ -146,7 +146,7 @@ void Expression::preanalyse(SemanticAnalyser* analyser)
 			add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
 		}
 
-//		cout << result << endl;
+		cout << result << endl;
 
 		v1->will_require(analyser, result);
 		v2->will_require(analyser, result);
@@ -157,6 +157,7 @@ void Expression::preanalyse(SemanticAnalyser* analyser)
 
 void Expression::will_require(SemanticAnalyser* analyser, const Type& req_type)
 {
+	cout << "EX wr type=" << type << " req=" << req_type << endl;
 	if (op == nullptr) {
 		v1->will_require(analyser, req_type);
 		type = v1->type;
@@ -173,7 +174,7 @@ void Expression::will_require(SemanticAnalyser* analyser, const Type& req_type)
 
 	} else if (op->type == TokenType::PLUS) {
 		Type fiber = type.fiber_conversion();
-		v1->will_require(analyser, fiber);
+		v1->will_require(analyser, fiber); // (a...) tricky : v1->type might be updated from fonction argument modification
 		v2->will_require(analyser, fiber);
 		Type result;
 		if (!Type::intersection(v1->type, v2->type, &result)) {
@@ -181,7 +182,13 @@ void Expression::will_require(SemanticAnalyser* analyser, const Type& req_type)
 		}
 		v1->will_require(analyser, result);
 		v2->will_require(analyser, result);
+
+		// (...z) therefore this instruction is useful
+		if (!Type::intersection(type, result.image_conversion(), &type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
 	}
+
 }
 
 void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type)

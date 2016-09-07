@@ -30,14 +30,23 @@ void ExpressionInstruction::preanalyse(SemanticAnalyser* analyser)
 
 void ExpressionInstruction::will_require(SemanticAnalyser* analyser, const Type& req_type)
 {
+	cout << "EI wr " << type << " + " << req_type << " = ";
+
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-	if (type != Type::VOID) {
+	cout << type << " --> ";
+	if (!Type::intersection(type, Type::VOID)) {
+		cout << "value.wr(type)" << endl;
 		value->will_require(analyser, type);
-		if (value->type == Type::UNREACHABLE) type = Type::UNREACHABLE;
-		type = Type({ value->type, Type::VOID});
+	} else {
+		cout << "value.wr(??)" << endl;
+		value->will_require(analyser, Type::UNKNOWN); // because of the void we cannot require anything
 	}
+	if (!Type::intersection(type, value->type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	if (value->type == Type::UNREACHABLE) type = Type::UNREACHABLE;
 }
 
 void ExpressionInstruction::analyse(SemanticAnalyser* analyser, const Type& req_type)

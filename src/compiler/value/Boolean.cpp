@@ -27,7 +27,7 @@ unsigned Boolean::line() const {
 void Boolean::preanalyse(SemanticAnalyser*)
 {
 	constant = true;
-	type = Type({ Type::BOOLEAN, Type::VAR, Type::I32, Type::I64 });
+	type = Type({ Type::BOOLEAN, Type::VAR, Type::I32 });
 }
 
 void Boolean::will_require(SemanticAnalyser* analyser, const Type& req_type)

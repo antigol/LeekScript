@@ -17,9 +17,9 @@ const RawType RawType::UNREACHABLE("unreachable", "",         "",         0,    
 const RawType RawType::LSVALUE    ("lsvalue",     "",         "",         sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  -100);
 const RawType RawType::BOOLEAN    ("bool",        "Boolean",  "boolean",  sizeof (int32_t), jit_type_int,      Nature::VALUE,    0);
 const RawType RawType::I32        ("i32",         "Number",   "number",   sizeof (int32_t), jit_type_int,      Nature::VALUE,    1);
-const RawType RawType::F64        ("f64",         "Number",   "number",   sizeof (double),  jit_type_float64,  Nature::VALUE,    200);
+const RawType RawType::F64        ("f64",         "Number",   "number",   sizeof (double),  jit_type_float64,  Nature::VALUE,    2);
 const RawType RawType::I64        ("i64",         "Number",   "number",   sizeof (int64_t), jit_type_long,     Nature::VALUE,    300);
-const RawType RawType::F32        ("f32",         "Number",   "number",   sizeof (float),   jit_type_float32,  Nature::VALUE,    4);
+const RawType RawType::F32        ("f32",         "Number",   "number",   sizeof (float),   jit_type_float32,  Nature::VALUE,    400);
 const RawType RawType::VAR        ("var",         "Variable", "variable", sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  5);
 const RawType RawType::VEC        ("vec",         "Vec",      "vec",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  6);
 const RawType RawType::MAP        ("map",         "Map",      "map",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  7);
@@ -45,10 +45,10 @@ const Type Type::MAP         (&RawType::MAP,     { Type::UNKNOWN, Type::UNKNOWN 
 const Type Type::SET         (&RawType::SET,     { Type::UNKNOWN });
 const Type Type::FUNCTION    (&RawType::FUNCTION);
 const Type Type::TUPLE       (&RawType::TUPLE);
-const Type Type::ARITHMETIC  ({ Type::VAR, Type::BOOLEAN, Type::I32, Type::I64, Type::F32, Type::F64 });
+const Type Type::ARITHMETIC  ({ Type::VAR, Type::BOOLEAN, Type::I32, /*Type::I64, Type::F32, */Type::F64 });
 const Type Type::LOGIC       ({ Type::LSVALUE, Type::ARITHMETIC });
 const Type Type::INDEXABLE   ({ Type::VEC, Type::MAP });
-const Type Type::VALUE_NUMBER({ Type::BOOLEAN, Type::I32, Type::I64, Type::F32, Type::F64 });
+const Type Type::VALUE_NUMBER({ Type::BOOLEAN, Type::I32, /*Type::I64, Type::F32, */Type::F64 });
 
 bool RawType::operator ==(const RawType& type) const {
 	return id == type.id;
@@ -205,20 +205,15 @@ bool Type::is_pure() const
 	return true;
 }
 
-void Type::make_it_pure(bool promote_primitive)
+void Type::make_it_pure()
 {
 	if (raw_type == &RawType::UNKNOWN) {
 		if (alternative_types.empty()) {
-			*this = promote_primitive ? Type::BOOLEAN : Type::VAR;
+			*this = Type::BOOLEAN;
 		} else {
-			if (promote_primitive) {
-				Type tmp = *alternative_types.begin();
-				*this = tmp;
-			} else {
-				Type tmp = *alternative_types.rbegin();
-				*this = tmp;
-			}
-			make_it_pure(promote_primitive);
+			Type tmp = *alternative_types.begin();
+			*this = tmp;
+			make_it_pure();
 		}
 		return;
 	}
@@ -230,9 +225,9 @@ void Type::make_it_pure(bool promote_primitive)
 		return_types.push_back(Type::VOID); // fn()
 		return;
 	}
-	for (Type& x : elements_types)  x.make_it_pure(promote_primitive);
-	for (Type& x : return_types)    x.make_it_pure(!promote_primitive);
-	for (Type& x : arguments_types) x.make_it_pure(promote_primitive);
+	for (Type& x : elements_types)  x.make_it_pure();
+	for (Type& x : return_types)    x.make_it_pure();
+	for (Type& x : arguments_types) x.make_it_pure();
 
 	assert(is_pure());
 }
@@ -345,8 +340,8 @@ Type Type::image_conversion() const
 		return union_iter(result.begin(), result.end());
 	}
 
-	if (*this == Type::BOOLEAN) return Type({ Type::BOOLEAN, Type::I32, Type::I64, Type::VAR });
-	if (*this == Type::I32) return Type({ Type::I32, Type::I64, Type::F64, Type::VAR });
+	if (*this == Type::BOOLEAN) return Type({ Type::BOOLEAN, Type::I32, Type::VAR });
+	if (*this == Type::I32) return Type({ Type::I32, Type::F64, Type::VAR });
 	if (*this == Type::F64) return Type({ Type::F64, Type::VAR });
 
 	// TODO add other possibilities here and in Compiler::compile_convert
@@ -372,8 +367,8 @@ Type Type::fiber_conversion() const
 		return union_iter(result.begin(), result.end());
 	}
 
-	if (*this == Type::LSVALUE) return Type({ Type::BOOLEAN, Type::I32, Type::I64, Type::LSVALUE });
-	if (*this == Type::VAR) return Type({ Type::BOOLEAN, Type::I32, Type::I64, Type::VAR });
+	if (*this == Type::LSVALUE) return Type({ Type::BOOLEAN, Type::I32, Type::F64, Type::LSVALUE });
+	if (*this == Type::VAR) return Type({ Type::BOOLEAN, Type::I32, Type::F64, Type::VAR });
 	if (*this == Type::F64) return Type({ Type::BOOLEAN, Type::I32, Type::F64 });
 	if (*this == Type::I32) return Type({ Type::BOOLEAN, Type::I32 });
 

@@ -78,11 +78,12 @@ void Array::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 
+	Type element_type = type.element_type(0);
 	for (Value* ex : expressions) {
-		ex->analyse(analyser, type.element_type(0));
-		type.set_element_type(0, ex->type);
+		ex->analyse(analyser, element_type);
+		element_type = ex->type;
 	}
-	type.make_it_pure();
+	type = Type(&RawType::VEC, { element_type });
 }
 
 jit_value_t Array::compile(Compiler& c) const {

@@ -83,15 +83,20 @@ void FunctionCall::preanalyse(SemanticAnalyser* analyser)
 
 		function->preanalyse(analyser);
 
+		cout << "FC " << req_fun_type << " + " << function->type << " = ";
+
 		if (!Type::intersection(function->type, req_fun_type, &req_fun_type)) {
 			add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
 		}
+
+		cout << req_fun_type << " --> ";
 
 		for (size_t i = 0; i < arguments.size(); ++i) {
 			Value* a = arguments[i];
 			a->will_require(analyser, req_fun_type.argument_type(i));
 			req_fun_type.set_argument_type(i, a->type);
 		}
+		cout << req_fun_type << endl;
 		function->will_require(analyser, req_fun_type);
 
 		// Convertion
@@ -147,7 +152,9 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type)
 			arguments[i]->analyse(analyser, methods[0].type.argument_type(i + 1));
 		}
 
-		type = methods[0].type.return_type().image_conversion();
+		if (!Type::intersection(type, methods[0].type.return_type().image_conversion(), &type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
 
 	} else {
 
@@ -161,12 +168,11 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		}
 		function->analyse(analyser, req_fun_type);
 
-		type = function->type.return_type().image_conversion();
+		if (!Type::intersection(type, function->type.return_type().image_conversion(), &type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
 	}
 
-	if (!Type::intersection(type, req_type, &type)) {
-		add_error(analyser, SemanticException::TYPE_MISMATCH);
-	}
 	type.make_it_pure();
 }
 

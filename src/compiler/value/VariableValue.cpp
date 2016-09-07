@@ -64,6 +64,11 @@ void VariableValue::will_require(SemanticAnalyser* analyser, const Type& req_typ
 {
 	if (var == nullptr) return;
 
+	// update type in case var->type has changed
+	if (!Type::intersection(type, var->type.image_conversion(), &type)) {
+		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
+	}
+
 	// Example input
 	// req_type == var
 	// var.type == UNKNOWN
@@ -72,6 +77,8 @@ void VariableValue::will_require(SemanticAnalyser* analyser, const Type& req_typ
 	// Ideal output
 	// type == var
 	// var.type == i32|f64|var
+
+	cout << "VV wr type=" << type << " req=" << req_type << " var->type=" << var->type << endl;
 
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
@@ -96,14 +103,13 @@ void VariableValue::analyse(SemanticAnalyser* analyser, const Type& req_type)
 	var = analyser->get_var(token);
 	if (var == nullptr) return;
 
-	type = var->type.image_conversion();
-
+	if (!Type::intersection(type, var->type.image_conversion(), &type)) {
+		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
+	}
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
 	}
 	type.make_it_pure();
-
-
 	left_type = var->type;
 }
 

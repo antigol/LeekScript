@@ -94,7 +94,7 @@ public:
 	// vvvvv generics proof vvvvv
 
 	bool is_pure() const;
-	void make_it_pure(bool promote_primitive = true);
+	void make_it_pure();
 
 	Type placeholder(int id) const;
 	const RawType* get_raw_type() const;

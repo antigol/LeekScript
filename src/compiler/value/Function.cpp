@@ -92,22 +92,28 @@ void Function::preanalyse(SemanticAnalyser* analyser)
 		}
 	}
 
+
 	Type req_return_type = Type::UNKNOWN;
 	if (returnType) {
 		req_return_type = returnType->getInternalType(analyser);
 	}
 
 	analyser->enter_function(this);
+	arguments_vars.clear();
 	for (size_t i = 0; i < arguments.size(); ++i) {
-		analyser->add_parameter(arguments[i], type.argument_type(i));
+		arguments_vars.push_back(analyser->add_parameter(arguments[i], type.argument_type(i)));
 	}
 
 	type.set_return_type(Type::UNKNOWN);
 
+	stringstream oss;
+	oss << "FUN " << type << " --> ";
 	// The following call will modify
 	// type.return_types (return instruction)
 	// type.arguments_type (parameters)
 	body->preanalyse(analyser);
+	oss << type << endl;
+	cout << oss.str();
 
 	// Compute intersection of returns types
 	Type return_type = req_return_type;
@@ -122,18 +128,40 @@ void Function::preanalyse(SemanticAnalyser* analyser)
 	type.set_return_type(return_type);
 	body->will_require(analyser, return_type);
 
+	// update return type
+	if (!Type::intersection(return_type, body->type, &return_type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	type.set_return_type(return_type);
+
 	analyser->leave_function();
 }
 
 void Function::will_require(SemanticAnalyser* analyser, const Type& req_type)
 {
+	cout << "FUN wr " << type << " + " << req_type << " = ";
+
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-//	body->will_require(analyser, type.return_type());
-//	if (body->type != Type::UNREACHABLE) {
-//		type.set_return_type(body->type);
-//	}
+	// TODO manage return
+
+	cout << type << " --> ";
+
+	for (size_t i = 0; i < arguments.size(); ++i) {
+		arguments_vars[i]->type = type.argument_type(i);
+	}
+
+	body->will_require(analyser, type.return_type());
+
+	// update return type
+	Type return_type = type.return_type();
+	if (!Type::intersection(return_type, body->type, &return_type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	type.set_return_type(return_type);
+
+	cout << type << endl;
 }
 
 void Function::analyse(SemanticAnalyser* analyser, const Type& req_type)

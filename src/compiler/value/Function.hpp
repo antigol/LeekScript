@@ -24,6 +24,8 @@ public:
 	TypeName* returnType;
 	std::vector<SemanticVar*> captures;
 	Block* body;
+
+	std::vector<SemanticVar*> arguments_vars;
 //	int pos;
 //	std::map<std::string, SemanticVar*> vars;
 //	bool function_added;
