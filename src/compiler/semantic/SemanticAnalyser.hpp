@@ -78,7 +78,7 @@ public:
 	bool in_loop(int deepness) const;
 
 	Module* module_by_name(const std::string& name) const;
-	std::vector<Method> get_method(const std::string& name, const Type& return_type, const Type& this_type, const std::vector<Type>& args_types) const;
+	std::vector<Method> get_method(const std::string& name, const Type& method_type) const;
 
 	SemanticVar* add_var(Token*, Type, Value* block, VariableDeclaration*);
 	SemanticVar* add_parameter(Token*, Type, Value* block);

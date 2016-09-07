@@ -93,7 +93,7 @@ public:
 	virtual ~Module();
 
 	void method(const std::string& name, std::initializer_list<Method>);
-	std::vector<Method> get_method_implementation(const std::string& name, const Type& return_type, const Type& this_type, const std::vector<Type> args_types) const;
+	std::vector<Method> get_method_implementation(const std::string& name, const Type& req_type) const;
 
 //	void static_method(std::string name, std::initializer_list<StaticMethod>);
 //	void static_method(std::string name, Type return_type, std::initializer_list<Type> args, void* addr);

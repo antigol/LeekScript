@@ -40,65 +40,28 @@ void FunctionCall::analyse_help(SemanticAnalyser* analyser)
 {
 	ObjectAccess* oa = dynamic_cast<ObjectAccess*>(function);
 	if (oa != nullptr) {
-		oa->object->analyse(analyser);
-		if (!oa->object->isLeftValue()) {
-			oa->object->add_error(analyser, SemanticException::VALUE_MUST_BE_A_LVALUE);
-			return;
-		}
 
-		vector<Type> args_types;
+		req_method_type = Type::FUNCTION;
+
+		oa->object->analyse(analyser);
+
+		req_method_type.add_argument_type(oa->object->type);
+
 		for (size_t i = 0; i < arguments.size(); ++i) {
 			Value* a = arguments[i];
 			a->analyse(analyser);
-			args_types.push_back(arguments[i]->type);
+			req_method_type.add_argument_type(a->type);
 		}
 
-		methods = analyser->get_method(oa->field->content, Type::UNKNOWN, oa->object->type, args_types);
+		req_method_type.set_return_type(Type::UNKNOWN);
 
-		if (methods.empty()) {
-			add_error(analyser, SemanticException::METHOD_NOT_FOUND);
-			return;
-		}
-
-		Type generic_method = methods[0].type;
-		for (size_t i = 1; i < methods.size(); ++i) {
-			generic_method = Type::union_of(generic_method, methods[i].type);
-		}
-
-		oa->type = generic_method; // only for debug
-
-		((LeftValue*) oa->object)->reanalyse_l(analyser, generic_method.argument_type(0));
-		for (size_t i = 0; i < arguments.size(); ++i) {
-			Value* a = arguments[i];
-			a->reanalyse(analyser, generic_method.argument_type(i + 1));
-		}
-		type = generic_method.return_type().image_conversion();
+		type = Type::UNKNOWN;
 
 	} else {
 
 		function->analyse(analyser);
-
-		Type req_fun_type = Type::FUNCTION;
 		for (Value* a : arguments) {
 			a->analyse(analyser);
-			req_fun_type.add_argument_type(a->type);
-		}
-		req_fun_type.set_return_type(Type::UNKNOWN);
-
-		Type old_fun_type = function->type;
-		function->reanalyse(analyser, req_fun_type);
-
-		while (old_fun_type != function->type) {
-			// The function.type has changed !
-			req_fun_type = function->type;
-			for (size_t i = 0; i < arguments.size(); ++i) {
-				Value* a = arguments[i];
-				a->reanalyse(analyser, req_fun_type.argument_type(i));
-				req_fun_type.set_argument_type(i, a->type);
-			}
-
-			old_fun_type = function->type;
-			function->reanalyse(analyser, req_fun_type);
 		}
 
 		// Convertion
@@ -114,9 +77,47 @@ void FunctionCall::reanalyse_help(SemanticAnalyser* analyser, const Type& req_ty
 
 	ObjectAccess* oa = dynamic_cast<ObjectAccess*>(function);
 	if (oa != nullptr) {
-		// TODO trier methods et garder que celle dont le type de retour peu être converti en req_type
-		// recalculer le type generic
-		// relancer will_require et will_take
+
+redo:
+		// get methods
+		methods = analyser->get_method(oa->field->content, req_method_type);
+		if (methods.empty()) {
+			add_error(analyser, SemanticException::METHOD_NOT_FOUND);
+			return;
+		}
+
+		// compute generic
+		Type generic = methods[0].type;
+		for (size_t i = 1; i < methods.size(); ++i) {
+			generic = Type::union_of(generic, methods[i].type);
+		}
+
+		if (!Type::intersection(type, generic.return_type().image_conversion(), &type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+
+		// reanalyse -> req_type
+		Type new_req_method_type = Type::FUNCTION;
+		new_req_method_type.set_return_type(type.fiber_conversion());
+		oa->object->reanalyse(analyser, generic.argument_type(0));
+		new_req_method_type.add_argument_type(oa->object->type);
+		for (size_t i = 0; i < arguments.size(); ++i) {
+			Value* a = arguments[i];
+			a->reanalyse(analyser, generic.argument_type(i + 1));
+			new_req_method_type.add_argument_type(a->type);
+		}
+
+		// if better redo
+		if (new_req_method_type != req_method_type) {
+			req_method_type = new_req_method_type;
+			goto redo;
+		}
+
+		oa->type = generic; // only for debug
+		if (!Type::intersection(type, generic.return_type(), &type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+
 	} else {
 		Type req_fun_type = Type::FUNCTION;
 		for (size_t i = 0; i < arguments.size(); ++i) {
@@ -159,30 +160,42 @@ void FunctionCall::finalize_help(SemanticAnalyser* analyser, const Type& req_typ
 	if (oa != nullptr) {
 
 		oa->object->finalize(analyser, Type::UNKNOWN);
-
-		vector<Type> args_types;
-		for (Value* a : arguments) {
-			args_types.push_back(a->type);
+		Type req_type = Type::FUNCTION;
+		req_type.set_return_type(type.fiber_conversion());
+		req_type.add_argument_type(oa->object->type);
+		for (size_t i = 0; i < arguments.size(); ++i) {
+			Value* a = arguments[i];
+			req_type.add_argument_type(a->type);
 		}
-
-		methods = analyser->get_method(oa->field->content, type.fiber_conversion(), oa->object->type, args_types);
+		methods = analyser->get_method(oa->field->content, req_type);
 		if (methods.empty()) {
 			add_error(analyser, SemanticException::METHOD_NOT_FOUND);
 			return;
 		}
-		// take the first one
-		methods.resize(1);
+		Type method_type = methods[0].type;
 
-		oa->type = methods[0].type; // only for debug
+		method_type.set_argument_type(0, oa->object->type);
+		if (!Type::intersection(method_type, methods[0].type, &method_type)) {
+			add_error(analyser, SemanticException::METHOD_NOT_FOUND);
+		}
 
 		for (size_t i = 0; i < arguments.size(); ++i) {
 			Value* a = arguments[i];
-			a->finalize(analyser, methods[0].type.argument_type(i + 1));
+			a->finalize(analyser, method_type.argument_type(i + 1));
+			method_type.set_argument_type(i + 1, a->type);
+		}
+		if (!Type::intersection(method_type, methods[0].type, &method_type)) {
+			add_error(analyser, SemanticException::METHOD_NOT_FOUND);
 		}
 
-		if (!Type::intersection(type, methods[0].type.return_type().image_conversion(), &type)) {
+		if (!Type::intersection(type, method_type.return_type().image_conversion(), &type)) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
+		oa->type = method_type; // only for debug
+		type.make_it_pure();
+
+		methods[0].type = method_type;
+		assert(method_type.is_pure() || !analyser->errors.empty());
 
 	} else {
 
@@ -199,15 +212,16 @@ void FunctionCall::finalize_help(SemanticAnalyser* analyser, const Type& req_typ
 		if (!Type::intersection(type, function->type.return_type().image_conversion(), &type)) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
-	}
+		type.make_it_pure();
 
-	type.make_it_pure();
+	}
 }
 
 jit_value_t FunctionCall::compile(Compiler& c) const
 {
 	ObjectAccess* oa = dynamic_cast<ObjectAccess*>(function);
 	if (oa != nullptr) {
+
 		vector<jit_value_t> args;
 		vector<jit_type_t> args_types;
 		args.push_back(oa->object->compile(c));

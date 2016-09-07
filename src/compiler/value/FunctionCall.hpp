@@ -14,6 +14,7 @@ public:
 	Value* function;
 	std::vector<Value*> arguments;
 
+	Type req_method_type;
 	std::vector<Method> methods;
 
 	FunctionCall();

@@ -71,7 +71,7 @@ void Block::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 			ins->reanalyse(analyser, req_type);
 			type = ins->type;
 		} else {
-			ins->reanalyse(analyser, Type::UNKNOWN);
+			ins->reanalyse(analyser, Type::VOID);
 			if (ins->type == Type::UNREACHABLE) {
 				type = Type::UNREACHABLE;
 				break;
@@ -89,30 +89,28 @@ void Block::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	analyser->enter_block(this);
 
-	if (!Type::intersection(type, req_type, &type)) {
-		add_error(analyser, SemanticException::TYPE_MISMATCH);
-	}
-
 	for (size_t i = 0; i < instructions.size(); ++i) {
 		Value* ins = instructions[i];
 
 		if (i == instructions.size() - 1) {
 			// last instruction
-			ins->finalize(analyser, type);
+			ins->finalize(analyser, req_type);
 			type = ins->type;
-			analyser->leave_block();
-			return;
 		} else {
 			ins->finalize(analyser, Type::VOID);
 			if (ins->type == Type::UNREACHABLE) {
 				type = Type::UNREACHABLE;
-				analyser->leave_block();
-				return; // no need to compile after a return
+				break;
 			}
 		}
 	}
 
+	if (!Type::intersection(type, req_type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+
 	analyser->leave_block();
+	assert(type.is_pure() || !analyser->errors.empty());
 }
 
 

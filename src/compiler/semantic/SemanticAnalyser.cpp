@@ -113,19 +113,19 @@ Module* SemanticAnalyser::module_by_name(const string& name) const
 	return nullptr;
 }
 
-vector<Method> SemanticAnalyser::get_method(const string& name, const Type& return_type, const Type& this_type, const std::vector<Type>& args_types) const
+vector<Method> SemanticAnalyser::get_method(const string& name, const Type& method_type) const
 {
-	string clazz = this_type.get_raw_type()->clazz();
+	string clazz = method_type.element_type(0).get_raw_type()->clazz();
 	if (clazz.empty()) {
 		vector<Method> methods;
 		for (Module* module : modules) {
-			vector<Method> x = module->get_method_implementation(name, return_type, this_type, args_types);
+			vector<Method> x = module->get_method_implementation(name, method_type);
 			methods.insert(methods.end(), x.begin(), x.end());
 		}
 		return methods;
 	} else {
 		Module* module = module_by_name(clazz);
-		return module->get_method_implementation(name, return_type, this_type, args_types);
+		return module->get_method_implementation(name, method_type);
 	}
 }
 
