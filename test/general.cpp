@@ -29,8 +29,8 @@ void Test::test_general() {
 //	success("{}", "{}");
 //	success("{a: 12}", "{a: 12}");
 	success("{;}", "<void>");
-	success("return 12", "12");
-	success("return", "<void>");
+//	success("return 12", "12");
+//	success("return", "<void>");
 	success("'a' 'b' 'c'", "'c'");
 
 	header("Variables");
@@ -54,10 +54,11 @@ void Test::test_general() {
 	success("let a = 12 let b = 0 { let a = 5 b = a } b", "5");
 	sem_err("{let a = 5} a", ls::SemanticException::Type::UNDEFINED_VARIABLE, "a");
 
-//	success("let f = function (x:vec<i32>, y) { if y { x } else { [] }} f([1], true)", "[1]");
+	success("let f = function (x:vec<i32>, y) { if y { x } else { [] }} f([1], true)", "[1]");
+	success("let f = function (x, y) { if y { x } else { [] }} f([1], true)", "[1]");
 //	success("let f = function (x:vec<i32>, y) { if y { x } else { return [42] [[]] }} f([1], false)", "[42]");
-	success("return 1 return [] []", "1");
-	success("if false { if true return 1 else return 2 } else { if true return 3 else return 'b' } return [] []", "3");
+//	success("return 1 return [] []", "1");
+//	success("if false { if true return 1 else return 2 } else { if true return 3 else return 'b' } return [] []", "3");
 
 	success("let x = 1 let y = 'a' x = y", "'a'");
 	success("let x = [1, 2, 3] x[1] = 'a' x", "[1, 'a', 3]");

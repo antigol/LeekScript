@@ -44,8 +44,9 @@ void If::preanalyse(SemanticAnalyser* analyser)
 	condition->preanalyse(analyser);
 	condition->will_require(analyser, Type::LOGIC);
 
+	then->preanalyse(analyser);
+
 	if (elze) {
-		then->preanalyse(analyser);
 		elze->preanalyse(analyser);
 
 		if (then->type == Type::UNREACHABLE) { // then contains return instruction
@@ -61,7 +62,6 @@ void If::preanalyse(SemanticAnalyser* analyser)
 			}
 		}
 	} else {
-		then->preanalyse(analyser);
 		type = Type::VOID;
 	}
 }
@@ -71,8 +71,24 @@ void If::will_require(SemanticAnalyser* analyser, const Type& req_type)
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
+redo:
 	then->will_require(analyser, type);
-	if (elze) elze->will_require(analyser, type);
+	if (elze) {
+		elze->will_require(analyser, type);
+
+		if (then->type == Type::UNREACHABLE) { // then contains return instruction
+			type = elze->type;
+		} else if (elze->type == Type::UNREACHABLE) { // elze contains return instruction
+			type = then->type;
+		} else {
+			Type old_type = type;
+			if (!Type::intersection(then->type, elze->type, &type)) {
+				type = Type::VOID;
+			} else if (old_type != type) {
+				goto redo;
+			}
+		}
+	}
 }
 
 void If::analyse(SemanticAnalyser* analyser, const Type& req_type)
