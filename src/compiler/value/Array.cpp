@@ -69,7 +69,11 @@ void Array::will_require(SemanticAnalyser* analyser, const Type& req_type)
 	Type element_type = type.element_type(0);
 	for (Value* ex : expressions) {
 		ex->will_require(analyser, element_type);
+		if (!Type::intersection(element_type, ex->type, &element_type)) {
+			add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
+		}
 	}
+	type = Type(&RawType::VEC, { element_type });
 }
 
 void Array::analyse(SemanticAnalyser* analyser, const Type& req_type)
