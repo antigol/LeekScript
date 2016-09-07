@@ -209,6 +209,17 @@ std::ostream& LSVec<T>::print(std::ostream& os) const {
 }
 
 template <>
+inline std::ostream& LSVec<void*>::print(std::ostream& os) const {
+	os << "[";
+	for (auto i = this->begin(); i != this->end(); i++) {
+		if (i != this->begin()) os << ", ";
+		os << "<function>";
+	}
+	os << "]";
+	return os;
+}
+
+template <>
 inline std::ostream& LSVec<LSValue*>::print(std::ostream& os) const {
 	os << "[";
 	for (auto i = this->begin(); i != this->end(); i++) {

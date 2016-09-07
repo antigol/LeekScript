@@ -103,9 +103,13 @@ void IndexAccess::will_take(SemanticAnalyser* analyser, const Type& req_type)
 
 void IndexAccess::will_require(SemanticAnalyser* analyser, const Type& req_type)
 {
+	cout << "IA wr " << type << " + " << req_type << " = ";
+
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
+
+	cout << type << endl;
 
 	Type fiber = type.fiber_conversion();
 	Type container_req_type = Type({ Type(&RawType::VEC, { fiber }), Type(&RawType::MAP, { Type::UNKNOWN, fiber }) });
@@ -114,10 +118,19 @@ void IndexAccess::will_require(SemanticAnalyser* analyser, const Type& req_type)
 
 	if (container->type.get_raw_type() == &RawType::VEC) {
 		left_type = container->type.element_type(0);
+		key->will_require(analyser, Type::I32);
+		if (key2) key2->will_require(analyser, Type::I32);
 	} else if (container->type.get_raw_type() == &RawType::MAP) {
 		left_type = container->type.element_type(1);
+		Type key_type = container->type.element_type(0);
+		key->will_require(analyser, key_type);
+		if (key2) key2->will_require(analyser, key_type);
 	} else {
 		left_type = Type::UNKNOWN;
+	}
+
+	if (!Type::intersection(type, left_type.image_conversion(), &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 }
 

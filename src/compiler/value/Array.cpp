@@ -84,6 +84,7 @@ void Array::analyse(SemanticAnalyser* analyser, const Type& req_type)
 		element_type = ex->type;
 	}
 	type = Type(&RawType::VEC, { element_type });
+	type.make_it_pure();
 }
 
 jit_value_t Array::compile(Compiler& c) const {
