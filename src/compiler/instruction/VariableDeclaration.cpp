@@ -10,7 +10,6 @@ VariableDeclaration::VariableDeclaration() {
 	global = false;
 	expression = nullptr;
 	typeName = nullptr;
-	var_type = Type::UNKNOWN;
 }
 
 VariableDeclaration::~VariableDeclaration() {
@@ -26,7 +25,7 @@ void VariableDeclaration::print(ostream& os, int indent, bool debug) const {
 		os << " : ";
 		typeName->print(os);
 	}
-	if (debug) os << " " << var_type;
+	if (debug) os << " " << var->type;
 	if (expression) {
 		os << " = ";
 		expression->print(os, indent, debug);
@@ -38,23 +37,25 @@ unsigned VariableDeclaration::line() const
 	return 0;
 }
 
+// DONE 1
 void VariableDeclaration::analyse_help(SemanticAnalyser* analyser)
 {
-	var_type = Type::UNKNOWN;
+	Type var_type = Type::UNKNOWN;
 
 	if (typeName) {
 		var_type = typeName->getInternalType(analyser);
 	}
 	if (expression) {
 		expression->analyse(analyser);
-		if (var_type != Type::UNKNOWN) {
-			expression->reanalyse(analyser, var_type);
-		}
 		var_type = expression->type;
 	}
 
 	var = analyser->add_var(variable, var_type, analyser->current_block(), this);
 	type = Type::VOID;
+
+	if (var->type == Type::UNREACHABLE) {
+		type = Type::UNREACHABLE;
+	}
 }
 
 void VariableDeclaration::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
@@ -63,17 +64,15 @@ void VariableDeclaration::reanalyse_help(SemanticAnalyser* analyser, const Type&
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 
-	if (!Type::intersection(var_type, var->type, &var_type)) {
-		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
-	}
-	var->type = var_type;
-
 	if (expression) {
-		expression->reanalyse(analyser, var_type);
-		if (!Type::intersection(var_type, expression->type, &var_type)) {
+		expression->reanalyse(analyser, var->type);
+		if (!Type::intersection(var->type, expression->type, &var->type)) {
 			add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
 		}
-		var->type = var_type; // TODO should work only with var->type  ==>  must before remove analyser stuff in finalize
+	}
+
+	if (var->type == Type::UNREACHABLE) {
+		type = Type::UNREACHABLE;
 	}
 }
 
@@ -84,19 +83,28 @@ void VariableDeclaration::finalize_help(SemanticAnalyser* analyser, const Type& 
 	}
 
 	if (expression) {
-		expression->finalize(analyser, var_type);
-		var_type = expression->type;
+		expression->finalize(analyser, var->type);
+		var->type = expression->type;
 	} else {
-		var_type.make_it_pure();
+		var->type.make_it_pure();
 	}
 
-	analyser->add_var(variable, var_type, analyser->current_block(), this);
+	if (var->type == Type::VOID) {
+		add_error(analyser, SemanticException::CANT_ASSIGN_VOID);
+	}
+	if (var->type == Type::UNREACHABLE) {
+		type = Type::UNREACHABLE;
+	}
 }
 
 jit_value_t VariableDeclaration::compile(Compiler& c) const
 {
-	jit_value_t var = jit_value_create(c.F, var_type.jit_type());
-	c.add_var(variable->content, var, var_type, false);
+	if (expression && expression->type == Type::UNREACHABLE) {
+		return expression->compile(c);
+	}
+
+	jit_value_t v = jit_value_create(c.F, var->type.jit_type());
+	c.add_var(variable->content, v, var->type, false);
 
 	if (expression) {
 		jit_value_t val = expression->compile(c);
@@ -105,9 +113,9 @@ jit_value_t VariableDeclaration::compile(Compiler& c) const
 			val = VM::move_inc_obj(c.F, val);
 		}
 
-		jit_insn_store(c.F, var, val);
+		jit_insn_store(c.F, v, val);
 	} else {
-		jit_insn_store(c.F, var, VM::create_default(c.F, var_type));
+		jit_insn_store(c.F, v, VM::create_default(c.F, var->type));
 	}
 	return nullptr;
 }

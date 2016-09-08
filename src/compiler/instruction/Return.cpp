@@ -9,6 +9,7 @@ Return::Return() : Return(nullptr) {}
 
 Return::Return(Value* v) {
 	expression = v;
+	function = nullptr;
 }
 
 Return::~Return() {
@@ -25,40 +26,55 @@ unsigned Return::line() const
 	return 0;
 }
 
+// DONE 1
 void Return::analyse_help(SemanticAnalyser* analyser)
 {
-	Function* f = analyser->current_function();
+	function = analyser->current_function();
 
+	Type tmp;
 	if (expression) {
 		expression->analyse(analyser);
-		f->type.return_types.push_back(expression->type);
-	} else {
-		f->type.return_types.push_back(Type::VOID);
-	}
-
-	type = Type::UNREACHABLE;
-}
-
-void Return::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
-{
-	assert(0);
-}
-
-void Return::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
-{
-	Function* f = analyser->current_function();
-
-	if (expression) {
-		expression->finalize(analyser, f->type.return_type());
-		f->type.set_return_type(expression->type);
-	} else {
-		if (!Type::intersection(Type::VOID, f->type.return_type())) {
+		if (!Type::intersection(expression->type, function->type.return_type(), &tmp)) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
-		f->type.set_return_type(Type::VOID);
+	} else {
+		if (!Type::intersection(Type::VOID, function->type.return_type(), &tmp)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
 	}
-
+	function->type.set_return_type(tmp);
 	type = Type::UNREACHABLE;
+}
+
+void Return::reanalyse_help(SemanticAnalyser* analyser, const Type&)
+{
+	Type tmp;
+	if (expression) {
+		expression->reanalyse(analyser, function->type.return_type());
+		if (!Type::intersection(expression->type, function->type.return_type(), &tmp)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+	} else {
+		if (!Type::intersection(Type::VOID, function->type.return_type(), &tmp)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+	}
+	function->type.set_return_type(tmp);
+	//tip! type = UNREACHABLE
+}
+
+void Return::finalize_help(SemanticAnalyser* analyser, const Type&)
+{
+	if (expression) {
+		expression->finalize(analyser, function->type.return_type());
+		function->type.set_return_type(expression->type);
+	} else {
+		if (!Type::intersection(Type::VOID, function->type.return_type())) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+		function->type.set_return_type(Type::VOID);
+	}
+	//tip! type = UNREACHABLE
 }
 
 jit_value_t Return::compile(Compiler& c) const {

@@ -29,16 +29,16 @@ enum class VarScope {
 class SemanticVar {
 public:
 	std::string name;
-	VarScope scope;
+	VarScope scope_type;
 	Type type;
 	int index;
-	Value* block; // In which the variable has been declared
+	Value* scope; // In which the variable has been declared
 	VariableDeclaration* vd;
 	Function* function; // In which the variable has been declared
 
-	SemanticVar(std::string name, VarScope scope, Type type, int index, Value* block,
+	SemanticVar(std::string name, VarScope scope_type, Type type, int index, Value* scope,
 		VariableDeclaration* vd, Function* function) :
-		name(name), scope(scope), type(type), index(index), block(block), vd(vd), function(function) {}
+		name(name), scope_type(scope_type), type(type), index(index), scope(scope), vd(vd), function(function) {}
 };
 
 class SemanticAnalyser {
@@ -46,6 +46,7 @@ public:
 
 	Program* program;
 	bool in_program = false;
+	bool in_analyse = false; // only for debug
 
 	std::vector<Module*> modules;
 
@@ -77,15 +78,14 @@ public:
 	void leave_loop();
 	bool in_loop(int deepness) const;
 
-	Module* module_by_name(const std::string& name) const;
-	std::vector<Method> get_method(const std::string& name, const Type& method_type) const;
-
-	SemanticVar* add_var(Token*, Type, Value* block, VariableDeclaration*);
-	SemanticVar* add_parameter(Token*, Type, Value* block);
+	SemanticVar* add_var(Token*, Type, Value* scope, VariableDeclaration*);
+	SemanticVar* add_parameter(Token*, Type, Value* scope);
 
 	SemanticVar* get_var(Token* name);
 	SemanticVar* get_var_direct(std::string name);
 	std::map<std::string, SemanticVar*>& get_local_vars();
+
+	std::vector<Method> get_method(const std::string& name, const Type& method_type) const;
 
 	void add_error(SemanticException ex);
 

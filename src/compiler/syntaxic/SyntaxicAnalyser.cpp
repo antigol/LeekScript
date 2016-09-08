@@ -67,6 +67,7 @@ Function* SyntaxicAnalyser::analyse(vector<Token>& tokens) {
 
 	Function* function = new Function();
 	function->body = eatMain();
+	function->body->function = function;
 
 	return function;
 }
@@ -327,6 +328,7 @@ eatFunction_eatArgument:
 	}
 
 	f->body = eatBlock();
+	f->body->function = f;
 
 	if (!braces) {
 		eat(TokenType::END);
@@ -363,6 +365,7 @@ eatLambda_eatArgument:
 
 	f->body = new Block();
 	f->body->instructions.push_back(new ExpressionInstruction(eatExpression()));
+	f->body->function = f;
 
 	return f;
 }

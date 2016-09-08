@@ -80,6 +80,7 @@ unsigned Function::line() const {
 	return 0;
 }
 
+// DONE 1
 void Function::analyse_help(SemanticAnalyser* analyser)
 {
 	type = Type::FUNCTION;
@@ -92,10 +93,10 @@ void Function::analyse_help(SemanticAnalyser* analyser)
 		}
 	}
 
-
-	Type req_return_type = Type::UNKNOWN;
 	if (returnType) {
-		req_return_type = returnType->getInternalType(analyser);
+		type.set_return_type(returnType->getInternalType(analyser));
+	} else {
+		type.set_return_type(Type::UNKNOWN);
 	}
 
 	analyser->enter_function(this);
@@ -104,50 +105,19 @@ void Function::analyse_help(SemanticAnalyser* analyser)
 		arguments_vars.push_back(analyser->add_parameter(arguments[i], type.argument_type(i), this));
 	}
 
-	type.set_return_type(Type::UNKNOWN);
-
-	stringstream oss;
-	oss << "FUN " << type << " --> ";
-	// The following call will modify
-	// type.return_types (return instruction)
-	// type.arguments_type (parameters)
+	body->function = this; // just in case
 	body->analyse(analyser);
-	oss << type << endl;
-	cout << oss.str();
-
-	// Compute intersection of returns types
-	Type return_type = req_return_type;
-	type.return_types[0] = body->type;
-	for (size_t i = 0; i < type.return_types.size(); ++i) {
-		if (type.return_types[i] == Type::UNREACHABLE) continue;
-		if (!Type::intersection(return_type, type.return_types[i], &return_type)) {
-			add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
-		}
-	}
-	type.return_types.clear();
-	type.set_return_type(return_type);
-	body->reanalyse(analyser, return_type);
-
-	// update return type
-	if (!Type::intersection(return_type, body->type, &return_type)) {
-		add_error(analyser, SemanticException::TYPE_MISMATCH);
-	}
-	type.set_return_type(return_type);
 
 	analyser->leave_function();
 }
 
 void Function::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-	cout << "FUN wr " << type << " + " << req_type << " = ";
+	cout << "FUN wr " << type << " + " << req_type << " + arguments types = ";
 
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-	// TODO manage return
-
-	cout << type << " --> ";
-
 	for (size_t i = 0; i < arguments.size(); ++i) {
 		Type arg_type = type.argument_type(i);
 		if (!Type::intersection(arg_type, arguments_vars[i]->type, &arg_type)) {
@@ -157,16 +127,10 @@ void Function::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 		type.set_argument_type(i, arg_type);
 	}
 
-	body->reanalyse(analyser, type.return_type());
-
-	// update return type
-	Type return_type = type.return_type();
-	if (!Type::intersection(return_type, body->type, &return_type)) {
-		add_error(analyser, SemanticException::TYPE_MISMATCH);
-	}
-	type.set_return_type(return_type);
-
 	cout << type << endl;
+
+	// tip! Block/Return will read/write return_type
+	body->reanalyse(analyser, Type::UNKNOWN);
 }
 
 void Function::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
@@ -174,27 +138,21 @@ void Function::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-	Type return_type = type.return_type();
-	type.make_it_pure();
-	type.set_return_type(return_type);
-
-	analyser->enter_function(this);
+	// make the arguments pure
 	for (size_t i = 0; i < arguments.size(); ++i) {
-		analyser->add_parameter(arguments[i], type.argument_type(i), this);
+		Type arg_type = type.argument_type(i);
+		if (!Type::intersection(arg_type, arguments_vars[i]->type, &arg_type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+		arg_type.make_it_pure();
+		arguments_vars[i]->type = arg_type;
+		type.set_argument_type(i, arg_type);
 	}
 
-	body->finalize(analyser, body->type != Type::UNREACHABLE ? return_type : Type::UNREACHABLE);
+	// body makes the return_type pure
+	body->finalize(analyser, Type::UNKNOWN);
 
-	if (body->type != Type::UNREACHABLE) type.set_return_type(body->type);
-
-//	if (body->type != Type::UNREACHABLE && !Type::intersection(body->type, type.return_type(), &return_type)) {
-//		add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
-//	}
-
-//	type.set_return_type(return_type);
-//	type.make_it_complete();
-
-	analyser->leave_function();
+	assert(type.is_pure() || !analyser->errors.empty());
 }
 
 void Function::capture(SemanticVar* var) {

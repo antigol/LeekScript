@@ -39,26 +39,23 @@ unsigned If::line() const {
 	return 0;
 }
 
+// DONE 1
 void If::analyse_help(SemanticAnalyser* analyser)
 {
 	condition->analyse(analyser);
-	condition->reanalyse(analyser, Type::LOGIC);
 
 	then->analyse(analyser);
 
 	if (elze) {
 		elze->analyse(analyser);
 
-		if (then->type == Type::UNREACHABLE) { // then contains return instruction
+		if (then->type == Type::UNREACHABLE) {
 			type = elze->type;
-		} else if (elze->type == Type::UNREACHABLE) { // elze contains return instruction
+		} else if (elze->type == Type::UNREACHABLE) {
 			type = then->type;
 		} else {
 			if (!Type::intersection(then->type, elze->type, &type)) {
 				type = Type::VOID;
-			} else {
-				then->reanalyse(analyser, type);
-				elze->reanalyse(analyser, type);
 			}
 		}
 	} else {
@@ -68,9 +65,12 @@ void If::analyse_help(SemanticAnalyser* analyser)
 
 void If::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
+	condition->reanalyse(analyser, Type::LOGIC);
+
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
+
 redo:
 	then->reanalyse(analyser, type);
 	if (elze) {
@@ -100,11 +100,20 @@ void If::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 	}
 
 	then->finalize(analyser, type);
-	type = then->type;
 
 	if (elze) {
-		elze->finalize(analyser, type);
+		if (then->type == Type::UNREACHABLE) {
+			elze->finalize(analyser, type);
+			type = elze->type;
+		} else {
+			type = then->type;
+			elze->finalize(analyser, type);
+		}
+	} else {
+		type = Type::VOID;
 	}
+
+	assert(type.is_pure() || !analyser->errors.empty());
 }
 
 jit_value_t If::compile(Compiler& c) const {

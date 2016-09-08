@@ -19,8 +19,6 @@ public:
 	Value* expression;
 	SemanticVar* var;
 
-	Type var_type; // for the preanalyse, to save the infered type
-
 	VariableDeclaration();
 	virtual ~VariableDeclaration();
 

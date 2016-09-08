@@ -21,6 +21,7 @@ unsigned ExpressionInstruction::line() const
 	return 0;
 }
 
+// DONE 1
 void ExpressionInstruction::analyse_help(SemanticAnalyser* analyser)
 {
 	value->analyse(analyser);

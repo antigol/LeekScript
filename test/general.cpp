@@ -77,6 +77,11 @@ void Test::test_general() {
 	success("let f = [x->x+x] f[0](5)", "10");
 	success("let f = [] f.push(x->x+x) f[0](5)", "10");
 
+	success("if 1 1 else 'a'", "1");
+	success("if 1 1", "<void>");
+	success("let x = if false return 42 else 12; x", "12");
+	success("let x = if true 12 else return 42; x", "12");
+
 //	success("'foo' ?? 'bar'", "'foo'");
 //	success("null ?? 'bar'", "'bar'");
 //	success("let a = 'foo' a ?? 'bar'", "'foo'");

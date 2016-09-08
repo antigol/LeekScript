@@ -58,6 +58,9 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 //	Type t1 = Type(&RawType::TUPLE, { Type(&RawType::VEC, {Type::UNKNOWN.place_holder(1)}),                  Type::UNKNOWN.place_holder(1)              });
 //	Type t2 = Type(&RawType::TUPLE, { Type(&RawType::VEC, {Type(&RawType::VEC, {Type::I32})}),               Type(&RawType::VEC, { Type::UNKNOWN })     });
 
+//	Type t1 = Type(&RawType::TUPLE, { Type(&RawType::VEC, {Type::UNKNOWN.placeholder(1)}),                  Type::UNKNOWN.placeholder(1)              });
+//	Type t2 = Type(&RawType::TUPLE, { Type(&RawType::VEC, {Type(&RawType::VEC, {Type::I32})}),               Type(&RawType::VEC, { Type::UNREACHABLE })     });
+
 //	Type t1 = Type::FUNCTION;
 //	t1.add_argument_type(Type(&RawType::VEC, {Type::UNKNOWN.place_holder(1)}));
 //	t1.add_argument_type(Type(&RawType::VEC, {Type::UNKNOWN.place_holder(1)}));
@@ -68,8 +71,8 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 //	t2.add_argument_type(Type(&RawType::VEC, {Type(&RawType::VEC, {Type::I32})}));
 //	t2.add_argument_type(Type(&RawType::VEC, { Type::UNKNOWN }));
 
-//	Type t1 = Type(&RawType::TUPLE, { Type(&RawType::VEC, { Type::UNKNOWN }).place_holder(1), Type::UNKNOWN.place_holder(1),  Type::UNKNOWN });
-//	Type t2 = Type(&RawType::TUPLE, { Type(&RawType::VEC, { Type::I32 }).place_holder(1),                     Type::UNKNOWN ,                 Type::UNKNOWN.place_holder(1)});
+//	Type t1 = Type(&RawType::TUPLE, { Type(&RawType::VEC, { Type::UNKNOWN }).placeholder(1),                  Type::UNKNOWN.placeholder(1),  Type::UNKNOWN });
+//	Type t2 = Type(&RawType::TUPLE, { Type(&RawType::VEC, { Type::I32 }).placeholder(1),                     Type::UNKNOWN ,                 Type::UNKNOWN.placeholder(1)});
 
 //	Type re;
 //	cout << Type::intersection(t1, t2, &re) << endl;

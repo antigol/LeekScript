@@ -27,6 +27,7 @@ unsigned VariableValue::line() const {
 	return token->line;
 }
 
+// DONE 1
 void VariableValue::analyse_help(SemanticAnalyser* analyser)
 {
 	var = analyser->get_var(token);
@@ -38,7 +39,7 @@ void VariableValue::analyse_help(SemanticAnalyser* analyser)
 
 void VariableValue::reanalyse_l_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-	if (var == nullptr) return;
+	assert(var);
 
 	Type tmp;
 	if (!Type::intersection(var->type, req_type, &tmp)) {
@@ -53,30 +54,14 @@ void VariableValue::reanalyse_l_help(SemanticAnalyser* analyser, const Type& req
 			add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
 		}
 
-		if (var->scope == VarScope::LOCAL) {
-			if (var->vd) var->vd->var_type = var->type; // TODO only good for finalize that should be modified
-		}
-		if (var->scope == VarScope::PARAMETER) {
-			var->function->type.set_argument_type(var->index, var->type);
-		}
-
-		if (var->block) var->block->reanalyse(analyser, Type::UNKNOWN);
+		// update modification in declaration and usage of the variable
+		if (var->scope) var->scope->reanalyse(analyser, Type::UNKNOWN);
 	}
 }
 
 void VariableValue::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-	if (var == nullptr) return;
-
-
-	// Example input
-	// req_type == var
-	// var.type == UNKNOWN
-	// type == UNKNOWN
-
-	// Ideal output
-	// type == var
-	// var.type == i32|f64|var
+	assert(var);
 
 	cout << "VV wr type=" << type << " req=" << req_type << " var->type=" << var->type << endl;
 
@@ -97,21 +82,13 @@ void VariableValue::reanalyse_help(SemanticAnalyser* analyser, const Type& req_t
 
 		left_type = var->type;
 
-		if (var->scope == VarScope::LOCAL && var->vd) {
-			if (var->vd) var->vd->var_type = var->type; // TODO only good for finalize that should be modified
-		}
-		if (var->scope == VarScope::PARAMETER) {
-			var->function->type.arguments_types[var->index] = var->type;
-		}
-
-		if (var->block) var->block->reanalyse(analyser, Type::UNKNOWN);
+		if (var->scope) var->scope->reanalyse(analyser, Type::UNKNOWN);
 	}
 }
 
 void VariableValue::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-	var = analyser->get_var(token);
-	if (var == nullptr) return;
+	//tip! var->type is already pure thanks to VD
 
 	if (!Type::intersection(type, var->type.image_conversion(), &type)) {
 		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
@@ -128,7 +105,7 @@ extern map<string, jit_value_t> internals;
 jit_value_t VariableValue::compile(Compiler& c) const
 {
 	jit_value_t v;
-	switch (var->scope) {
+	switch (var->scope_type) {
 		case VarScope::INTERNAL:
 			v = internals[name];
 			break;

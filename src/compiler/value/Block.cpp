@@ -1,6 +1,7 @@
 #include "Block.hpp"
 
 #include "../instruction/Return.hpp"
+#include "Function.hpp"
 #include "../../vm/VM.hpp"
 #include "../../vm/LSValue.hpp"
 
@@ -9,6 +10,7 @@ using namespace std;
 namespace ls {
 
 Block::Block() {
+	function = nullptr;
 }
 
 Block::~Block() {
@@ -35,6 +37,7 @@ unsigned Block::line() const {
 	return 0;
 }
 
+// DONE 1
 void Block::analyse_help(SemanticAnalyser* analyser)
 {
 	analyser->enter_block(this);
@@ -68,7 +71,12 @@ void Block::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 
 		if (i == instructions.size() - 1) {
 			// last instruction
-			ins->reanalyse(analyser, req_type);
+			if (function) {
+				ins->reanalyse(analyser, function->type.return_type());
+				function->type.set_return_type(ins->type);
+			} else {
+				ins->reanalyse(analyser, req_type);
+			}
 			type = ins->type;
 		} else {
 			ins->reanalyse(analyser, Type::VOID);
@@ -79,6 +87,10 @@ void Block::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 		}
 	}
 
+	if (instructions.empty() && function) {
+		function->type.set_return_type(type);
+	}
+
 	// tip! Intersection of any type with UNREACHABLE gives UNREACHABLE
 	if (!Type::intersection(type, req_type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
@@ -87,14 +99,17 @@ void Block::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 
 void Block::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-	analyser->enter_block(this);
-
 	for (size_t i = 0; i < instructions.size(); ++i) {
 		Value* ins = instructions[i];
 
 		if (i == instructions.size() - 1) {
 			// last instruction
-			ins->finalize(analyser, req_type);
+			if (function) {
+				ins->finalize(analyser, function->type.return_type());
+				function->type.set_return_type(ins->type);
+			} else {
+				ins->finalize(analyser, req_type);
+			}
 			type = ins->type;
 		} else {
 			ins->finalize(analyser, Type::VOID);
@@ -108,8 +123,6 @@ void Block::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 	if (!Type::intersection(type, req_type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-
-	analyser->leave_block();
 	assert(type.is_pure() || !analyser->errors.empty());
 }
 

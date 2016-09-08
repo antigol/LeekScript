@@ -443,7 +443,7 @@ void Type::replace_place_holder_type(uint32_t id, const Type& type)
 	if (id == 0) return;
 	if (ph == id) {
 		*this = type;
-		if (!is_pure()) ph = id;
+		/*if (!is_pure())*/ ph = id;
 	}
 	for (Type& x : elements_types)  x.replace_place_holder_type(id, type);
 	for (Type& x : return_types)    x.replace_place_holder_type(id, type);

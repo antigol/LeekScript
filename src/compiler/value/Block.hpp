@@ -10,6 +10,7 @@ class Block : public Value {
 public:
 
 	std::vector<Value*> instructions;
+	Function* function; // if the block is the main block of a functi<on
 
 	Block();
 	virtual ~Block();

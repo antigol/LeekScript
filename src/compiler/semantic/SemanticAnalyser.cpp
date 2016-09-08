@@ -18,6 +18,8 @@
 #include "SemanticException.hpp"
 #include "../instruction/VariableDeclaration.hpp"
 
+#include <cassert>
+
 using namespace std;
 
 namespace ls {
@@ -35,7 +37,11 @@ void SemanticAnalyser::analyse(Program* program)
 	// Gives to each element a type
 	// but this type is not necessarly complete
 	in_program = true;
+	in_analyse = true;
 	program->main->analyse(this);
+	in_analyse = false;
+	if (!errors.empty()) return;
+
 	program->main->reanalyse(this, Type::UNKNOWN);
 }
 
@@ -47,6 +53,7 @@ void SemanticAnalyser::finalize(Program* program)
 
 void SemanticAnalyser::enter_function(Function* f) {
 
+	assert(in_analyse);
 	// Create function scope
 	variables.push_back(vector<map<std::string, SemanticVar*>> {});
 	// First function block
@@ -60,6 +67,7 @@ void SemanticAnalyser::enter_function(Function* f) {
 
 void SemanticAnalyser::leave_function() {
 
+	assert(in_analyse);
 	variables.pop_back();
 	parameters.pop_back();
 	functions_stack.pop();
@@ -67,16 +75,19 @@ void SemanticAnalyser::leave_function() {
 }
 
 void SemanticAnalyser::enter_block(Value* block) {
+	assert(in_analyse);
 	variables.back().push_back(map<std::string, SemanticVar*> {});
 	block_stack.push(block);
 }
 
 void SemanticAnalyser::leave_block() {
+	assert(in_analyse);
 	variables.back().pop_back();
 	block_stack.pop();
 }
 
 Function* SemanticAnalyser::current_function() const {
+	assert(in_analyse);
 	if (functions_stack.empty()) {
 		assert(0);
 		return nullptr;
@@ -86,6 +97,7 @@ Function* SemanticAnalyser::current_function() const {
 
 Value*SemanticAnalyser::current_block() const
 {
+	assert(in_analyse);
 	if (block_stack.empty()) {
 		assert(0);
 		return nullptr;
@@ -94,46 +106,26 @@ Value*SemanticAnalyser::current_block() const
 }
 
 void SemanticAnalyser::enter_loop() {
+	assert(in_analyse);
 	loops.top()++;
 }
 
 void SemanticAnalyser::leave_loop() {
+	assert(in_analyse);
 	loops.top()--;
 }
 
 bool SemanticAnalyser::in_loop(int deepness) const {
+	assert(in_analyse);
 	return loops.top() >= deepness;
 }
 
-Module* SemanticAnalyser::module_by_name(const string& name) const
-{
-	for (size_t i = 0; i < modules.size(); ++i) {
-		if (modules[i]->name == name) return modules[i];
-	}
-	return nullptr;
-}
-
-vector<Method> SemanticAnalyser::get_method(const string& name, const Type& method_type) const
-{
-	string clazz = method_type.element_type(0).get_raw_type()->clazz();
-	if (clazz.empty()) {
-		vector<Method> methods;
-		for (Module* module : modules) {
-			vector<Method> x = module->get_method_implementation(name, method_type);
-			methods.insert(methods.end(), x.begin(), x.end());
-		}
-		return methods;
-	} else {
-		Module* module = module_by_name(clazz);
-		return module->get_method_implementation(name, method_type);
-	}
-}
-
-SemanticVar* SemanticAnalyser::add_var(Token* v, Type type, Value* block, VariableDeclaration* vd) {
+SemanticVar* SemanticAnalyser::add_var(Token* v, Type type, Value* scope, VariableDeclaration* vd) {
+	assert(in_analyse);
 
 	// Internal variable, before execution
 	if (!in_program) {
-		SemanticVar* var = new SemanticVar(v->content, VarScope::INTERNAL, type, 0, block, vd, current_function());
+		SemanticVar* var = new SemanticVar(v->content, VarScope::INTERNAL, type, 0, scope, vd, current_function());
 		internal_vars.insert(pair<string, SemanticVar*>(v->content, var));
 		return var;
 	}
@@ -142,20 +134,22 @@ SemanticVar* SemanticAnalyser::add_var(Token* v, Type type, Value* block, Variab
 		add_error({ SemanticException::VARIABLE_ALREADY_DEFINED, v->line, v->content });
 	}
 
-	SemanticVar* var = new SemanticVar(v->content, VarScope::LOCAL, type, 0, block, vd, current_function());
+	SemanticVar* var = new SemanticVar(v->content, VarScope::LOCAL, type, 0, scope, vd, current_function());
 
 	variables.back().back().insert(pair<string, SemanticVar*>(v->content, var));
 	return var;
 }
 
-SemanticVar* SemanticAnalyser::add_parameter(Token* v, Type type, Value* block) {
+SemanticVar* SemanticAnalyser::add_parameter(Token* v, Type type, Value* scope) {
+	assert(in_analyse);
 
-	SemanticVar* arg = new SemanticVar(v->content, VarScope::PARAMETER, type, parameters.back().size(), block, nullptr, current_function());
+	SemanticVar* arg = new SemanticVar(v->content, VarScope::PARAMETER, type, parameters.back().size(), scope, nullptr, current_function());
 	parameters.back().insert(pair<string, SemanticVar*>(v->content, arg));
 	return arg;
 }
 
 SemanticVar* SemanticAnalyser::get_var(Token* v) {
+	assert(in_analyse);
 
 	// Search in internal variables : global for the program
 	try {
@@ -185,16 +179,39 @@ SemanticVar* SemanticAnalyser::get_var(Token* v) {
 }
 
 SemanticVar* SemanticAnalyser::get_var_direct(std::string name) {
+	assert(in_analyse);
 	try {
 		if (variables.size() > 0) {
 			return variables.back().back().at(name);
 		}
-	} catch (exception& e) {}
+	} catch (exception&) {}
 	return nullptr;
 }
 
 map<string, SemanticVar*>& SemanticAnalyser::get_local_vars() {
+	assert(in_analyse);
 	return variables.back().back();
+}
+
+vector<Method> SemanticAnalyser::get_method(const string& name, const Type& method_type) const
+{
+	string clazz = method_type.element_type(0).get_raw_type()->clazz();
+	if (clazz.empty()) {
+		vector<Method> methods;
+		for (Module* module : modules) {
+			vector<Method> x = module->get_method_implementation(name, method_type);
+			methods.insert(methods.end(), x.begin(), x.end());
+		}
+		return methods;
+	} else {
+		Module* module = nullptr;
+		for (size_t i = 0; i < modules.size(); ++i) {
+			if (modules[i]->name == clazz) module = modules[i];
+		}
+		if (module)	return module->get_method_implementation(name, method_type);
+		assert(0);
+		return vector<Method>();
+	}
 }
 
 void SemanticAnalyser::add_error(SemanticException ex) {

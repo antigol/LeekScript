@@ -9,6 +9,7 @@ class Return : public Value {
 public:
 
 	Value* expression;
+	Function* function;
 
 	Return();
 	Return(Value*);

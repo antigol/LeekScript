@@ -36,6 +36,7 @@ unsigned FunctionCall::line() const {
 	return 0;
 }
 
+// DONE 1
 void FunctionCall::analyse_help(SemanticAnalyser* analyser)
 {
 	ObjectAccess* oa = dynamic_cast<ObjectAccess*>(function);
@@ -78,39 +79,43 @@ void FunctionCall::reanalyse_help(SemanticAnalyser* analyser, const Type& req_ty
 	ObjectAccess* oa = dynamic_cast<ObjectAccess*>(function);
 	if (oa != nullptr) {
 
-redo:
-		// get methods
-		methods = analyser->get_method(oa->field->content, req_method_type);
-		if (methods.empty()) {
-			add_error(analyser, SemanticException::METHOD_NOT_FOUND);
-			return;
-		}
+		Type generic;
 
-		// compute generic
-		Type generic = methods[0].type;
-		for (size_t i = 1; i < methods.size(); ++i) {
-			generic = Type::union_of(generic, methods[i].type);
-		}
+		while (true) {
+			// get methods
+			methods = analyser->get_method(oa->field->content, req_method_type);
+			if (methods.empty()) {
+				add_error(analyser, SemanticException::METHOD_NOT_FOUND);
+				return;
+			}
 
-		if (!Type::intersection(type, generic.return_type().image_conversion(), &type)) {
-			add_error(analyser, SemanticException::TYPE_MISMATCH);
-		}
+			// compute generic
+			generic = methods[0].type;
+			for (size_t i = 1; i < methods.size(); ++i) {
+				generic = Type::union_of(generic, methods[i].type);
+			}
 
-		// reanalyse -> req_type
-		Type new_req_method_type = Type::FUNCTION;
-		new_req_method_type.set_return_type(type.fiber_conversion());
-		oa->object->reanalyse(analyser, generic.argument_type(0));
-		new_req_method_type.add_argument_type(oa->object->type);
-		for (size_t i = 0; i < arguments.size(); ++i) {
-			Value* a = arguments[i];
-			a->reanalyse(analyser, generic.argument_type(i + 1));
-			new_req_method_type.add_argument_type(a->type);
-		}
+			if (!Type::intersection(type, generic.return_type().image_conversion(), &type)) {
+				add_error(analyser, SemanticException::TYPE_MISMATCH);
+			}
 
-		// if better redo
-		if (new_req_method_type != req_method_type) {
-			req_method_type = new_req_method_type;
-			goto redo;
+			// reanalyse -> req_type
+			Type new_req_method_type = Type::FUNCTION;
+			new_req_method_type.set_return_type(type.fiber_conversion());
+			oa->object->reanalyse(analyser, generic.argument_type(0));
+			new_req_method_type.add_argument_type(oa->object->type);
+			for (size_t i = 0; i < arguments.size(); ++i) {
+				Value* a = arguments[i];
+				a->reanalyse(analyser, generic.argument_type(i + 1));
+				new_req_method_type.add_argument_type(a->type);
+			}
+
+			// if better redo
+			if (new_req_method_type != req_method_type) {
+				req_method_type = new_req_method_type;
+			} else {
+				break;
+			}
 		}
 
 		oa->type = generic; // only for debug
