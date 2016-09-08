@@ -22,10 +22,9 @@ public:
 	virtual bool isLeftValue() const override;
 
 	virtual void analyse_help(SemanticAnalyser* analyser) override;
-	virtual void reanalyse_l_help(SemanticAnalyser* analyser, const Type& req_type) override;
-	virtual void reanalyse_help(SemanticAnalyser* analyser, const Type& req_type) override;
+	virtual void reanalyse_l_help(SemanticAnalyser* analyser, const Type& req_type, const Type& req_left_type) override;
 
-	virtual void finalize_help(SemanticAnalyser* analyser, const Type& req_type) override;
+	virtual void finalize_l_help(SemanticAnalyser* analyser, const Type& req_type, const Type& req_left_type) override;
 
 	virtual jit_value_t compile(Compiler&) const override;
 	virtual jit_value_t compile_l(Compiler&) const override;

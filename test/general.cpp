@@ -61,6 +61,7 @@ void Test::test_general() {
 //	success("if false { if true return 1 else return 2 } else { if true return 3 else return 'b' } return [] []", "3");
 
 	success("let x = 1 let y = 'a' x = y", "'a'");
+	success("let a let b let c let d a=b b=c c=d d='a' a", "null");
 	success("let x = [1, 2, 3] x[1] = 'a' x", "[1, 'a', 3]");
 	success("let x = []; let y = [[1.5], x]; y[0][0]", "1.5");
 	success("let x = [] let y = null [x,y]", "[[], null]");

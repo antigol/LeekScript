@@ -51,17 +51,12 @@ void ObjectAccess::analyse_help(SemanticAnalyser* analyser)
 	}
 }
 
-void ObjectAccess::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
+void ObjectAccess::reanalyse_l_help(SemanticAnalyser* analyser, const Type& req_type, const Type& req_left_type)
 {
 
 }
 
-void ObjectAccess::reanalyse_l_help(SemanticAnalyser* analyser, const Type& req_type)
-{
-
-}
-
-void ObjectAccess::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
+void ObjectAccess::finalize_l_help(SemanticAnalyser* analyser, const Type& req_type, const Type& req_left_type)
 {
 	assert(0);
 	try {

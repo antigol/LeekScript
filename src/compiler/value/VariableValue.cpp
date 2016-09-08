@@ -37,63 +37,43 @@ void VariableValue::analyse_help(SemanticAnalyser* analyser)
 	type = var->type.image_conversion();
 }
 
-void VariableValue::reanalyse_l_help(SemanticAnalyser* analyser, const Type& req_type)
+void VariableValue::reanalyse_l_help(SemanticAnalyser* analyser, const Type& req_type, const Type& req_left_type)
 {
 	assert(var);
 
-	Type tmp;
-	if (!Type::intersection(var->type, req_type, &tmp)) {
+	Type old = var->type;
+
+	if (!Type::intersection(var->type, req_left_type, &var->type)) {
 		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
 	}
-
-	if (tmp != var->type) {
-		var->type = tmp;
-
-		left_type = var->type;
-		if (!Type::intersection(type, var->type.image_conversion(), &type)) {
-			add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
-		}
-
-		// update modification in declaration and usage of the variable
-		if (var->scope) var->scope->reanalyse(analyser, Type::UNKNOWN);
-	}
-}
-
-void VariableValue::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
-{
-	assert(var);
-
-	cout << "VV wr type=" << type << " req=" << req_type << " var->type=" << var->type << endl;
-
-	// update type in case var->type has changed
 	if (!Type::intersection(type, var->type.image_conversion(), &type)) {
 		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
 	}
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
 	}
-	Type tmp;
-	if (!Type::intersection(type.fiber_conversion(), var->type, &tmp)) {
+	if (!Type::intersection(type.fiber_conversion(), var->type, &var->type)) {
 		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
 	}
 
-	if (tmp != var->type) {
-		var->type = tmp;
-
+	if (old != var->type) {
 		left_type = var->type;
 
 		if (var->scope) var->scope->reanalyse(analyser, Type::UNKNOWN);
 	}
 }
 
-void VariableValue::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
+void VariableValue::finalize_l_help(SemanticAnalyser* analyser, const Type& req_type, const Type& req_left_type)
 {
 	//tip! var->type is already pure thanks to VD
 
-	if (!Type::intersection(type, var->type.image_conversion(), &type)) {
+	if (!Type::intersection(var->type, req_left_type)) {
 		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
 	}
 	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
+	}
+	if (!Type::intersection(type, var->type.image_conversion(), &type)) {
 		add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
 	}
 	type.make_it_pure();

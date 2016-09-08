@@ -112,14 +112,10 @@ void Expression::analyse_help(SemanticAnalyser* analyser)
 
 	if (op->type == TokenType::EQUAL) {
 
-		LeftValue* l1 = dynamic_cast<LeftValue*>(v1);
-		if (l1->isLeftValue()) {
-			l1->analyse(analyser);
+		if (v1->isLeftValue()) {
+			v1->analyse(analyser);
 			v2->analyse(analyser);
-
-			l1->reanalyse_l(analyser, v2->type);
-
-			type = l1->type;
+			type = v1->type;
 		} else {
 			v1->add_error(analyser, SemanticException::VALUE_MUST_BE_A_LVALUE);
 		}
@@ -168,11 +164,14 @@ void Expression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type
 	if (op->type == TokenType::EQUAL) {
 		LeftValue* l1 = dynamic_cast<LeftValue*>(v1);
 
-		l1->reanalyse(analyser, req_type);
-		type = l1->type;
-
-		v2->reanalyse(analyser, l1->left_type);
-		l1->reanalyse_l(analyser, v2->type);
+		Type old_left, old_right;
+		do {
+			old_left = l1->left_type;
+			old_right = v2->type;
+			l1->reanalyse_l(analyser, req_type, v2->type);
+			type = l1->type;
+			v2->reanalyse(analyser, l1->left_type);
+		} while (old_left != l1->left_type || old_right != v2->type);
 
 	} else if (op->type == TokenType::PLUS) {
 		if (!Type::intersection(type, req_type, &type)) {
@@ -206,10 +205,11 @@ void Expression::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 	}
 
 	if (op->type == TokenType::EQUAL) {
+		LeftValue* l1 = dynamic_cast<LeftValue*>(v1);
 
-		v1->finalize(analyser, req_type);
-		v2->finalize(analyser, ((LeftValue*) v1)->left_type);
-		type = v1->type;
+		l1->finalize_l(analyser, req_type, v2->type);
+		type = l1->type;
+		v2->finalize(analyser, l1->left_type);
 
 	} else if (op->type == TokenType::PLUS) {
 

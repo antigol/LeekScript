@@ -45,118 +45,148 @@ bool IndexAccess::isLeftValue() const
 	return key2 == nullptr && container->isLeftValue();
 }
 
+// DONE 1
 void IndexAccess::analyse_help(SemanticAnalyser* analyser)
 {
 	container->analyse(analyser);
-	container->reanalyse(analyser, Type::INDEXABLE);
 
 	key->analyse(analyser);
 	if (key2) key2->analyse(analyser);
-
-	left_type = Type::UNKNOWN;
-
-	// VEC
-	if (container->type.get_raw_type() == &RawType::VEC) {
-		key->reanalyse(analyser, Type::I32);
-		if (key2) key2->reanalyse(analyser, Type::I32);
-
-		left_type = container->type.element_type(0);
-	}
-
-	// MAP
-	if (container->type.get_raw_type() == &RawType::MAP) {
-		key->reanalyse(analyser, container->type.element_type(0));
-		if (key2) key2->reanalyse(analyser, container->type.element_type(0));
-
-		left_type = container->type.element_type(1);
-	}
-
-	type = left_type.image_conversion();
-}
-
-void IndexAccess::reanalyse_l_help(SemanticAnalyser* analyser, const Type& req_type)
-{
-	if (!isLeftValue()) {
-		add_error(analyser, SemanticException::VALUE_MUST_BE_A_LVALUE);
-		return;
-	}
-
-	Type container_req_type = Type({ Type(&RawType::VEC, { req_type }), Type(&RawType::MAP, { Type::UNKNOWN, req_type }) });
-
-	((LeftValue*) container)->reanalyse_l(analyser, container_req_type);
 
 	if (container->type.get_raw_type() == &RawType::VEC) {
 		left_type = container->type.element_type(0);
 	} else if (container->type.get_raw_type() == &RawType::MAP) {
 		left_type = container->type.element_type(1);
 	} else {
-		if (!Type::intersection(left_type, req_type, &left_type)) {
-			add_error(analyser, SemanticException::INFERENCE_TYPE_ERROR);
-		}
+		left_type = Type::UNKNOWN;
 	}
 
-	if (!Type::intersection(type, left_type.image_conversion(), &type)) {
-		add_error(analyser, SemanticException::TYPE_MISMATCH);
-	}
+	type = left_type.image_conversion();
 }
 
-void IndexAccess::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
+void IndexAccess::reanalyse_l_help(SemanticAnalyser* analyser, const Type& req_type, const Type& req_left_type)
 {
-	cout << "IA wr " << type << " + " << req_type << " = ";
-
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
+	if (!Type::intersection(left_type, req_left_type, &left_type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
 
-	cout << type << endl;
 
 	Type fiber = type.fiber_conversion();
 	Type container_req_type = Type({ Type(&RawType::VEC, { fiber }), Type(&RawType::MAP, { Type::UNKNOWN, fiber }) });
 
-	container->reanalyse(analyser, container_req_type);
+	Type element_type;
 
-	if (container->type.get_raw_type() == &RawType::VEC) {
-		left_type = container->type.element_type(0);
-		key->reanalyse(analyser, Type::I32);
-		if (key2) key2->reanalyse(analyser, Type::I32);
-	} else if (container->type.get_raw_type() == &RawType::MAP) {
-		left_type = container->type.element_type(1);
-		Type key_type = container->type.element_type(0);
-		key->reanalyse(analyser, key_type);
-		if (key2) key2->reanalyse(analyser, key_type);
+	if (isLeftValue()) {
+		LeftValue* left_container = dynamic_cast<LeftValue*>(container);
+
+		Type container_req_left_type = Type({ Type(&RawType::VEC, { left_type }), Type(&RawType::MAP, { Type::UNKNOWN, left_type }) });
+
+		left_container->reanalyse_l(analyser, container_req_type, container_req_left_type);
+
+		Type element_left_type;
+
+		if (left_container->left_type.get_raw_type() == &RawType::VEC) {
+			element_left_type = left_container->left_type.element_type(0);
+			element_type = left_container->type.element_type(0);
+			key->reanalyse(analyser, Type::I32);
+		} else if (left_container->left_type.get_raw_type() == &RawType::MAP) {
+			element_left_type = left_container->left_type.element_type(1);
+			element_type = left_container->type.element_type(1);
+			key->reanalyse(analyser, left_container->left_type.element_type(0));
+		} else {
+			element_left_type = Type::UNKNOWN;
+			element_type = Type::UNKNOWN;
+			key->reanalyse(analyser, Type::UNKNOWN);
+		}
+
+		if (!Type::intersection(left_type, element_left_type, &left_type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+
+	} else {
+		container->reanalyse(analyser, container_req_type);
+
+		if (container->type.get_raw_type() == &RawType::VEC) {
+			element_type = container->type.element_type(0);
+			key->reanalyse(analyser, Type::I32);
+			if (key2) key2->reanalyse(analyser, Type::I32);
+		} else if (container->type.get_raw_type() == &RawType::MAP) {
+			element_type = container->type.element_type(1);
+			Type key_type = container->type.element_type(0);
+			key->reanalyse(analyser, key_type);
+			if (key2) key2->reanalyse(analyser, key_type);
+		} else {
+			element_type = Type::UNKNOWN;
+			key->reanalyse(analyser, Type::UNKNOWN);
+			if (key2) key2->reanalyse(analyser, Type::UNKNOWN);
+		}
 	}
 
-	if (!Type::intersection(type, left_type.image_conversion(), &type)) {
+	if (!Type::intersection(type, element_type.image_conversion(), &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 }
 
-void IndexAccess::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
+void IndexAccess::finalize_l_help(SemanticAnalyser* analyser, const Type& req_type, const Type& req_left_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
+	if (!Type::intersection(left_type, req_left_type, &left_type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+
 
 	Type fiber = type.fiber_conversion();
-	container->finalize(analyser, Type({ Type(&RawType::VEC, { fiber }), Type(&RawType::MAP, { Type::UNKNOWN, fiber }) }));
+	Type container_req_type = Type({ Type(&RawType::VEC, { fiber }), Type(&RawType::MAP, { Type::UNKNOWN, fiber }) });
 
-	// VEC
-	if (container->type.raw_type == &RawType::VEC) {
-		key->finalize(analyser, Type::I32);
-		if (key2) key2->finalize(analyser, Type::I32);
+	Type element_type;
 
-		left_type = container->type.element_type(0);
+	if (isLeftValue()) {
+		LeftValue* left_container = dynamic_cast<LeftValue*>(container);
+
+		Type container_req_left_type = Type({ Type(&RawType::VEC, { left_type }), Type(&RawType::MAP, { Type::UNKNOWN, left_type }) });
+
+		left_container->finalize_l(analyser, container_req_type, container_req_left_type);
+
+		if (left_container->left_type.get_raw_type() == &RawType::VEC) {
+			left_type = left_container->left_type.element_type(0);
+			element_type = left_container->type.element_type(0);
+			key->finalize(analyser, Type::I32);
+		} else if (left_container->left_type.get_raw_type() == &RawType::MAP) {
+			left_type = left_container->left_type.element_type(1);
+			element_type = left_container->type.element_type(1);
+			key->finalize(analyser, left_container->left_type.element_type(0));
+		} else {
+			assert(0);
+		}
+
+	} else {
+		container->reanalyse(analyser, container_req_type);
+
+		if (container->type.get_raw_type() == &RawType::VEC) {
+			element_type = container->type.element_type(0);
+			key->reanalyse(analyser, Type::I32);
+			if (key2) key2->reanalyse(analyser, Type::I32);
+		} else if (container->type.get_raw_type() == &RawType::MAP) {
+			element_type = container->type.element_type(1);
+			Type key_type = container->type.element_type(0);
+			key->reanalyse(analyser, key_type);
+			if (key2) key2->reanalyse(analyser, key_type);
+		} else {
+			assert(0);
+		}
 	}
 
-	// MAP
-	if (container->type.raw_type == &RawType::MAP) {
-		key->finalize(analyser, container->type.element_type(0));
-		if (key2) key2->finalize(analyser, container->type.element_type(0));
-
-		left_type = container->type.element_type(1);
+	if (!Type::intersection(type, element_type.image_conversion(), &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-
 	type.make_it_pure();
+
+	assert((type.is_pure() && left_type.is_pure()) || !analyser->errors.empty());
 }
 
 
