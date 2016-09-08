@@ -125,29 +125,8 @@ void Expression::analyse_help(SemanticAnalyser* analyser)
 
 		v1->analyse(analyser);
 		v2->analyse(analyser);
+		type = Type::UNKNOWN;
 
-		cout << "EX " << v1->type << " + " << v2->type << " = ";
-
-		Type type1, type2;
-
-		if (!Type::intersection(v1->type, Type::ARITHMETIC, &type1)) {
-			v1->add_error(analyser, SemanticException::MUST_BE_ARITHMETIC_TYPE);
-		}
-		if (!Type::intersection(v2->type, Type::ARITHMETIC, &type2)) {
-			v2->add_error(analyser, SemanticException::MUST_BE_ARITHMETIC_TYPE);
-		}
-
-		Type result;
-		if (!Type::intersection(type1, type2, &result)) {
-			add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
-		}
-
-		cout << result << endl;
-
-		v1->reanalyse(analyser, result);
-		v2->reanalyse(analyser, result);
-
-		type = result.image_conversion();
 	}
 }
 
@@ -180,10 +159,20 @@ void Expression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type
 		Type fiber = type.fiber_conversion();
 		v1->reanalyse(analyser, fiber); // (a...) tricky : v1->type might be updated from fonction argument modification
 		v2->reanalyse(analyser, fiber);
+
+		Type type1, type2;
+		if (!Type::intersection(v1->type, Type::ARITHMETIC, &type1)) {
+			v1->add_error(analyser, SemanticException::MUST_BE_ARITHMETIC_TYPE);
+		}
+		if (!Type::intersection(v2->type, Type::ARITHMETIC, &type2)) {
+			v2->add_error(analyser, SemanticException::MUST_BE_ARITHMETIC_TYPE);
+		}
+
 		Type result;
-		if (!Type::intersection(v1->type, v2->type, &result)) {
+		if (!Type::intersection(type1, type2, &result)) {
 			add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
 		}
+
 		v1->reanalyse(analyser, result);
 		v2->reanalyse(analyser, result);
 
@@ -191,6 +180,8 @@ void Expression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type
 		if (!Type::intersection(type, result.image_conversion(), &type)) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
+
+		// TODO do {} while() here too ?
 	}
 
 }

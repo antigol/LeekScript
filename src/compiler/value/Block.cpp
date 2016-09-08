@@ -73,7 +73,11 @@ void Block::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 			// last instruction
 			if (function) {
 				ins->reanalyse(analyser, function->type.return_type());
-				function->type.set_return_type(ins->type);
+				if (ins->type != Type::UNREACHABLE) {
+					if (!Type::intersection(function->type.return_types[0], ins->type, &function->type.return_types[0])) {
+						add_error(analyser, SemanticException::TYPE_MISMATCH);
+					}
+				}
 			} else {
 				ins->reanalyse(analyser, req_type);
 			}
@@ -106,7 +110,9 @@ void Block::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 			// last instruction
 			if (function) {
 				ins->finalize(analyser, function->type.return_type());
-				function->type.set_return_type(ins->type);
+				if (ins->type != Type::UNREACHABLE) {
+					function->type.set_return_type(ins->type);
+				}
 			} else {
 				ins->finalize(analyser, req_type);
 			}

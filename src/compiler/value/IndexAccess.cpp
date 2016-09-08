@@ -163,19 +163,20 @@ void IndexAccess::finalize_l_help(SemanticAnalyser* analyser, const Type& req_ty
 		} else {
 			assert(0);
 		}
+		assert(left_type.is_pure() || !analyser->errors.empty());
 
 	} else {
-		container->reanalyse(analyser, container_req_type);
+		container->finalize(analyser, container_req_type);
 
 		if (container->type.get_raw_type() == &RawType::VEC) {
 			element_type = container->type.element_type(0);
-			key->reanalyse(analyser, Type::I32);
-			if (key2) key2->reanalyse(analyser, Type::I32);
+			key->finalize(analyser, Type::I32);
+			if (key2) key2->finalize(analyser, Type::I32);
 		} else if (container->type.get_raw_type() == &RawType::MAP) {
 			element_type = container->type.element_type(1);
 			Type key_type = container->type.element_type(0);
-			key->reanalyse(analyser, key_type);
-			if (key2) key2->reanalyse(analyser, key_type);
+			key->finalize(analyser, key_type);
+			if (key2) key2->finalize(analyser, key_type);
 		} else {
 			assert(0);
 		}
@@ -186,7 +187,7 @@ void IndexAccess::finalize_l_help(SemanticAnalyser* analyser, const Type& req_ty
 	}
 	type.make_it_pure();
 
-	assert((type.is_pure() && left_type.is_pure()) || !analyser->errors.empty());
+	assert(type.is_pure() || !analyser->errors.empty());
 }
 
 

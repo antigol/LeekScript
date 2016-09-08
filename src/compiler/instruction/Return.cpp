@@ -42,7 +42,9 @@ void Return::analyse_help(SemanticAnalyser* analyser)
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
 	}
-	function->type.set_return_type(tmp);
+	if (!Type::intersection(function->type.return_types[0], tmp, &function->type.return_types[0])) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
 	type = Type::UNREACHABLE;
 }
 
@@ -51,15 +53,14 @@ void Return::reanalyse_help(SemanticAnalyser* analyser, const Type&)
 	Type tmp;
 	if (expression) {
 		expression->reanalyse(analyser, function->type.return_type());
-		if (!Type::intersection(expression->type, function->type.return_type(), &tmp)) {
+		if (!Type::intersection(expression->type, function->type.return_types[0], &function->type.return_types[0])) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
 	} else {
-		if (!Type::intersection(Type::VOID, function->type.return_type(), &tmp)) {
+		if (!Type::intersection(Type::VOID, function->type.return_types[0], &function->type.return_types[0])) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
 	}
-	function->type.set_return_type(tmp);
 	//tip! type = UNREACHABLE
 }
 

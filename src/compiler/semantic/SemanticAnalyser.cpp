@@ -37,23 +37,27 @@ void SemanticAnalyser::analyse(Program* program)
 	// Gives to each element a type
 	// but this type is not necessarly complete
 	in_program = true;
-	in_analyse = true;
+	in_phase = 1;
 	program->main->analyse(this);
-	in_analyse = false;
+	in_phase = 0;
 	if (!errors.empty()) return;
 
+	in_phase = 2;
 	program->main->reanalyse(this, Type::UNKNOWN);
+	in_phase = 0;
 }
 
 void SemanticAnalyser::finalize(Program* program)
 {
 	// Fix the uncomplete types
+	in_phase = 3;
 	program->main->finalize(this, Type::UNKNOWN); // TODO do not recreate variables enter_block and so on
+	in_phase = 0;
 }
 
 void SemanticAnalyser::enter_function(Function* f) {
 
-	assert(in_analyse);
+	assert(in_phase == 1);
 	// Create function scope
 	variables.push_back(vector<map<std::string, SemanticVar*>> {});
 	// First function block
@@ -67,7 +71,7 @@ void SemanticAnalyser::enter_function(Function* f) {
 
 void SemanticAnalyser::leave_function() {
 
-	assert(in_analyse);
+	assert(in_phase == 1);
 	variables.pop_back();
 	parameters.pop_back();
 	functions_stack.pop();
@@ -75,19 +79,19 @@ void SemanticAnalyser::leave_function() {
 }
 
 void SemanticAnalyser::enter_block(Value* block) {
-	assert(in_analyse);
+	assert(in_phase == 1);
 	variables.back().push_back(map<std::string, SemanticVar*> {});
 	block_stack.push(block);
 }
 
 void SemanticAnalyser::leave_block() {
-	assert(in_analyse);
+	assert(in_phase == 1);
 	variables.back().pop_back();
 	block_stack.pop();
 }
 
 Function* SemanticAnalyser::current_function() const {
-	assert(in_analyse);
+	assert(in_phase == 1);
 	if (functions_stack.empty()) {
 		assert(0);
 		return nullptr;
@@ -97,7 +101,7 @@ Function* SemanticAnalyser::current_function() const {
 
 Value*SemanticAnalyser::current_block() const
 {
-	assert(in_analyse);
+	assert(in_phase == 1);
 	if (block_stack.empty()) {
 		assert(0);
 		return nullptr;
@@ -106,22 +110,22 @@ Value*SemanticAnalyser::current_block() const
 }
 
 void SemanticAnalyser::enter_loop() {
-	assert(in_analyse);
+	assert(in_phase == 1);
 	loops.top()++;
 }
 
 void SemanticAnalyser::leave_loop() {
-	assert(in_analyse);
+	assert(in_phase == 1);
 	loops.top()--;
 }
 
 bool SemanticAnalyser::in_loop(int deepness) const {
-	assert(in_analyse);
+	assert(in_phase == 1);
 	return loops.top() >= deepness;
 }
 
 SemanticVar* SemanticAnalyser::add_var(Token* v, Type type, Value* scope, VariableDeclaration* vd) {
-	assert(in_analyse);
+	assert(in_phase == 1);
 
 	// Internal variable, before execution
 	if (!in_program) {
@@ -141,7 +145,7 @@ SemanticVar* SemanticAnalyser::add_var(Token* v, Type type, Value* scope, Variab
 }
 
 SemanticVar* SemanticAnalyser::add_parameter(Token* v, Type type, Value* scope) {
-	assert(in_analyse);
+	assert(in_phase == 1);
 
 	SemanticVar* arg = new SemanticVar(v->content, VarScope::PARAMETER, type, parameters.back().size(), scope, nullptr, current_function());
 	parameters.back().insert(pair<string, SemanticVar*>(v->content, arg));
@@ -149,7 +153,7 @@ SemanticVar* SemanticAnalyser::add_parameter(Token* v, Type type, Value* scope) 
 }
 
 SemanticVar* SemanticAnalyser::get_var(Token* v) {
-	assert(in_analyse);
+	assert(in_phase == 1);
 
 	// Search in internal variables : global for the program
 	try {
@@ -179,7 +183,7 @@ SemanticVar* SemanticAnalyser::get_var(Token* v) {
 }
 
 SemanticVar* SemanticAnalyser::get_var_direct(std::string name) {
-	assert(in_analyse);
+	assert(in_phase == 1);
 	try {
 		if (variables.size() > 0) {
 			return variables.back().back().at(name);
@@ -189,7 +193,7 @@ SemanticVar* SemanticAnalyser::get_var_direct(std::string name) {
 }
 
 map<string, SemanticVar*>& SemanticAnalyser::get_local_vars() {
-	assert(in_analyse);
+	assert(in_phase == 1);
 	return variables.back().back();
 }
 

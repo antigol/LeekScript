@@ -46,17 +46,10 @@ void Array::analyse_help(SemanticAnalyser* analyser)
 		ex->analyse(analyser);
 		constant = constant && ex->constant;
 
-//		cout << element_type << " + " << ex->type << " = ";
 		if (!Type::intersection(element_type, ex->type, &element_type)) {
 			add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
 		}
-//		cout << element_type << endl;
 	}
-
-	for (Value* ex : expressions) {
-		ex->reanalyse(analyser, element_type);
-	}
-
 	type = Type(&RawType::VEC, { element_type });
 }
 
@@ -67,13 +60,16 @@ void Array::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 	}
 
 	Type element_type = type.element_type(0);
-	for (Value* ex : expressions) {
-		ex->reanalyse(analyser, element_type);
-		if (!Type::intersection(element_type, ex->type, &element_type)) {
-			add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
+	do {
+		type = Type(&RawType::VEC, { element_type });
+
+		for (Value* ex : expressions) {
+			ex->reanalyse(analyser, element_type);
+			if (!Type::intersection(element_type, ex->type, &element_type)) {
+				add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
+			}
 		}
-	}
-	type = Type(&RawType::VEC, { element_type });
+	} while (element_type != type.element_type(0));
 }
 
 void Array::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
@@ -87,8 +83,9 @@ void Array::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 		ex->finalize(analyser, element_type);
 		element_type = ex->type;
 	}
+	element_type.make_it_pure(); // if empty
 	type = Type(&RawType::VEC, { element_type });
-	type.make_it_pure();
+	assert(type.is_pure() || !analyser->errors.empty());
 }
 
 jit_value_t Array::compile(Compiler& c) const {

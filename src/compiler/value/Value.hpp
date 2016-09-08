@@ -29,15 +29,18 @@ public:
 
 
 	inline void analyse(SemanticAnalyser* analyser) {
+		assert(analyser->in_phase == 1);
 		analyse_help(analyser);
 		analysed = true;
 	}
 
 	inline void reanalyse(SemanticAnalyser* analyser, const Type& req_type) {
+		assert(analyser->in_phase == 2);
 		if (analysed) reanalyse_help(analyser, req_type);
 	}
 
 	void finalize(SemanticAnalyser* analyser, const Type& req_type) {
+		assert(analyser->in_phase == 3);
 		finalize_help(analyser, req_type);
 		analysed = false;
 	}

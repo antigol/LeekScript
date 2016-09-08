@@ -56,9 +56,10 @@ void Test::test_general() {
 
 	success("let f = function (x:vec<i32>, y) { if y { x } else { [] }} f([1], true)", "[1]");
 	success("let f = function (x, y) { if y { x } else { [] }} f([1], true)", "[1]");
-//	success("let f = function (x:vec<i32>, y) { if y { x } else { return [42] [[]] }} f([1], false)", "[42]");
-//	success("return 1 return [] []", "1");
-//	success("if false { if true return 1 else return 2 } else { if true return 3 else return 'b' } return [] []", "3");
+	success("let f = function (x:vec<i32>, y) { if y { x } else { return [42] [[]] }} f([1], false)", "[42]");
+	success("return 1 return [] []", "1");
+	success("if true return 1 'a'", "1");
+	success("if false { if true return 1 else return 2 } else { if true return 3 else return 'b' } return [] []", "3");
 
 	success("let x = 1 let y = 'a' x = y", "'a'");
 	success("let a let b let c let d a=b b=c c=d d='a' a", "null");
@@ -82,6 +83,7 @@ void Test::test_general() {
 	success("if 1 1", "<void>");
 	success("let x = if false return 42 else 12; x", "12");
 	success("let x = if true 12 else return 42; x", "12");
+
 
 //	success("'foo' ?? 'bar'", "'foo'");
 //	success("null ?? 'bar'", "'bar'");
