@@ -121,7 +121,8 @@ void Expression::analyse_help(SemanticAnalyser* analyser)
 		}
 
 
-	} else if (op->type == TokenType::PLUS) {
+	} else if (op->type == TokenType::PLUS
+			   || op->type == TokenType::MINUS) {
 
 		v1->analyse(analyser);
 		v2->analyse(analyser);
@@ -163,7 +164,8 @@ void Expression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type
 			v2->reanalyse(analyser, l1->left_type);
 		} while (analyser->errors.empty() && (old_left != l1->left_type || old_right != v2->type));
 
-	} else if (op->type == TokenType::PLUS) {
+	} else if (op->type == TokenType::PLUS
+			   || op->type == TokenType::MINUS) {
 		if (!Type::intersection(type, req_type, &type)) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
@@ -229,7 +231,8 @@ void Expression::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 		type = l1->type;
 		v2->finalize(analyser, l1->left_type);
 
-	} else if (op->type == TokenType::PLUS) {
+	} else if (op->type == TokenType::PLUS
+			   || op->type == TokenType::MINUS) {
 
 		v1->finalize(analyser, req_type.fiber_conversion());
 		v2->finalize(analyser, v1->type);
@@ -268,7 +271,8 @@ jit_value_t Expression::compile(Compiler& c) const
 
 	switch (op->type) {
 		case TokenType::EQUAL: {
-			// type = v1.type = v2.type
+			// type = v1.type
+			// v1.left_type = v2.type
 			LeftValue* l1 = dynamic_cast<LeftValue*>(v1);
 			jit_value_t l = l1->compile_l(c);
 			jit_value_t v = v2->compile(c);
@@ -281,15 +285,21 @@ jit_value_t Expression::compile(Compiler& c) const
 		}
 
 		case TokenType::PLUS: {
-			// v1.type = type
-			// v1.left_type = v2.type
+			// v1.type => type
+			// v1.type = v2.type
 			jit_value_t x = v1->compile(c);
 			jit_value_t y = v2->compile(c);
 			if (v1->type.raw_type->nature() == Nature::LSVALUE) {
-				jit_type_t args_t[2] = { LS_POINTER, LS_POINTER };
-				jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_t, 2, 0);
-				jit_value_t args[2] = { x, y };
-				return jit_insn_call_native(c.F, "add", (void*) LSVar::ls_add, sig, args, 2, JIT_CALL_NOTHROW);
+				Compiler::call_native(c.F, LS_POINTER, { LS_POINTER, LS_POINTER }, (void*) LSVar::ls_add, { x, y });
+			} else {
+				return Compiler::compile_convert(c.F, jit_insn_add(c.F, x, y), v1->type, type);
+			}
+		}
+		case TokenType::MINUS: {
+			jit_value_t x = v1->compile(c);
+			jit_value_t y = v2->compile(c);
+			if (v1->type.raw_type->nature() == Nature::LSVALUE) {
+				Compiler::call_native(c.F, LS_POINTER, { LS_POINTER, LS_POINTER }, (void*) LSVar::ls_add, { x, y });
 			} else {
 				return Compiler::compile_convert(c.F, jit_insn_add(c.F, x, y), v1->type, type);
 			}

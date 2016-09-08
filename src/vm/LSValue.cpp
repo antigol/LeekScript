@@ -12,27 +12,27 @@ namespace ls {
 
 int LSValue::obj_count = 0;
 int LSValue::obj_deleted = 0;
-#if DEBUG > 1
+#if DEBUG >= 4
 	extern std::map<LSValue*, LSValue*> objs;
 #endif
 
 LSValue::LSValue() : refs(0) {
 	obj_count++;
-	#if DEBUG > 1
+	#if DEBUG >= 4
 		objs.insert({this, this});
 	#endif
 }
 
 LSValue::LSValue(const LSValue& ) : refs(0) {
 	obj_count++;
-	#if DEBUG > 1
+	#if DEBUG >= 4
 		objs.insert({this, this});
 	#endif
 }
 
 LSValue::~LSValue() {
 	obj_deleted++;
-	#if DEBUG > 1
+	#if DEBUG >= 4
 		objs.erase(this);
 	#endif
 }

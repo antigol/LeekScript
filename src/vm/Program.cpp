@@ -72,14 +72,14 @@ double Program::compile(VM& vm, const std::string& ctx, const ExecMode mode) {
 
 	SemanticAnalyser sem(vm.modules);
 	sem.analyse(this);
-#if DEBUG > 0
+#if DEBUG >= 2
 	cout << "analyse: "; print(cout, true);
 #endif
 
 	if (sem.errors.empty()) {
 		sem.finalize(this);
-#if DEBUG > 0
-	cout << "finalyse: "; print(cout, true);
+#if DEBUG >= 1
+		print(cout, true);
 #endif
 	}
 
@@ -227,7 +227,7 @@ void Program_push_pointer(LSVec<LSValue*>* array, LSValue* value) {
 }
 */
 
-void Program::compile_jit(Compiler& c, Context& context, bool toplevel) {
+void Program::compile_jit(Compiler& c, Context& , bool ) {
 
 	// System internal variables
 //	for (auto var : system_vars) {

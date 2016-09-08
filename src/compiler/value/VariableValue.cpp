@@ -19,7 +19,7 @@ VariableValue::~VariableValue() {}
 void VariableValue::print(ostream& os, int, bool debug) const {
 	if (debug) os << "(";
 	os << token->content;
-	if (debug) {
+	if (debug && var) {
 		os << " " << var->type;
 		if (type != var->type) os << "→" << type;
 		os << ")";

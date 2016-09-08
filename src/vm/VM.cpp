@@ -41,7 +41,7 @@ void VM::add_module(Module* m) {
 	modules.push_back(m);
 }
 
-#if DEBUG > 1
+#if DEBUG >= 4
 extern std::map<LSValue*, LSValue*> objs;
 #endif
 
@@ -81,7 +81,7 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 	// Reset
 	LSValue::obj_count = 0;
 	LSValue::obj_deleted = 0;
-	#if DEBUG > 1
+	#if DEBUG >= 4
 		objs.clear();
 	#endif
 
@@ -163,10 +163,10 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 	// Cleaning
 	delete program;
 
-	#if DEBUG > 0
+	#if DEBUG >= 2
 		if (ls::LSValue::obj_deleted != ls::LSValue::obj_count) {
 			cout << "/!\\ " << LSValue::obj_deleted << " / " << LSValue::obj_count << " (" << (LSValue::obj_count - LSValue::obj_deleted) << " leaked)" << endl;
-			#if DEBUG > 1
+			#if DEBUG >= 4
 				for (auto o : objs) {
 					o.second->print(cout);
 					cout << " (" << o.second->refs << " refs)" << endl;
@@ -390,7 +390,9 @@ void VM::push_move_inc_vec(jit_function_t F, const Type& element_type, jit_value
 	 * If value points to a temporary variable his ownership will be transfer to the vec.
 	 */
 
-	if (element_type == Type::I32) {
+	if (element_type == Type::BOOLEAN) {
+		Compiler::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec<int32_t>, { vec, value });
+	} else 	if (element_type == Type::I32) {
 		Compiler::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec<int32_t>, { vec, value });
 	} else 	if (element_type == Type::F64) {
 		Compiler::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec<double>, { vec, value });

@@ -5,18 +5,20 @@
 
 /*
  * 0 : no debug,
- * 1 : print types + #leaks
- * 2 : print leak details
+ * 1 : print types
+ * 2 : print analyse + amount of leeks
+ * 3 : print debug messages
+ * 4 : print leeks details
  */
-#define DEBUG 0
+#define DEBUG 1
 
 // to disable assert
 //#define NDEBUG
 
-#if DEBUG == 0
-  #define DBOUT( x )
+#if DEBUG >= 3
+#define DBOUT( x )  x
 #else
-  #define DBOUT( x )  x
+#define DBOUT( x )
 #endif
 
 #endif // DEBUG_HPP

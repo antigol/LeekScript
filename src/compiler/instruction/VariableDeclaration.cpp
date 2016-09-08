@@ -10,6 +10,7 @@ VariableDeclaration::VariableDeclaration() {
 	global = false;
 	expression = nullptr;
 	typeName = nullptr;
+	var = nullptr;
 }
 
 VariableDeclaration::~VariableDeclaration() {
@@ -25,7 +26,9 @@ void VariableDeclaration::print(ostream& os, int indent, bool debug) const {
 		os << " : ";
 		typeName->print(os);
 	}
-	if (debug) os << " " << var->type;
+	if (debug && var) {
+		os << " " << var->type;
+	}
 	if (expression) {
 		os << " = ";
 		expression->print(os, indent, debug);
