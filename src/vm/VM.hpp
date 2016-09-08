@@ -7,13 +7,6 @@
 
 #define OPERATION_LIMIT 10000000
 
-/*
- * 0 : no debug,
- * 1 : print types + #leaks
- * 2 : print leak details
- */
-#define DEBUG 1
-
 #define LS_I32 jit_type_int
 #define LS_I64 jit_type_long
 #define LS_F32 jit_type_float32

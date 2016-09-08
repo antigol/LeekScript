@@ -7,6 +7,8 @@
 #include <initializer_list>
 #include <jit/jit.h>
 
+#include "../util/Debug.hpp"
+
 namespace ls {
 
 enum class Nature {

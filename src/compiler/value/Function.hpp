@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "../lexical/Ident.hpp"
-#include "../semantic/SemanticAnalyser.hpp"
 #include "Value.hpp"
 #include "Block.hpp"
 #include "../TypeName.hpp"

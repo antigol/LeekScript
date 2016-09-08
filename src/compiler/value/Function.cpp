@@ -1,5 +1,4 @@
 #include "Function.hpp"
-#include "../semantic/SemanticAnalyser.hpp"
 
 using namespace std;
 
@@ -113,7 +112,7 @@ void Function::analyse_help(SemanticAnalyser* analyser)
 
 void Function::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-	cout << "FUN wr " << type << " + " << req_type << " + arguments types = ";
+	DBOUT(cout << "FUN wr " << type << " + " << req_type << " + arguments types = ");
 
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
@@ -127,7 +126,7 @@ void Function::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 		type.set_argument_type(i, arg_type);
 	}
 
-	cout << type << endl;
+	DBOUT(cout << type << endl);
 
 	// tip! Block/Return will read/write return_type
 	body->reanalyse(analyser, Type::UNKNOWN);

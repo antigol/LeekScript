@@ -31,14 +31,14 @@ void ExpressionInstruction::analyse_help(SemanticAnalyser* analyser)
 
 void ExpressionInstruction::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-	cout << "EI wr " << type << " + " << req_type << " = ";
+	DBOUT(cout << "EI wr " << type << " + " << req_type << " = ");
 
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-	cout << type << " => ";
+	DBOUT(cout << type << " => ");
 	if (Type::intersection(type, Type::VOID)) {
-		cout << "ask UNKNOWN" << endl;
+		DBOUT(cout << "ask UNKNOWN" << endl);
 		value->reanalyse(analyser, Type::UNKNOWN); // because of the void we cannot require anything
 		if (value->type == Type::UNREACHABLE) {
 			type = Type::UNREACHABLE;
@@ -48,7 +48,7 @@ void ExpressionInstruction::reanalyse_help(SemanticAnalyser* analyser, const Typ
 			}
 		}
 	} else {
-		cout << "ask type" << endl;
+		DBOUT(cout << "ask type" << endl);
 		value->reanalyse(analyser, type);
 		// tip! If value returns UNREACHABLE type will naturaly become UNREACHABLE via the intersection
 		if (!Type::intersection(type, value->type, &type)) {

@@ -43,8 +43,9 @@ lib: makedirs $(OBJ_LIB)
 	@echo "-----------------------"
 	
 install:
-	cp build/libleekscript.so /usr/lib/
-	@find -iregex '.*\.\(hpp\|h\|tcc\)' | cpio -updm /usr/include/leekscript/
+	cp build/leekscript /usr/local/bin/
+	cp build/libleekscript.so /usr/local/lib/
+	@find -iregex '.*\.\(hpp\|h\|tcc\)' | cpio -updm /usr/local/include/leekscript/
 	@echo "Library installed!"
 	
 clean:

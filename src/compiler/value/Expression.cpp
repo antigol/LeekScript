@@ -132,7 +132,7 @@ void Expression::analyse_help(SemanticAnalyser* analyser)
 
 void Expression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-	cout << "EX wr type=" << type << " req=" << req_type << endl;
+	DBOUT(cout << "EX wr type=" << type << " req=" << req_type << endl);
 	if (op == nullptr) {
 		v1->reanalyse(analyser, req_type);
 		type = v1->type;

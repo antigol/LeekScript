@@ -35,7 +35,7 @@ public:
 	}
 
 	inline void reanalyse(SemanticAnalyser* analyser, const Type& req_type) {
-		assert(analyser->in_phase == 2);
+		assert(analyser->in_phase <= 2);
 		if (analysed) reanalyse_help(analyser, req_type);
 	}
 
