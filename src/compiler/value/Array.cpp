@@ -36,21 +36,13 @@ unsigned Array::line() const {
 	return 0;
 }
 
+// DONE 1
 void Array::analyse_help(SemanticAnalyser* analyser)
 {
-	constant = true;
-
-	Type element_type = Type::UNKNOWN;
-
 	for (Value* ex : expressions) {
 		ex->analyse(analyser);
-		constant = constant && ex->constant;
-
-		if (!Type::intersection(element_type, ex->type, &element_type)) {
-			add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
-		}
 	}
-	type = Type(&RawType::VEC, { element_type });
+	type = Type::VEC;
 }
 
 void Array::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)

@@ -40,21 +40,7 @@ unsigned For::line() const
 
 void For::analyse_help(SemanticAnalyser* analyser)
 {
-	// TODO
-	assert(0);
-}
-
-void For::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
-{
-
-}
-
-void For::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
-{
-	assert(0);
-	if (req_type.raw_type == &RawType::VEC) {
-		type = req_type;
-	} else {
+	if (type.raw_type != &RawType::VEC) {
 		type = Type::VOID;
 	}
 
@@ -62,47 +48,109 @@ void For::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 
 	// Init
 	for (Value* ins : inits) {
-		ins->finalize(analyser, Type::VOID);
+		ins->analyse(analyser);
 		if (dynamic_cast<Return*>(ins)) {
 			analyser->leave_block();
+			type = Type::UNREACHABLE;
 			return;
 		}
 	}
 
 	// Condition
-	condition->finalize(analyser, Type::UNKNOWN);
-	if (condition->type == Type::FUNCTION || condition->type == Type::VOID) {
-		stringstream oss;
-		condition->print(oss);
-		analyser->add_error({ SemanticException::TYPE_MISMATCH, condition->line(), oss.str() });
-	}
+	condition->analyse(analyser);
 
 	// Body
 	analyser->enter_loop();
-	if (type == Type::VOID) {
-		body->finalize(analyser, Type::VOID);
-	} else {
-		body->finalize(analyser, type.element_type(0));
-		if (type.element_type(0) == Type::UNKNOWN) {
-			type.set_element_type(0, body->type);
-		} else if (type.element_type(0) != body->type) {
-			analyser->add_error({ SemanticException::TYPE_MISMATCH });
-		}
-	}
+	body->analyse(analyser);
 	analyser->leave_loop();
 
 	// Increment
 	analyser->enter_block(this);
 	for (Value* ins : increments) {
-		ins->finalize(analyser, Type::VOID);
+		ins->analyse(analyser);
 		if (dynamic_cast<Return*>(ins)) {
+			type = Type::UNREACHABLE;
 			break;
 		}
 	}
 	analyser->leave_block();
 
 	analyser->leave_block();
-	assert(type.is_pure());
+}
+
+// DONE 1
+void For::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+
+	// Init
+	for (Value* ins : inits) {
+		ins->reanalyse(analyser, Type::VOID);
+		if (dynamic_cast<Return*>(ins)) {
+			return;
+		}
+	}
+
+	// Condition
+	condition->reanalyse(analyser, Type::LOGIC);
+
+	// Body
+	if (type.raw_type == &RawType::VEC) {
+		body->reanalyse(analyser, type.element_type(0));
+
+		if (!Type::intersection(type.elements_types[0], body->type, &type.elements_types[0])) {
+			body->add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+		if (body->type == Type::VOID || body->type == Type::UNREACHABLE) {
+			body->add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+	} else {
+		body->reanalyse(analyser, Type::VOID);
+	}
+
+	// Increment
+	for (Value* ins : increments) {
+		ins->reanalyse(analyser, Type::VOID);
+		if (dynamic_cast<Return*>(ins)) {
+			break;
+		}
+	}
+}
+
+void For::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+
+	// Init
+	for (Value* ins : inits) {
+		ins->finalize(analyser, Type::VOID);
+		if (dynamic_cast<Return*>(ins)) {
+			return;
+		}
+	}
+
+	// Condition
+	condition->finalize(analyser, Type::LOGIC);
+
+	// Body
+	if (type.raw_type == &RawType::VEC) {
+		body->finalize(analyser, type.element_type(0));
+		type.set_element_type(0, body->type);
+	} else {
+		body->finalize(analyser, Type::VOID);
+	}
+
+	// Increment
+	for (Value* ins : increments) {
+		ins->finalize(analyser, Type::VOID);
+		if (dynamic_cast<Return*>(ins)) {
+			break;
+		}
+	}
 }
 
 jit_value_t For::compile(Compiler& c) const {

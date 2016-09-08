@@ -51,53 +51,94 @@ unsigned Match::line() const {
 	return 0;
 }
 
+// DONE 1
 void Match::analyse_help(SemanticAnalyser* analyser)
 {
-	// TODO
-	assert(0);
+	value->analyse(analyser);
+
+	for (auto& ps : pattern_list) {
+		for (Pattern& p : ps) {
+			if (p.begin) p.begin->analyse(analyser);
+			if (p.end)   p.end->analyse(analyser);
+		}
+	}
+
+	for (Value* ret : returns) {
+		ret->analyse(analyser);
+	}
+
+	type = Type::UNKNOWN;
 }
 
 void Match::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
 
+	Type old_type;
+	Type new_type = value->type;
+	do {
+		old_type = new_type;
+
+		value->reanalyse(analyser, new_type);
+		if (!Type::intersection(new_type, value->type, &new_type)) {
+			add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
+		}
+
+		for (auto& ps : pattern_list) {
+			for (Pattern& p : ps) {
+				if (p.begin) {
+					p.begin->reanalyse(analyser, new_type);
+					if (!Type::intersection(new_type, p.begin->type, &new_type)) {
+						add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
+					}
+				}
+				if (p.end) {
+					p.end->reanalyse(analyser, new_type);
+					if (!Type::intersection(new_type, p.end->type, &new_type)) {
+						add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
+					}
+				}
+			}
+		}
+	} while (new_type != old_type);
+
+	Type ret_type = type;
+	do {
+		type = ret_type;
+
+		for (Value* ret : returns) {
+			ret->reanalyse(analyser, ret_type);
+			if (!Type::intersection(ret_type, ret->type, &ret_type)) {
+				add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
+			}
+		}
+	} while (ret_type != type);
 }
 
 void Match::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-	assert(0);
-	value->finalize(analyser, Type::UNKNOWN);
-	if (value->type == Type::FUNCTION || value->type == Type::VOID) {
-		stringstream oss;
-		value->print(oss);
-		analyser->add_error({ SemanticException::TYPE_MISMATCH, value->line(), oss.str() });
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
+
+	value->finalize(analyser, Type::UNKNOWN);
 
 	for (auto& ps : pattern_list) {
 		for (Pattern& p : ps) {
-			if (p.begin) {
-				p.begin->finalize(analyser, Type::UNKNOWN);
-			}
-			if (p.end) {
-				p.end->finalize(analyser, Type::UNKNOWN);
-			}
+			if (p.begin) p.begin->finalize(analyser, value->type);
+			if (p.end)   p.end->finalize(analyser, value->type);
 		}
 	}
-
-	type = req_type;
-	for (Value* ret : returns) {
-		ret->analyse(analyser);
-		if (!Type::intersection(type, ret->type, &type)) {
-			stringstream oss;
-			ret->print(oss);
-			analyser->add_error({ SemanticException::INCOMPATIBLE_TYPES, ret->line(), oss.str() });
-			break;
-		}
-	}
-	type.make_it_pure();
 
 	for (Value* ret : returns) {
 		ret->finalize(analyser, type);
+		type = ret->type;
 	}
+	type.make_it_pure(); // empty match
+
+	assert(type.is_pure() || !analyser->errors.empty());
 }
 
 /*

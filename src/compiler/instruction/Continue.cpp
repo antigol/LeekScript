@@ -22,6 +22,7 @@ unsigned Continue::line() const
 	return 0;
 }
 
+// DONE 1
 void Continue::analyse_help(SemanticAnalyser* analyser)
 {
 	// break must be in a loop
@@ -31,14 +32,12 @@ void Continue::analyse_help(SemanticAnalyser* analyser)
 	type = Type::UNREACHABLE;
 }
 
-void Continue::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
+void Continue::reanalyse_help(SemanticAnalyser*, const Type&)
 {
-	assert(0);
 }
 
-void Continue::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
+void Continue::finalize_help(SemanticAnalyser*, const Type&)
 {
-	analyse(analyser);
 }
 
 jit_value_t Continue::compile(Compiler& c) const {

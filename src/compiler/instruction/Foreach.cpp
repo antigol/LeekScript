@@ -27,13 +27,13 @@ void Foreach::print(ostream& os, int indent, bool debug) const {
 	if (key != nullptr) {
 		os << key->content;
 		if (debug) {
-			os << " " << key_type;
+			os << " " << key_var->type;
 		}
 		os << " : ";
 	}
 	os << value->content;
 	if (debug) {
-		os << " " << value_type;
+		os << " " << value_var->type;
 	}
 
 	os << " in ";
@@ -48,6 +48,7 @@ unsigned Foreach::line() const
 	return 0;
 }
 
+// DONE 1
 void Foreach::analyse_help(SemanticAnalyser* analyser)
 {
 	if (type.raw_type != &RawType::VEC) {
@@ -57,36 +58,15 @@ void Foreach::analyse_help(SemanticAnalyser* analyser)
 	analyser->enter_block(this);
 
 	container->analyse(analyser);
-	container->reanalyse(analyser, Type({ Type::VEC, Type::MAP, Type::SET }));
-
-
-	if (container->type.get_raw_type() == &RawType::VEC || container->type.get_raw_type() == &RawType::SET) {
-		key_type = Type::I32; // If no key type in array key = 0, 1, 2...
-		value_type = container->type.element_type(0);
-	} else if (container->type.get_raw_type() == &RawType::MAP) {
-		key_type = container->type.element_type(0);
-		value_type = container->type.element_type(1);
-	} else {
-		key_type = Type::UNKNOWN;
-		value_type = Type::UNKNOWN;
-	}
 
 	if (key != nullptr) {
-		key_var = analyser->add_var(key, key_type, this, nullptr);
+		key_var = analyser->add_var(key, Type::UNKNOWN, this, nullptr);
 	}
-	value_var = analyser->add_var(value, value_type, this, nullptr);
+	value_var = analyser->add_var(value, Type::UNKNOWN, this, nullptr);
 
 	analyser->enter_loop();
 
 	body->analyse(analyser);
-
-	if (type.raw_type == &RawType::VEC) {
-		if (body->type == Type::VOID || body->type == Type::UNREACHABLE) {
-			add_error(analyser, SemanticException::TYPE_MISMATCH);
-		}
-
-		type.set_element_type(0, body->type);
-	}
 
 	analyser->leave_loop();
 	analyser->leave_block();
@@ -98,9 +78,35 @@ void Foreach::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 
+	container->reanalyse(analyser, Type({ Type::VEC, Type::MAP, Type::SET }));
+
+	if (container->type.get_raw_type() == &RawType::VEC || container->type.get_raw_type() == &RawType::SET) {
+		if (key_var && !Type::intersection(key_var->type, Type::I32, &key_var->type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+		if (!Type::intersection(value_var->type, container->type.element_type(0), &value_var->type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+	} else if (container->type.get_raw_type() == &RawType::MAP) {
+		if (key_var && !Type::intersection(key_var->type, container->type.element_type(0), &key_var->type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+		if (!Type::intersection(value_var->type, container->type.element_type(1), &value_var->type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+	}
+
 	if (type.raw_type == &RawType::VEC) {
 		body->reanalyse(analyser, type.element_type(0));
-		type.set_element_type(0, body->type);
+
+		if (!Type::intersection(type.elements_types[0], body->type, &type.elements_types[0])) {
+			body->add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+		if (body->type == Type::VOID || body->type == Type::UNREACHABLE) {
+			body->add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+	} else {
+		body->reanalyse(analyser, Type::VOID);
 	}
 }
 
@@ -110,27 +116,26 @@ void Foreach::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 
-	analyser->enter_block(this);
-
-	container->finalize(analyser, Type::UNKNOWN);
+	container->finalize(analyser, Type({ Type::VEC, Type::MAP, Type::SET }));
 
 	if (container->type.get_raw_type() == &RawType::VEC || container->type.get_raw_type() == &RawType::SET) {
-		key_type = Type::I32; // If no key type in array key = 0, 1, 2...
-		value_type = container->type.element_type(0);
+		if (key_var && !Type::intersection(key_var->type, Type::I32, &key_var->type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+		if (!Type::intersection(value_var->type, container->type.element_type(0), &value_var->type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
 	} else if (container->type.get_raw_type() == &RawType::MAP) {
-		key_type = container->type.element_type(0);
-		value_type = container->type.element_type(1);
-	} else {
-		container->add_error(analyser, SemanticException::TYPE_MISMATCH);
+		if (key_var && !Type::intersection(key_var->type, container->type.element_type(0), &key_var->type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+		if (!Type::intersection(value_var->type, container->type.element_type(1), &value_var->type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
 	}
 
-	if (key != nullptr) {
-		key_var = analyser->add_var(key, key_type, this, nullptr);
-	}
-	value_var = analyser->add_var(value, value_type, this, nullptr);
-
-	analyser->enter_loop();
-
+	if (key_var) key_var->type.make_it_pure();
+	value_var->type.make_it_pure();
 
 	if (type.raw_type == &RawType::VEC) {
 		body->finalize(analyser, type.element_type(0));
@@ -138,9 +143,6 @@ void Foreach::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 	} else {
 		body->finalize(analyser, Type::VOID);
 	}
-
-	analyser->leave_loop();
-	analyser->leave_block();
 }
 
 /*
@@ -242,13 +244,13 @@ jit_value_t Foreach::compile(Compiler& c) const {
 	c.add_var("{array}", container_v, container->type, false);
 
 	// Create variables
-	jit_type_t jit_value_type = value_type.jit_type();
+	jit_type_t jit_value_type = value_var->type.jit_type();
 	jit_value_t value_v = jit_value_create(c.F, jit_value_type);
-	jit_type_t jit_key_type = key_type.jit_type();
+	jit_type_t jit_key_type = key ? key_var->type.jit_type() : nullptr;
 	jit_value_t key_v = key ? jit_value_create(c.F, jit_key_type) : nullptr;
 
-	c.add_var(value->content, value_v, value_type, true);
-	if (key) c.add_var(key->content, key_v, key_type, true);
+	c.add_var(value->content, value_v, value_var->type, true);
+	if (key) c.add_var(key->content, key_v, key_var->type, true);
 
 
 	jit_label_t label_end = jit_label_undefined;

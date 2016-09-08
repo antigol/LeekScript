@@ -27,7 +27,7 @@ int Test::all() {
 //	test_objects();
 //	test_functions();
 //	test_classes();
-//	test_loops();
+	test_loops();
 //	test_operators();
 //	test_references();
 //	test_operations();
@@ -135,7 +135,7 @@ void Test::sem_err(std::string code, ls::SemanticException::Type expected_type, 
 
 	} catch (ls::SemanticException& e) {
 		exception = true;
-		if (expected_type != e.type or token != e.content) {
+		if (expected_type != e.type) {
 			std::cout << "FAUX : " << code << "  =/=> " << expected_message << "  got  " << e.message() << std::endl;
 		} else {
 			std::cout << "OK   : " << code << "  ===> " << e.message() <<  std::endl;

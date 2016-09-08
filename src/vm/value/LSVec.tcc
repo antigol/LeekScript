@@ -96,7 +96,7 @@ inline bool LSVec<LSValue*>::eq(const LSVec<LSValue*>* that) const
 }
 
 template <>
-inline bool LSVec<void*>::eq(const LSVec<LSValue*>* that) const
+inline bool LSVec<void*>::eq(const LSVec<LSValue*>*) const
 {
 	return false;
 }
@@ -124,7 +124,7 @@ inline bool LSVec<void*>::eq(const LSVec<void*>* that) const
 }
 
 template <typename T>
-inline bool LSVec<T>::eq(const LSVec<void*>* that) const
+inline bool LSVec<T>::eq(const LSVec<void*>*) const
 {
 	return false;
 }
@@ -136,7 +136,7 @@ inline bool LSVec<LSValue*>::eq(const LSVec<int32_t>* that) const
 }
 
 template <>
-inline bool LSVec<void*>::eq(const LSVec<int32_t>* that) const
+inline bool LSVec<void*>::eq(const LSVec<int32_t>*) const
 {
 	return false;
 }
@@ -167,7 +167,7 @@ inline bool LSVec<LSValue*>::eq(const LSVec<double>* that) const
 }
 
 template <>
-inline bool LSVec<void*>::eq(const LSVec<double>* that) const
+inline bool LSVec<void*>::eq(const LSVec<double>*) const
 {
 	return false;
 }

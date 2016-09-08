@@ -24,23 +24,22 @@ unsigned Break::line() const
 	return 0;
 }
 
+// DONE 1
 void Break::analyse_help(SemanticAnalyser* analyser)
 {
 	// break must be in a loop
 	if (!analyser->in_loop(deepness)) {
-		analyser->add_error({ SemanticException::Type::BREAK_MUST_BE_IN_LOOP, line() });
+		add_error(analyser, SemanticException::BREAK_MUST_BE_IN_LOOP);
 	}
 	type = Type::UNREACHABLE;
 }
 
-void Break::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
+void Break::reanalyse_help(SemanticAnalyser*, const Type&)
 {
-	assert(0);
 }
 
-void Break::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
+void Break::finalize_help(SemanticAnalyser*, const Type&)
 {
-	analyse(analyser);
 }
 
 jit_value_t Break::compile(Compiler& c) const {

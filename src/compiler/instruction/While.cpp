@@ -26,31 +26,32 @@ unsigned While::line() const
 	return 0;
 }
 
+// DONE 1
 void While::analyse_help(SemanticAnalyser* analyser)
 {
-	// TODO
-	assert(0);
+	condition->analyse(analyser);
+	analyser->enter_loop();
+	body->analyse(analyser);
+	analyser->leave_loop();
+	type = Type::VOID;
 }
 
 void While::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-
+	if (!Type::intersection(type, req_type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	condition->reanalyse(analyser, Type::LOGIC);
+	body->reanalyse(analyser, Type::VOID);
 }
 
-void While::finalize_help(SemanticAnalyser* analyser, const Type& req_type) {
-	assert(0);
-
-	condition->finalize(analyser, Type::UNKNOWN);
-	if (condition->type == Type::FUNCTION || condition->type == Type::VOID) {
-		stringstream oss;
-		condition->print(oss);
-		analyser->add_error({ SemanticException::TYPE_MISMATCH, condition->line(), oss.str() });
+void While::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
+{
+	if (!Type::intersection(type, req_type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-	analyser->enter_loop();
+	condition->finalize(analyser, Type::LOGIC);
 	body->finalize(analyser, Type::VOID);
-	analyser->leave_loop();
-
-	type = Type::VOID;
 }
 
 jit_value_t While::compile(Compiler& c) const {
