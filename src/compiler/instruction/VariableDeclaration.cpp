@@ -47,7 +47,9 @@ void VariableDeclaration::analyse_help(SemanticAnalyser* analyser)
 	}
 	if (expression) {
 		expression->analyse(analyser);
-		var_type = expression->type;
+		if (!Type::intersection(var_type, expression->type, &var_type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
 	}
 
 	var = analyser->add_var(variable, var_type, analyser->current_block(), this);

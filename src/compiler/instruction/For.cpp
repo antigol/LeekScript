@@ -38,6 +38,7 @@ unsigned For::line() const
 	return 0;
 }
 
+// DONE 1
 void For::analyse_help(SemanticAnalyser* analyser)
 {
 	if (type.raw_type != &RawType::VEC) {
@@ -78,7 +79,6 @@ void For::analyse_help(SemanticAnalyser* analyser)
 	analyser->leave_block();
 }
 
-// DONE 1
 void For::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	if (!Type::intersection(type, req_type, &type)) {
