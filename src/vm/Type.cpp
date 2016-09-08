@@ -387,6 +387,8 @@ bool Type::intersection(const Type& t1, const Type& t2, Type* result)
 	 *
 	 * empty set => false
 	 * non empty set => true
+	 *
+	 * The result do not contain placeholder
 	 */
 
 	Type r;
@@ -394,29 +396,31 @@ bool Type::intersection(const Type& t1, const Type& t2, Type* result)
 
 	if (t1.is_placeholder_free() && t2.is_placeholder_free()) {
 		b = priv_intersection_phfree(&t1, &t2, &r) > 0;
+		if (result && b) {
+			*result = r;
+		}
 	} else {
 		Type f1 = t1;
 		Type f2 = t2;
 
 		// Avoid place holders collisions
 		uint32_t i = 1;
-		for (uint32_t old : f1.place_holder_set()) {
-			f1.replace_place_holder_id(old, i++);
+		for (uint32_t old : f1.placeholder_set()) {
+			f1.replace_placeholder_id(old, i++);
 		}
-		for (uint32_t old : f2.place_holder_set()) {
-			f2.replace_place_holder_id(old, i++);
+		for (uint32_t old : f2.placeholder_set()) {
+			f2.replace_placeholder_id(old, i++);
 		}
 
 		b = priv_intersection_ph(&f1, f1, &f2, f2, &r, r) > 0;
+		if (result && b) {
+			r.clear_placeholder();
+			*result = r;
+		}
 	}
 
 //	if (b) cout << "INTER " << t1 << " <<>> " << t2 << " = " << r << endl;
 
-	if (result) {
-		if (b) {
-			*result = r;
-		}
-	}
 	return b;
 }
 
@@ -435,44 +439,52 @@ bool Type::is_placeholder_free() const
 	return true;
 }
 
-void Type::replace_place_holder_type(uint32_t id, const Type& type)
+void Type::replace_placeholder_type(uint32_t id, const Type& type)
 {
 	if (id == 0) return;
 	if (ph == id) {
 		*this = type;
 		/*if (!is_pure())*/ ph = id;
 	}
-	for (Type& x : elements_types)  x.replace_place_holder_type(id, type);
-	for (Type& x : return_types)    x.replace_place_holder_type(id, type);
-	for (Type& x : arguments_types) x.replace_place_holder_type(id, type);
+	for (Type& x : elements_types)  x.replace_placeholder_type(id, type);
+	for (Type& x : return_types)    x.replace_placeholder_type(id, type);
+	for (Type& x : arguments_types) x.replace_placeholder_type(id, type);
 }
 
-void Type::replace_place_holder_id(uint32_t old_id, uint32_t new_id)
+void Type::replace_placeholder_id(uint32_t old_id, uint32_t new_id)
 {
 	if (old_id == 0 || new_id == 0) return;
 	if (ph == old_id) ph = new_id;
-	for (Type& x : elements_types)  x.replace_place_holder_id(old_id, new_id);
-	for (Type& x : return_types)    x.replace_place_holder_id(old_id, new_id);
-	for (Type& x : arguments_types) x.replace_place_holder_id(old_id, new_id);
+	for (Type& x : elements_types)  x.replace_placeholder_id(old_id, new_id);
+	for (Type& x : return_types)    x.replace_placeholder_id(old_id, new_id);
+	for (Type& x : arguments_types) x.replace_placeholder_id(old_id, new_id);
 }
 
-set<uint32_t> Type::place_holder_set() const
+set<uint32_t> Type::placeholder_set() const
 {
 	set<uint32_t> phs;
 	if (ph > 0) phs.insert(ph);
 	for (const Type& x : elements_types) {
-		set<uint32_t> sub = x.place_holder_set();
+		set<uint32_t> sub = x.placeholder_set();
 		phs.insert(sub.begin(), sub.end());
 	}
 	for (const Type& x : return_types) {
-		set<uint32_t> sub = x.place_holder_set();
+		set<uint32_t> sub = x.placeholder_set();
 		phs.insert(sub.begin(), sub.end());
 	}
 	for (const Type& x : arguments_types) {
-		set<uint32_t> sub = x.place_holder_set();
+		set<uint32_t> sub = x.placeholder_set();
 		phs.insert(sub.begin(), sub.end());
 	}
 	return phs;
+}
+
+void Type::clear_placeholder()
+{
+	ph = 0;
+	for (Type& x : elements_types)  x.clear_placeholder();
+	for (Type& x : return_types)    x.clear_placeholder();
+	for (Type& x : arguments_types) x.clear_placeholder();
 }
 
 Type* Type::copy_iterator(const Type* type, const Type* it)
@@ -511,7 +523,7 @@ int Type::priv_intersection_ph(Type* t1, Type& f1, Type* t2, Type& f2, Type* tr,
 			if (t1->ph == 0) {
 				*ct1 = alternative;
 			} else {
-				cf1.replace_place_holder_type(t1->ph, alternative);
+				cf1.replace_placeholder_type(t1->ph, alternative);
 			}
 
 			Type r;
@@ -546,14 +558,14 @@ int Type::priv_intersection_ph(Type* t1, Type& f1, Type* t2, Type& f2, Type* tr,
 		// in case t1 && t2 are both ph > 0
 		uint32_t old_ph = t2->ph;
 		uint32_t new_ph = tr->ph;
-		f1.replace_place_holder_id(old_ph, new_ph);
-		f2.replace_place_holder_id(old_ph, new_ph);
-		fr.replace_place_holder_id(old_ph, new_ph);
+		f1.replace_placeholder_id(old_ph, new_ph);
+		f2.replace_placeholder_id(old_ph, new_ph);
+		fr.replace_placeholder_id(old_ph, new_ph);
 
 		// update ph types
-		f1.replace_place_holder_type(new_ph, *t2);
-		f2.replace_place_holder_type(new_ph, *t2);
-		fr.replace_place_holder_type(new_ph, *t2);
+		f1.replace_placeholder_type(new_ph, *t2);
+		f2.replace_placeholder_type(new_ph, *t2);
+		fr.replace_placeholder_type(new_ph, *t2);
 		return 1;
 	}
 	if (t2->raw_type == &RawType::UNKNOWN) {
@@ -568,14 +580,14 @@ int Type::priv_intersection_ph(Type* t1, Type& f1, Type* t2, Type& f2, Type* tr,
 			// in case t1 && t2 are both ph > 0
 			uint32_t old_ph = t2->ph;
 			uint32_t new_ph = tr->ph;
-			f1.replace_place_holder_id(old_ph, new_ph);
-			f2.replace_place_holder_id(old_ph, new_ph);
-			fr.replace_place_holder_id(old_ph, new_ph);
+			f1.replace_placeholder_id(old_ph, new_ph);
+			f2.replace_placeholder_id(old_ph, new_ph);
+			fr.replace_placeholder_id(old_ph, new_ph);
 
 			// update ph types
-			f1.replace_place_holder_type(new_ph, *t2);
-			f2.replace_place_holder_type(new_ph, *t2);
-			fr.replace_place_holder_type(new_ph, *t2);
+			f1.replace_placeholder_type(new_ph, *t2);
+			f2.replace_placeholder_type(new_ph, *t2);
+			fr.replace_placeholder_type(new_ph, *t2);
 			return 1;
 		}
 		return 0;
@@ -592,14 +604,14 @@ int Type::priv_intersection_ph(Type* t1, Type& f1, Type* t2, Type& f2, Type* tr,
 			// in case t1 && t2 are both ph > 0
 			uint32_t old_ph = t2->ph;
 			uint32_t new_ph = tr->ph;
-			f1.replace_place_holder_id(old_ph, new_ph);
-			f2.replace_place_holder_id(old_ph, new_ph);
-			fr.replace_place_holder_id(old_ph, new_ph);
+			f1.replace_placeholder_id(old_ph, new_ph);
+			f2.replace_placeholder_id(old_ph, new_ph);
+			fr.replace_placeholder_id(old_ph, new_ph);
 
 			// update ph types
-			f1.replace_place_holder_type(new_ph, *t2);
-			f2.replace_place_holder_type(new_ph, *t2);
-			fr.replace_place_holder_type(new_ph, *t2);
+			f1.replace_placeholder_type(new_ph, *t2);
+			f2.replace_placeholder_type(new_ph, *t2);
+			fr.replace_placeholder_type(new_ph, *t2);
 			return 1;
 		}
 		return 0;
@@ -615,14 +627,14 @@ int Type::priv_intersection_ph(Type* t1, Type& f1, Type* t2, Type& f2, Type* tr,
 		// in case t1 && t2 are both ph > 0
 		uint32_t old_ph = t2->ph;
 		uint32_t new_ph = tr->ph;
-		f1.replace_place_holder_id(old_ph, new_ph);
-		f2.replace_place_holder_id(old_ph, new_ph);
-		fr.replace_place_holder_id(old_ph, new_ph);
+		f1.replace_placeholder_id(old_ph, new_ph);
+		f2.replace_placeholder_id(old_ph, new_ph);
+		fr.replace_placeholder_id(old_ph, new_ph);
 
 		// update ph types
-		f1.replace_place_holder_type(new_ph, *t2);
-		f2.replace_place_holder_type(new_ph, *t2);
-		fr.replace_place_holder_type(new_ph, *t2);
+		f1.replace_placeholder_type(new_ph, *t2);
+		f2.replace_placeholder_type(new_ph, *t2);
+		fr.replace_placeholder_type(new_ph, *t2);
 		return 1;
 	}
 	if (t1->raw_type == &RawType::UNREACHABLE) {
@@ -655,14 +667,14 @@ int Type::priv_intersection_ph(Type* t1, Type& f1, Type* t2, Type& f2, Type* tr,
 
 	uint32_t new_ph = t2->ph > 0 ? t2->ph : t1->ph;
 	uint32_t old_ph = t1->ph;
-	f1.replace_place_holder_id(old_ph, new_ph);
-	f2.replace_place_holder_id(old_ph, new_ph);
-	fr.replace_place_holder_id(old_ph, new_ph);
+	f1.replace_placeholder_id(old_ph, new_ph);
+	f2.replace_placeholder_id(old_ph, new_ph);
+	fr.replace_placeholder_id(old_ph, new_ph);
 
 	// update ph types
-	f1.replace_place_holder_type(new_ph, *tr);
-	f2.replace_place_holder_type(new_ph, *tr);
-	fr.replace_place_holder_type(new_ph, *tr);
+	f1.replace_placeholder_type(new_ph, *tr);
+	f2.replace_placeholder_type(new_ph, *tr);
+	fr.replace_placeholder_type(new_ph, *tr);
 
 	return 1;
 }

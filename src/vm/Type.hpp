@@ -113,9 +113,10 @@ public:
 	bool is_placeholder_free() const;
 
 private:
-	void replace_place_holder_type(uint32_t id, const Type& type);
-	void replace_place_holder_id(uint32_t old_id, uint32_t new_id);
-	std::set<uint32_t> place_holder_set() const;
+	void replace_placeholder_type(uint32_t id, const Type& type);
+	void replace_placeholder_id(uint32_t old_id, uint32_t new_id);
+	std::set<uint32_t> placeholder_set() const;
+	void clear_placeholder();
 	Type* copy_iterator(const Type* type, const Type* it);
 	static int priv_intersection_ph(Type* t1, Type& f1, Type* t2, Type& f2, Type* tr, Type& fr);
 	static int priv_intersection_phfree(const Type* t1, const Type* t2, Type* tr);
