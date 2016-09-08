@@ -119,9 +119,6 @@ void FunctionCall::reanalyse_help(SemanticAnalyser* analyser, const Type& req_ty
 		}
 
 		oa->type = generic; // only for debug
-		if (!Type::intersection(type, generic.return_type(), &type)) {
-			add_error(analyser, SemanticException::TYPE_MISMATCH);
-		}
 
 	} else {
 		Type req_fun_type = Type::FUNCTION;
