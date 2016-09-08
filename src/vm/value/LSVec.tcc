@@ -56,6 +56,15 @@ inline LSVec<LSValue*>::~LSVec() {
 template <typename T>
 LSVec<T>::~LSVec() {}
 
+template <typename T>
+inline int32_t LSVec<T>::ls_size(LSVec<T>* vec)
+{
+	if (vec == nullptr) return 0;
+	int32_t s = vec->size();
+	if (vec->refs == 0) delete vec;
+	return s;
+}
+
 template <>
 inline LSValue* LSVec<LSValue*>::ls_push(LSVec<LSValue*>* vec, LSValue* value)
 {

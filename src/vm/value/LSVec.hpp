@@ -31,7 +31,7 @@ public:
 //	bool ls_remove_element(T element);
 //	bool ls_empty();
 //	LSValue* ls_pop();
-//	int ls_size();
+	static int32_t ls_size(LSVec<T>* vec);
 //	T ls_sum();
 //	double ls_average();
 //	LSValue* ls_first();

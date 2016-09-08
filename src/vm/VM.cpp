@@ -163,7 +163,7 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 	// Cleaning
 	delete program;
 
-	#if DEBUG >= 2
+	#if DEBUG >= 1
 		if (ls::LSValue::obj_deleted != ls::LSValue::obj_count) {
 			cout << "/!\\ " << LSValue::obj_deleted << " / " << LSValue::obj_count << " (" << (LSValue::obj_count - LSValue::obj_deleted) << " leaked)" << endl;
 			#if DEBUG >= 4
@@ -173,7 +173,7 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 				}
 			#endif
 		} else {
-			cout << ls::LSValue::obj_count << " objects created" << endl;
+//			cout << ls::LSValue::obj_count << " objects created" << endl;
 		}
 	#endif
 
@@ -187,7 +187,7 @@ LSValue* VM_convert_i64(int64_t n) {
 	return new LSVar(n);
 }
 LSValue* VM_convert_bool(int32_t n) {
-	return new LSVar((bool) n);
+	return new LSVar(n);
 }
 LSValue* VM_convert_f32(float n) {
 	return new LSVar(n);
@@ -420,15 +420,6 @@ LSValue* VM_clone(LSValue* val) {
 
 jit_value_t VM::clone_obj(jit_function_t F, jit_value_t ptr) {
 	return Compiler::call_native(F, LS_POINTER, { LS_POINTER }, (void*) VM_clone, { ptr });
-}
-
-bool VM_is_true(LSValue* val) {
-	if (val == nullptr) return false;
-	return val->isTrue();
-}
-
-jit_value_t VM::is_true(jit_function_t F, jit_value_t ptr) {
-	return Compiler::call_native(F, jit_type_sys_bool, { LS_POINTER }, (void*) VM_is_true, { ptr });
 }
 
 }

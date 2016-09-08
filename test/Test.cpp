@@ -18,7 +18,7 @@ int Test::all() {
 	exeTime = 0;
 
 	test_general();
-//	test_booleans();
+	test_booleans();
 //	test_numbers();
 //	test_strings();
 //	test_arrays();
@@ -28,7 +28,7 @@ int Test::all() {
 //	test_functions();
 //	test_classes();
 	test_loops();
-//	test_operators();
+	test_operators();
 //	test_references();
 //	test_operations();
 //	test_system();

@@ -32,16 +32,29 @@ LSValue* array_sub(LSVec<LSValue*>* array, int begin, int end) {
 #endif
 VecSTD::VecSTD() : Module(RawType::VEC.clazz())
 {
-	Type vec_ls = Type(&RawType::VEC, { Type::LSVALUE.placeholder(1) });
-	Type vec_fn = Type(&RawType::VEC, { Type::FUNCTION.placeholder(1) });
+	Type vec_ls1 = Type(&RawType::VEC, { Type::LSVALUE.placeholder(1) });
+	Type vec_fn1 = Type(&RawType::VEC, { Type::FUNCTION.placeholder(1) });
+	Type vec_ls = Type(&RawType::VEC, { Type::LSVALUE });
+	Type vec_fn = Type(&RawType::VEC, { Type::FUNCTION });
 	Type vec_bool = Type(&RawType::VEC, { Type::BOOLEAN });
+	Type vec_i32 = Type(&RawType::VEC, { Type::I32 });
+	Type vec_f64 = Type(&RawType::VEC, { Type::F64 });
 
 	method("push", {
-		{vec_bool, vec_bool, { Type::BOOLEAN }, (void*) LSVec<int32_t>::ls_push},
-		{Type::VEC_I32, Type::VEC_I32, { Type::I32 }, (void*) LSVec<int32_t>::ls_push},
-		{Type::VEC_F64, Type::VEC_F64, { Type::F64 }, (void*) LSVec<double>::ls_push},
-		{vec_ls, vec_ls, { Type::LSVALUE.placeholder(1) }, (void*) LSVec<LSValue*>::ls_push},
-		{vec_fn, vec_fn, { Type::FUNCTION.placeholder(1) }, (void*) LSVec<void*>::ls_push},
+		{vec_bool, vec_bool, { Type::BOOLEAN },                 (void*) LSVec<int32_t>::ls_push},
+		{vec_i32,  vec_i32,  { Type::I32 },                     (void*) LSVec<int32_t>::ls_push},
+		{vec_f64,  vec_f64,  { Type::F64 },                     (void*) LSVec<double>::ls_push},
+		{vec_ls1,  vec_ls1,  { Type::LSVALUE.placeholder(1) },  (void*) LSVec<LSValue*>::ls_push},
+		{vec_fn1,  vec_fn1,  { Type::FUNCTION.placeholder(1) }, (void*) LSVec<void*>::ls_push},
+	});
+
+
+	method("size", {
+		{vec_bool, Type::I32, { }, (void*) LSVec<int32_t>::ls_size},
+		{vec_i32,  Type::I32, { }, (void*) LSVec<int32_t>::ls_size},
+		{vec_f64,  Type::I32, { }, (void*) LSVec<double>::ls_size},
+		{vec_ls,   Type::I32, { }, (void*) LSVec<LSValue*>::ls_size},
+		{vec_fn,   Type::I32, { }, (void*) LSVec<void*>::ls_size},
 	});
 
 /*
@@ -63,11 +76,6 @@ VecSTD::VecSTD() : Module(RawType::VEC.clazz())
 		{Type::INT_ARRAY, Type::INTEGER, {}, (void*) &LSVec<int>::ls_min}
 	});
 
-	method("size", {
-		{Type::PTR_ARRAY, Type::INTEGER, {}, (void*) &LSVec<LSValue*>::ls_size},
-		{Type::FLOAT_ARRAY, Type::INTEGER, {}, (void*) &LSVec<double>::ls_size},
-		{Type::INT_ARRAY, Type::INTEGER, {}, (void*) &LSVec<int>::ls_size}
-	});
 
 	method("sum", {
 		{Type::PTR_ARRAY, Type::POINTER, {}, (void*) &LSVec<LSValue*>::ls_sum},

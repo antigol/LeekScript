@@ -63,18 +63,8 @@ jit_value_t While::compile(Compiler& c) const {
 	jit_insn_label(c.F, &label_cond);
 
 	// condition
-	jit_value_t cond = condition->compile(c);
-	if (condition->type.raw_type->nature() == Nature::LSVALUE) {
-		jit_value_t cond_bool = VM::is_true(c.F, cond);
-
-		if (condition->type.must_manage_memory()) {
-			VM::delete_temporary(c.F, cond);
-		}
-
-		jit_insn_branch_if_not(c.F, cond_bool, &label_end);
-	} else {
-		jit_insn_branch_if_not(c.F, cond, &label_end);
-	}
+	jit_value_t cond = Compiler::compile_is_true_delete_temporary(c.F, condition->compile(c), condition->type);
+	jit_insn_branch_if_not(c.F, cond, &label_end);
 
 	// body
 	c.enter_loop(&label_end, &label_cond);

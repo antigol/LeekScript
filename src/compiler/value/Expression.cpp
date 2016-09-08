@@ -44,7 +44,7 @@ void Expression::append(Operator* op, Value* exp) {
 	}
 
 	if (!parenthesis and (op->priority < this->op->priority
-		   or (op->priority == this->op->priority and op->character == "="))) {
+						  or (op->priority == this->op->priority and op->character == "="))) {
 		/*
 		 * We already have '5 + 2' for example,
 		 * and try to add a operator with a higher priority,
@@ -122,7 +122,9 @@ void Expression::analyse_help(SemanticAnalyser* analyser)
 
 
 	} else if (op->type == TokenType::PLUS
-			   || op->type == TokenType::MINUS) {
+			   || op->type == TokenType::MINUS
+			   || op->type == TokenType::TIMES
+			   || op->type == TokenType::DIVIDE) {
 
 		v1->analyse(analyser);
 		v2->analyse(analyser);
@@ -139,6 +141,15 @@ void Expression::analyse_help(SemanticAnalyser* analyser)
 		v2->analyse(analyser);
 		type = Type::BOOLEAN;
 
+	} else if (op->type == TokenType::AND
+			   || op->type == TokenType::OR) {
+
+		v1->analyse(analyser);
+		v2->analyse(analyser);
+		type = Type::BOOLEAN;
+
+	} else {
+		assert(0);
 	}
 }
 
@@ -165,7 +176,9 @@ void Expression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type
 		} while (analyser->errors.empty() && (old_left != l1->left_type || old_right != v2->type));
 
 	} else if (op->type == TokenType::PLUS
-			   || op->type == TokenType::MINUS) {
+			   || op->type == TokenType::MINUS
+			   || op->type == TokenType::TIMES
+			   || op->type == TokenType::DIVIDE) {
 		if (!Type::intersection(type, req_type, &type)) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
@@ -209,6 +222,16 @@ void Expression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type
 			v1->reanalyse(analyser, v2->type);
 			v2->reanalyse(analyser, v1->type);
 		} while (analyser->errors.empty() && v1->type != v2->type);
+
+	} else if (op->type == TokenType::AND
+			   || op->type == TokenType::OR) {
+		if (!Type::intersection(type, req_type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+
+		v1->reanalyse(analyser, Type::LOGIC);
+		v2->reanalyse(analyser, Type::LOGIC);
+
 	} else {
 		assert(0);
 	}
@@ -232,7 +255,9 @@ void Expression::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 		v2->finalize(analyser, l1->left_type);
 
 	} else if (op->type == TokenType::PLUS
-			   || op->type == TokenType::MINUS) {
+			   || op->type == TokenType::MINUS
+			   || op->type == TokenType::TIMES
+			   || op->type == TokenType::DIVIDE) {
 
 		v1->finalize(analyser, req_type.fiber_conversion());
 		v2->finalize(analyser, v1->type);
@@ -254,6 +279,18 @@ void Expression::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 
 		v1->finalize(analyser, v2->type);
 		v2->finalize(analyser, v1->type);
+
+	} else if (op->type == TokenType::AND
+			   || op->type == TokenType::OR) {
+		if (!Type::intersection(type, req_type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+
+		v1->finalize(analyser, Type::LOGIC);
+		v2->finalize(analyser, Type::LOGIC);
+
+	} else {
+		assert(0);
 	}
 }
 
@@ -269,51 +306,124 @@ jit_value_t Expression::compile(Compiler& c) const
 		return v1->compile(c);
 	}
 
-	switch (op->type) {
-		case TokenType::EQUAL: {
-			// type = v1.type
-			// v1.left_type = v2.type
-			LeftValue* l1 = dynamic_cast<LeftValue*>(v1);
-			jit_value_t l = l1->compile_l(c);
-			jit_value_t v = v2->compile(c);
-			if (l1->left_type.must_manage_memory()) {
-				Compiler::call_native(c.F, LS_VOID, { LS_POINTER, LS_POINTER }, (void*) EX_store_lsptr, { l, v }); // TODO update for tuples
-			} else {
-				jit_insn_store_relative(c.F, l, 0, v);
+	if (op->type == TokenType::EQUAL) {
+		// type = v1.type
+		// v1.left_type = v2.type
+		LeftValue* l1 = dynamic_cast<LeftValue*>(v1);
+		jit_value_t l = l1->compile_l(c);
+		jit_value_t v = v2->compile(c);
+		if (l1->left_type.must_manage_memory()) {
+			Compiler::call_native(c.F, LS_VOID, { LS_POINTER, LS_POINTER }, (void*) EX_store_lsptr, { l, v }); // TODO update for tuples
+		} else {
+			jit_insn_store_relative(c.F, l, 0, v);
+		}
+		return l1->compile(c);
+
+	} else if (op->type == TokenType::PLUS
+			   || op->type == TokenType::MINUS
+			   || op->type == TokenType::TIMES
+			   || op->type == TokenType::DIVIDE) {
+
+		// v1.type => type
+		// v1.type = v2.type
+		jit_value_t x = v1->compile(c);
+		jit_value_t y = v2->compile(c);
+
+		switch (op->type) {
+			case TokenType::PLUS: {
+
+				if (v1->type.raw_type->nature() == Nature::LSVALUE) {
+					return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER, LS_POINTER }, (void*) LSVar::ls_add, { x, y });
+				} else {
+					return Compiler::compile_convert(c.F, jit_insn_add(c.F, x, y), v1->type, type);
+				}
 			}
-			return l1->compile(c);
+			case TokenType::MINUS: {
+				if (v1->type.raw_type->nature() == Nature::LSVALUE) {
+					return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER, LS_POINTER }, (void*) LSVar::ls_sub, { x, y });
+				} else {
+					return Compiler::compile_convert(c.F, jit_insn_sub(c.F, x, y), v1->type, type);
+				}
+			}
+			case TokenType::TIMES: {
+				if (v1->type.raw_type->nature() == Nature::LSVALUE) {
+					return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER, LS_POINTER }, (void*) LSVar::ls_mul, { x, y });
+				} else {
+					return Compiler::compile_convert(c.F, jit_insn_mul(c.F, x, y), v1->type, type);
+				}
+			}
+			case TokenType::DIVIDE: {
+				if (v1->type.raw_type->nature() == Nature::LSVALUE) {
+					return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER, LS_POINTER }, (void*) LSVar::ls_div, { x, y });
+				} else {
+					return Compiler::compile_convert(c.F, jit_insn_div(c.F, x, y), v1->type, type);
+				}
+			}
+			default: {
+				assert(0);
+				return nullptr;
+			}
+		}
+	} else if (op->type == TokenType::DOUBLE_EQUAL
+			   || op->type == TokenType::DIFFERENT
+			   || op->type == TokenType::LOWER
+			   || op->type == TokenType::GREATER
+			   || op->type == TokenType::LOWER_EQUALS
+			   || op->type == TokenType::GREATER_EQUALS) {
+		// v1.type = v2.type
+		// type = boolean
+		jit_value_t x = v1->compile(c);
+		jit_value_t y = v2->compile(c);
+		jit_value_t res;
+
+		switch (op->type) {
+			case TokenType::DOUBLE_EQUAL:   res = Compiler::compile_eq(c.F, x, v1->type, y, v2->type); break;
+			case TokenType::DIFFERENT:      res = Compiler::compile_ne(c.F, x, v1->type, y, v2->type); break;
+			case TokenType::LOWER:          res = Compiler::compile_lt(c.F, x, v1->type, y, v2->type); break;
+			case TokenType::LOWER_EQUALS:   res = Compiler::compile_le(c.F, x, v1->type, y, v2->type); break;
+			case TokenType::GREATER:        res = Compiler::compile_gt(c.F, x, v1->type, y, v2->type); break;
+			case TokenType::GREATER_EQUALS: res = Compiler::compile_ge(c.F, x, v1->type, y, v2->type); break;
+			default: {
+				assert(0);
+				return nullptr;
+			}
 		}
 
-		case TokenType::PLUS: {
-			// v1.type => type
-			// v1.type = v2.type
-			jit_value_t x = v1->compile(c);
-			jit_value_t y = v2->compile(c);
-			if (v1->type.raw_type->nature() == Nature::LSVALUE) {
-				Compiler::call_native(c.F, LS_POINTER, { LS_POINTER, LS_POINTER }, (void*) LSVar::ls_add, { x, y });
-			} else {
-				return Compiler::compile_convert(c.F, jit_insn_add(c.F, x, y), v1->type, type);
+		if (v1->type.must_manage_memory()) VM::delete_temporary(c.F, x);
+		if (v2->type.must_manage_memory()) VM::delete_temporary(c.F, y);
+
+		return res;
+
+	} else if (op->type == TokenType::AND
+			   || op->type == TokenType::OR) {
+		// v1.type != v2.type
+		// type = boolean
+		jit_value_t x = Compiler::compile_is_true_delete_temporary(c.F, v1->compile(c), v1->type);
+		jit_label_t shortcut = jit_label_undefined;
+		jit_value_t res = jit_value_create(c.F, LS_I32);
+
+		switch (op->type) {
+			case TokenType::AND: {
+				jit_insn_store(c.F, res, VM::create_bool(c.F, false));
+				jit_insn_branch_if_not(c.F, x, &shortcut);
+				jit_value_t y = Compiler::compile_is_true_delete_temporary(c.F, v2->compile(c), v2->type);
+				jit_insn_store(c.F, res, y);
+				break;
+			}
+			case TokenType::OR: {
+				jit_insn_store(c.F, res, VM::create_bool(c.F, true));
+				jit_insn_branch_if(c.F, x, &shortcut);
+				jit_value_t y = Compiler::compile_is_true_delete_temporary(c.F, v2->compile(c), v2->type);
+				jit_insn_store(c.F, res, y);
+				break;
+			}
+			default: {
+				assert(0);
+				return nullptr;
 			}
 		}
-		case TokenType::MINUS: {
-			jit_value_t x = v1->compile(c);
-			jit_value_t y = v2->compile(c);
-			if (v1->type.raw_type->nature() == Nature::LSVALUE) {
-				Compiler::call_native(c.F, LS_POINTER, { LS_POINTER, LS_POINTER }, (void*) LSVar::ls_add, { x, y });
-			} else {
-				return Compiler::compile_convert(c.F, jit_insn_add(c.F, x, y), v1->type, type);
-			}
-		}
-
-		case TokenType::DOUBLE_EQUAL:   return Compiler::compile_eq(c.F, v1->compile(c), v1->type, v2->compile(c), v2->type);
-		case TokenType::DIFFERENT:      return Compiler::compile_ne(c.F, v1->compile(c), v1->type, v2->compile(c), v2->type);
-		case TokenType::LOWER:          return Compiler::compile_lt(c.F, v1->compile(c), v1->type, v2->compile(c), v2->type);
-		case TokenType::LOWER_EQUALS:   return Compiler::compile_le(c.F, v1->compile(c), v1->type, v2->compile(c), v2->type);
-		case TokenType::GREATER:        return Compiler::compile_gt(c.F, v1->compile(c), v1->type, v2->compile(c), v2->type);
-		case TokenType::GREATER_EQUALS: return Compiler::compile_ge(c.F, v1->compile(c), v1->type, v2->compile(c), v2->type);
-
-
-		default: break;
+		jit_insn_label(c.F, &shortcut);
+		return res;
 	}
 
 	assert(0);

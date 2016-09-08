@@ -223,7 +223,6 @@ jit_value_t Compiler::compile_ge(jit_function_t F, jit_value_t v1, const Type& t
 	return nullptr;
 }
 
-
 jit_value_t Compiler::compile_convert(jit_function_t F, jit_value_t v, const Type& t_in, const Type& t_out)
 {
 	if (t_in == t_out || v == nullptr) return v;
@@ -241,6 +240,21 @@ jit_value_t Compiler::compile_convert(jit_function_t F, jit_value_t v, const Typ
 
 	assert(0);
 	return nullptr;
+}
+
+int32_t CP_is_true(LSValue* val) {
+	if (val == nullptr) return 0;
+	int32_t r = val->isTrue();
+	if (val->refs == 0) delete val;
+	return r;
+}
+
+jit_value_t Compiler::compile_is_true_delete_temporary(jit_function_t F, jit_value_t v, const Type& type)
+{
+	if (type.raw_type->nature() == Nature::LSVALUE) {
+		return call_native(F, LS_I32, { LS_POINTER }, (void*) CP_is_true, { v });
+	}
+	return v;
 }
 
 }

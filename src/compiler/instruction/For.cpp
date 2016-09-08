@@ -180,18 +180,9 @@ jit_value_t For::compile(Compiler& c) const {
 
 	// Cond
 	jit_insn_label(c.F, &label_cond);
-	jit_value_t condition_v = condition->compile(c);
-	if (condition->type.raw_type->nature() == Nature::LSVALUE) {
-		jit_value_t bool_v = VM::is_true(c.F, condition_v);
+	jit_value_t condition_v = Compiler::compile_is_true_delete_temporary(c.F, condition->compile(c), condition->type);
 
-		if (condition->type.must_manage_memory()) {
-			VM::delete_temporary(c.F, condition_v);
-		}
-
-		jit_insn_branch_if_not(c.F, bool_v, &label_end);
-	} else {
-		jit_insn_branch_if_not(c.F, condition_v, &label_end);
-	}
+	jit_insn_branch_if_not(c.F, condition_v, &label_end);
 
 	// Body
 	c.enter_loop(&label_end, &label_inc);

@@ -228,7 +228,23 @@ LSVar* LSVar::LSVar::ls_sub_eq(LSVar* x, LSVar* y)
 
 LSVar* LSVar::LSVar::ls_mul(LSVar* x, LSVar* y)
 {
+	LSVar* r = nullptr;
 
+	if (!x && !y) return r;
+	if (!x) {
+		if (y->refs == 0) delete y;
+		return r;
+	}
+	if (!y) {
+		if (x->refs == 0) delete x;
+		return r;
+	}
+
+	if ((x->type == REAL || x->type == BOOLEAN) && (y->type == REAL || y->type == BOOLEAN)) r = new LSVar(x->real * y->real);
+
+	if (x->refs == 0) delete x;
+	if (y->refs == 0) delete y;
+	return r;
 }
 
 LSVar* LSVar::LSVar::ls_mul_eq(LSVar* x, LSVar* y)
@@ -238,7 +254,23 @@ LSVar* LSVar::LSVar::ls_mul_eq(LSVar* x, LSVar* y)
 
 LSVar* LSVar::LSVar::ls_div(LSVar* x, LSVar* y)
 {
+	LSVar* r = nullptr;
 
+	if (!x && !y) return r;
+	if (!x) {
+		if (y->refs == 0) delete y;
+		return r;
+	}
+	if (!y) {
+		if (x->refs == 0) delete x;
+		return r;
+	}
+
+	if ((x->type == REAL || x->type == BOOLEAN) && (y->type == REAL || y->type == BOOLEAN)) r = new LSVar(x->real / y->real);
+
+	if (x->refs == 0) delete x;
+	if (y->refs == 0) delete y;
+	return r;
 }
 
 LSVar* LSVar::LSVar::ls_div_eq(LSVar* x, LSVar* y)

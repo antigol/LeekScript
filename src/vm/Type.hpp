@@ -143,9 +143,6 @@ public:
 	static const Type F32;
 	static const Type F64;
 	static const Type VEC; // LSVALUE
-	static const Type VEC_VAR; // LSVALUE
-	static const Type VEC_I32; // LSVALUE
-	static const Type VEC_F64; // LSVALUE
 	static const Type MAP; // LSVALUE
 	static const Type SET; // LSVALUE
 	static const Type FUNCTION; // generic if no return_type

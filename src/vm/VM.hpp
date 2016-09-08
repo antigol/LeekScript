@@ -75,7 +75,6 @@ public:
 	static jit_value_t move_obj(jit_function_t F, jit_value_t ptr);
 	static jit_value_t move_inc_obj(jit_function_t F, jit_value_t ptr);
 	static jit_value_t clone_obj(jit_function_t F, jit_value_t ptr);
-	static jit_value_t is_true(jit_function_t F, jit_value_t ptr);
 };
 
 }

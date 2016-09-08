@@ -74,7 +74,7 @@ bool LSValue::lt(const LSSet<LSValue*>*) const               { return typeID() <
 bool LSValue::lt(const LSSet<int>*) const                    { return typeID() < 7; }
 bool LSValue::lt(const LSSet<double>*) const                 { return typeID() < 7; }
 
-LSValue* get_value(int type, Json& json) {
+LSValue* get_value(int type, Json& ) {
 	switch (type) {
 //		case 1: return new LSVar();
 //		case 2: return new LSBoolean(json);

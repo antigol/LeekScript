@@ -5,8 +5,8 @@
 
 /*
  * 0 : no debug,
- * 1 : print types
- * 2 : print analyse + amount of leeks
+ * 1 : print types + amount of leeks
+ * 2 : print analyse
  * 3 : print debug messages
  * 4 : print leeks details
  */

@@ -3,8 +3,8 @@
 void Test::test_booleans() {
 
 	header("Booléens");
-	success("new Boolean", "false");
-	success("new Boolean()", "false");
+//	success("new Boolean", "false");
+//	success("new Boolean()", "false");
 	success("true", "true");
 	success("false", "false");
 	success("!true", "false");
@@ -26,4 +26,8 @@ void Test::test_booleans() {
 	success("false xor 99", "true");
 	success("false + 99", "99");
 	success("true + 99", "100");
+	success("let x = 0 true || x++ x", "0");
+	success("let x = 0 true && x++ x", "1");
+	success("let x = 0 false || x++ x", "1");
+	success("let x = 0 false && x++ x", "0");
 }
