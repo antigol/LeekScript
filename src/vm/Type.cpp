@@ -754,22 +754,19 @@ int Type::priv_intersection_phfree(const Type* t1, const Type* t2, Type* tr)
 	if (t1->elements_types.size() != t2->elements_types.size()) return 0;
 	tr->elements_types.resize(t1->elements_types.size());
 	for (size_t i = 0; i < t1->elements_types.size(); ++i) {
-		int res = priv_intersection_phfree(&t1->elements_types[i], &t2->elements_types[i], &tr->elements_types[i]);
-		if (res != 1) return res;
+		if (!priv_intersection_phfree(&t1->elements_types[i], &t2->elements_types[i], &tr->elements_types[i])) return 0;
 	}
 
 	if (t1->return_types.size() != t2->return_types.size()) return 0;
 	tr->return_types.resize(t1->return_types.size());
 	for (size_t i = 0; i < t1->return_types.size(); ++i) {
-		int res = priv_intersection_phfree(&t1->return_types[i], &t2->return_types[i], &tr->return_types[i]);
-		if (res != 1) return res;
+		if (!priv_intersection_phfree(&t1->return_types[i], &t2->return_types[i], &tr->return_types[i])) return 0;
 	}
 
 	if (t1->arguments_types.size() != t2->arguments_types.size()) return 0;
 	tr->arguments_types.resize(t1->arguments_types.size());
 	for (size_t i = 0; i < t1->arguments_types.size(); ++i) {
-		int res = priv_intersection_phfree(&t1->arguments_types[i], &t2->arguments_types[i], &tr->arguments_types[i]);
-		if (res != 1) return res;
+		if (!priv_intersection_phfree(&t1->arguments_types[i], &t2->arguments_types[i], &tr->arguments_types[i])) return 0;
 	}
 
 	return 1;

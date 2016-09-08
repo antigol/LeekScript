@@ -24,7 +24,7 @@ unsigned Boolean::line() const {
 	return 0;
 }
 
-void Boolean::analyse_help(SemanticAnalyser* analyser)
+void Boolean::analyse_help(SemanticAnalyser*)
 {
 	constant = true;
 	type = Type({ Type::BOOLEAN, Type::VAR, Type::I32 });

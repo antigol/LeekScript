@@ -17,10 +17,13 @@ VariableValue::VariableValue(Token* token) {
 VariableValue::~VariableValue() {}
 
 void VariableValue::print(ostream& os, int, bool debug) const {
+	if (debug) os << "(";
 	os << token->content;
-//	if (debug) {
-//		os << " " << type;
-//	}
+	if (debug) {
+		os << " " << var->type;
+		if (type != var->type) os << "→" << type;
+		os << ")";
+	}
 }
 
 unsigned VariableValue::line() const {
@@ -95,6 +98,8 @@ jit_value_t VariableValue::compile(Compiler& c) const
 		case VarScope::PARAMETER:
 			v = jit_value_get_param(c.F, var->index);
 			break;
+		default:
+			v = nullptr;
 	}
 
 	return Compiler::compile_convert(c.F, v, var->type, type);
@@ -102,8 +107,21 @@ jit_value_t VariableValue::compile(Compiler& c) const
 
 jit_value_t VariableValue::compile_l(Compiler& c) const
 {
-	if (var->type != type) return nullptr;
-	jit_value_t v = compile(c);
+	jit_value_t v;
+	switch (var->scope_type) {
+		case VarScope::INTERNAL:
+			v = internals[name];
+			break;
+		case VarScope::LOCAL:
+			v = c.get_var(name).value;
+			break;
+		case VarScope::PARAMETER:
+			v = jit_value_get_param(c.F, var->index);
+			break;
+		default:
+			v = nullptr;
+	}
+
 	return jit_insn_address_of(c.F, v);
 }
 

@@ -65,6 +65,7 @@ void Number::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 	type.make_it_pure();
 }
 
+
 jit_value_t Number::compile(Compiler& c) const
 {
 	double v = stod_(value);

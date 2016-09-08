@@ -55,9 +55,12 @@ public:
 
 	static jit_value_t call_native(jit_function_t F, jit_type_t return_type, std::vector<jit_type_t> args_type, void* function, std::vector<jit_value_t> args);
 
-	static jit_value_t compile_ge(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2);
-	static jit_value_t compile_lt(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2);
 	static jit_value_t compile_eq(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2);
+	static jit_value_t compile_ne(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2);
+	static jit_value_t compile_lt(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2);
+	static jit_value_t compile_le(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2);
+	static jit_value_t compile_gt(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2);
+	static jit_value_t compile_ge(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2);
 
 	static jit_value_t compile_convert(jit_function_t F, jit_value_t v, const Type& t_in, const Type& t_out);
 };

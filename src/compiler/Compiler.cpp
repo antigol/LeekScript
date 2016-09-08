@@ -123,47 +123,57 @@ jit_value_t Compiler::call_native(jit_function_t F, jit_type_t return_type, std:
 	return res;
 }
 
-bool CP_equal(LSValue* x, LSValue* y) {
+bool CP_eq(LSValue* x, LSValue* y) {
 	if (x == nullptr) return y == nullptr;
 	if (y == nullptr) return false;
 	return *x == *y;
 }
-bool CP_less(LSValue* x, LSValue* y) {
+bool CP_ne(LSValue* x, LSValue* y) {
+	if (x == nullptr) return y != nullptr;
+	if (y == nullptr) return true;
+	return *x != *y;
+}
+bool CP_lt(LSValue* x, LSValue* y) {
 	if (y == nullptr) return false;
 	if (x == nullptr) return true;
 	return *x < *y;
 }
-bool CP_greater_equal(LSValue* x, LSValue* y) {
+bool CP_le(LSValue* x, LSValue* y) {
+	if (x == nullptr) return true;
+	if (y == nullptr) return false;
+	return *x <= *y;
+}
+bool CP_gt(LSValue* x, LSValue* y) {
+	if (x == nullptr) return false;
+	if (y == nullptr) return true;
+	return *x > *y;
+}
+bool CP_ge(LSValue* x, LSValue* y) {
 	if (y == nullptr) return true;
 	if (x == nullptr) return false;
 	return *x >= *y;
 }
 
-bool CP_equal_bool_var(int32_t x, LSVar* y) {
-	if (y == nullptr) return false;
-	if (y->type == LSVar::BOOLEAN) return ((bool) x) == (y->real > 0.0);
-	return false;
-}
-bool CP_less_bool_var(int32_t x, LSVar* y) {
-	if (y == nullptr) return false;
-	if (y->type == LSVar::TEXT) return true;
-	return ((bool) x) < y->real;
-}
-bool CP_greater_equal_bool_var(int32_t x, LSVar* y) {
-	if (y == nullptr) return true;
-	if (y->type == LSVar::TEXT) return false;
-	return ((bool) x) >= y->real;
-}
-
 //  a?        a          a
 // null < bool,number < text < vec < map < set < function < tuple
 
-jit_value_t Compiler::compile_ge(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2)
+jit_value_t Compiler::compile_eq(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2)
 {
-	// TODO : complete all type possibilities
-	if (Type::intersection(t1, Type::VALUE_NUMBER) && Type::intersection(t2, Type::VALUE_NUMBER)) return jit_insn_ge(F, v1, v2);
+	if (Type::intersection(t1, Type::VALUE_NUMBER) && Type::intersection(t2, Type::VALUE_NUMBER)) return jit_insn_eq(F, v1, v2);
+	if (t1.raw_type == &RawType::FUNCTION && t2.raw_type == &RawType::FUNCTION) return jit_insn_eq(F, v1, v2);
 	if (t1.raw_type->nature() == Nature::LSVALUE && t2.raw_type->nature() == Nature::LSVALUE) {
-		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_greater_equal, { v1, v2 });
+		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_eq, { v1, v2 });
+	}
+	assert(0);
+	return nullptr;
+}
+
+jit_value_t Compiler::compile_ne(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2)
+{
+	if (Type::intersection(t1, Type::VALUE_NUMBER) && Type::intersection(t2, Type::VALUE_NUMBER)) return jit_insn_ne(F, v1, v2);
+	if (t1.raw_type == &RawType::FUNCTION && t2.raw_type == &RawType::FUNCTION) return jit_insn_ne(F, v1, v2);
+	if (t1.raw_type->nature() == Nature::LSVALUE && t2.raw_type->nature() == Nature::LSVALUE) {
+		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_ne, { v1, v2 });
 	}
 	assert(0);
 	return nullptr;
@@ -171,30 +181,48 @@ jit_value_t Compiler::compile_ge(jit_function_t F, jit_value_t v1, const Type& t
 
 jit_value_t Compiler::compile_lt(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2)
 {
-	// TODO : complete all type possibilities
-	if (t1 == Type::BOOLEAN && t2 == Type::VAR) {
-		return call_native(F, jit_type_sys_bool, { t1.jit_type(), LS_POINTER }, (void*) CP_less_bool_var, { v1, v2 });
-	}
-	if (Type::intersection(t1, Type::VALUE_NUMBER) && Type::intersection(t2, Type::VALUE_NUMBER)) {
-		return jit_insn_lt(F, v1, v2);
-	}
+	if (Type::intersection(t1, Type::VALUE_NUMBER) && Type::intersection(t2, Type::VALUE_NUMBER)) return jit_insn_lt(F, v1, v2);
+	if (t1.raw_type == &RawType::FUNCTION && t2.raw_type == &RawType::FUNCTION) return jit_insn_lt(F, v1, v2);
 	if (t1.raw_type->nature() == Nature::LSVALUE && t2.raw_type->nature() == Nature::LSVALUE) {
-		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_less, { v1, v2 });
+		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_lt, { v1, v2 });
 	}
 	assert(0);
 	return nullptr;
 }
 
-jit_value_t Compiler::compile_eq(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2)
+jit_value_t Compiler::compile_le(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2)
 {
-	// TODO : complete all type possibilities
-	if (Type::intersection(t1, Type::VALUE_NUMBER) && Type::intersection(t2, Type::VALUE_NUMBER)) return jit_insn_eq(F, v1, v2);
+	if (Type::intersection(t1, Type::VALUE_NUMBER) && Type::intersection(t2, Type::VALUE_NUMBER)) return jit_insn_le(F, v1, v2);
+	if (t1.raw_type == &RawType::FUNCTION && t2.raw_type == &RawType::FUNCTION) return jit_insn_le(F, v1, v2);
 	if (t1.raw_type->nature() == Nature::LSVALUE && t2.raw_type->nature() == Nature::LSVALUE) {
-		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_equal, { v1, v2 });
+		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_le, { v1, v2 });
 	}
 	assert(0);
 	return nullptr;
 }
+
+jit_value_t Compiler::compile_gt(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2)
+{
+	if (Type::intersection(t1, Type::VALUE_NUMBER) && Type::intersection(t2, Type::VALUE_NUMBER)) return jit_insn_gt(F, v1, v2);
+	if (t1.raw_type == &RawType::FUNCTION && t2.raw_type == &RawType::FUNCTION) return jit_insn_gt(F, v1, v2);
+	if (t1.raw_type->nature() == Nature::LSVALUE && t2.raw_type->nature() == Nature::LSVALUE) {
+		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_gt, { v1, v2 });
+	}
+	assert(0);
+	return nullptr;
+}
+
+jit_value_t Compiler::compile_ge(jit_function_t F, jit_value_t v1, const Type& t1, jit_value_t v2, const Type& t2)
+{
+	if (Type::intersection(t1, Type::VALUE_NUMBER) && Type::intersection(t2, Type::VALUE_NUMBER)) return jit_insn_ge(F, v1, v2);
+	if (t1.raw_type == &RawType::FUNCTION && t2.raw_type == &RawType::FUNCTION) return jit_insn_ge(F, v1, v2);
+	if (t1.raw_type->nature() == Nature::LSVALUE && t2.raw_type->nature() == Nature::LSVALUE) {
+		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_ge, { v1, v2 });
+	}
+	assert(0);
+	return nullptr;
+}
+
 
 jit_value_t Compiler::compile_convert(jit_function_t F, jit_value_t v, const Type& t_in, const Type& t_out)
 {
@@ -209,7 +237,7 @@ jit_value_t Compiler::compile_convert(jit_function_t F, jit_value_t v, const Typ
 		return v;
 	}
 
-	// TODO add other possibilities here and in Compiler::compile_convert
+	// TODO add other possibilities here and in Type.cpp
 
 	assert(0);
 	return nullptr;

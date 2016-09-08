@@ -27,10 +27,6 @@ unsigned AbsoluteValue::line() const {
 void AbsoluteValue::analyse_help(SemanticAnalyser* analyser)
 {
 	expression->analyse(analyser);
-	constant = expression->constant;
-
-	expression->reanalyse(analyser, Type::VAR);
-
 	type = Type::VAR;
 }
 
@@ -39,12 +35,15 @@ void AbsoluteValue::reanalyse_help(SemanticAnalyser* analyser, const Type& req_t
 	if (!Type::intersection(type, req_type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
+	expression->reanalyse(analyser, Type::VAR);
 }
 
 void AbsoluteValue::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
+	if (!Type::intersection(type, req_type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
 	expression->finalize(analyser, Type::VAR);
-	constant = expression->constant;
 	type = Type::VAR;
 }
 

@@ -154,8 +154,8 @@ void Function::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 	assert(type.is_pure() || !analyser->errors.empty());
 }
 
-void Function::capture(SemanticVar* var) {
-
+void Function::capture(SemanticVar* var)
+{
 //	if (std::find(captures.begin(), captures.end(), var) == captures.end()) {
 //		captures.push_back(var);
 

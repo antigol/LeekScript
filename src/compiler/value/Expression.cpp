@@ -127,6 +127,17 @@ void Expression::analyse_help(SemanticAnalyser* analyser)
 		v2->analyse(analyser);
 		type = Type::UNKNOWN;
 
+	} else if (op->type == TokenType::DOUBLE_EQUAL
+			   || op->type == TokenType::DIFFERENT
+			   || op->type == TokenType::LOWER
+			   || op->type == TokenType::GREATER
+			   || op->type == TokenType::LOWER_EQUALS
+			   || op->type == TokenType::GREATER_EQUALS) {
+
+		v1->analyse(analyser);
+		v2->analyse(analyser);
+		type = Type::BOOLEAN;
+
 	}
 }
 
@@ -150,7 +161,7 @@ void Expression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type
 			l1->reanalyse_l(analyser, req_type, v2->type);
 			type = l1->type;
 			v2->reanalyse(analyser, l1->left_type);
-		} while (old_left != l1->left_type || old_right != v2->type);
+		} while (analyser->errors.empty() && (old_left != l1->left_type || old_right != v2->type));
 
 	} else if (op->type == TokenType::PLUS) {
 		if (!Type::intersection(type, req_type, &type)) {
@@ -182,6 +193,22 @@ void Expression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type
 		}
 
 		// TODO do {} while() here too ?
+	} else if (op->type == TokenType::DOUBLE_EQUAL
+			   || op->type == TokenType::DIFFERENT
+			   || op->type == TokenType::LOWER
+			   || op->type == TokenType::GREATER
+			   || op->type == TokenType::LOWER_EQUALS
+			   || op->type == TokenType::GREATER_EQUALS) {
+		if (!Type::intersection(type, req_type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+
+		do {
+			v1->reanalyse(analyser, v2->type);
+			v2->reanalyse(analyser, v1->type);
+		} while (analyser->errors.empty() && v1->type != v2->type);
+	} else {
+		assert(0);
 	}
 
 }
@@ -211,6 +238,19 @@ void Expression::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
 		type.make_it_pure();
+
+	} else if (op->type == TokenType::DOUBLE_EQUAL
+			   || op->type == TokenType::DIFFERENT
+			   || op->type == TokenType::LOWER
+			   || op->type == TokenType::GREATER
+			   || op->type == TokenType::LOWER_EQUALS
+			   || op->type == TokenType::GREATER_EQUALS) {
+		if (!Type::intersection(type, req_type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+
+		v1->finalize(analyser, v2->type);
+		v2->finalize(analyser, v1->type);
 	}
 }
 
@@ -229,23 +269,20 @@ jit_value_t Expression::compile(Compiler& c) const
 	switch (op->type) {
 		case TokenType::EQUAL: {
 			// type = v1.type = v2.type
-			LeftValue* left = (LeftValue*) v1;
-			jit_value_t l = left->compile_l(c);
-			jit_label_t label_end = jit_label_undefined;
-			jit_insn_branch_if_not(c.F, l, &label_end);
+			LeftValue* l1 = dynamic_cast<LeftValue*>(v1);
+			jit_value_t l = l1->compile_l(c);
 			jit_value_t v = v2->compile(c);
-			if (left->type.must_manage_memory()) {
+			if (l1->left_type.must_manage_memory()) {
 				Compiler::call_native(c.F, LS_VOID, { LS_POINTER, LS_POINTER }, (void*) EX_store_lsptr, { l, v }); // TODO update for tuples
 			} else {
 				jit_insn_store_relative(c.F, l, 0, v);
 			}
-			jit_insn_label(c.F, &label_end);
-			return left->compile(c);
+			return l1->compile(c);
 		}
 
 		case TokenType::PLUS: {
-			// type = req_type
-			// v1.type = v2.type
+			// v1.type = type
+			// v1.left_type = v2.type
 			jit_value_t x = v1->compile(c);
 			jit_value_t y = v2->compile(c);
 			if (v1->type.raw_type->nature() == Nature::LSVALUE) {
@@ -257,6 +294,14 @@ jit_value_t Expression::compile(Compiler& c) const
 				return Compiler::compile_convert(c.F, jit_insn_add(c.F, x, y), v1->type, type);
 			}
 		}
+
+		case TokenType::DOUBLE_EQUAL:   return Compiler::compile_eq(c.F, v1->compile(c), v1->type, v2->compile(c), v2->type);
+		case TokenType::DIFFERENT:      return Compiler::compile_ne(c.F, v1->compile(c), v1->type, v2->compile(c), v2->type);
+		case TokenType::LOWER:          return Compiler::compile_lt(c.F, v1->compile(c), v1->type, v2->compile(c), v2->type);
+		case TokenType::LOWER_EQUALS:   return Compiler::compile_le(c.F, v1->compile(c), v1->type, v2->compile(c), v2->type);
+		case TokenType::GREATER:        return Compiler::compile_gt(c.F, v1->compile(c), v1->type, v2->compile(c), v2->type);
+		case TokenType::GREATER_EQUALS: return Compiler::compile_ge(c.F, v1->compile(c), v1->type, v2->compile(c), v2->type);
+
 
 		default: break;
 	}
