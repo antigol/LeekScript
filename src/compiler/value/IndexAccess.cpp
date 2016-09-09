@@ -246,8 +246,7 @@ jit_value_t IndexAccess::compile(Compiler& c) const {
 
 LSValue** IA_l_vec_lsptr(LSVec<LSValue*>* vec, uint32_t i) {
 	VM::operations += 2;
-	if (vec->refs == 0) {
-		delete vec;
+	if (vec == nullptr) {
 		return nullptr;
 	}
 	return i < vec->size() ? vec->data()+i : nullptr;
@@ -255,8 +254,7 @@ LSValue** IA_l_vec_lsptr(LSVec<LSValue*>* vec, uint32_t i) {
 template <typename T>
 T* IA_l_vec(LSVec<T>* vec, uint32_t i) {
 	VM::operations += 2;
-	if (vec->refs == 0) {
-		delete vec;
+	if (vec == nullptr) {
 		return nullptr;
 	}
 	return i < vec->size() ? vec->data()+i : nullptr;

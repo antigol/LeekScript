@@ -46,6 +46,7 @@ public:
 	void test_functions();
 	void test_loops();
 	void test_classes();
+	void test_tuple();
 };
 
 #endif

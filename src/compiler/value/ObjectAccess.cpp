@@ -134,10 +134,18 @@ jit_value_t ObjectAccess::compile(Compiler& c) const
 	if (object->type.raw_type == &RawType::TUPLE) {
 		ulong index = stoul(field->content);
 
-		jit_value_t ptr = jit_insn_address_of(c.F, object->compile(c));
-		jit_type_t ty = object->type.jit_type();
-		return jit_insn_load_relative(c.F, ptr, jit_type_get_offset(ty, index), object->type.element_type(index).jit_type());
+		jit_value_t tuple_ptr = jit_insn_address_of(c.F, object->compile(c));
+		jit_type_t tuple_jit_type = object->type.jit_type();
+		jit_value_t res = jit_insn_load_relative(c.F, tuple_ptr, jit_type_get_offset(tuple_jit_type, index), object->type.element_type(index).jit_type());
 
+		for (size_t i = 0; i < object->type.elements_types.size(); ++i) {
+			if (i == index) continue;
+
+			jit_value_t el = jit_insn_load_relative(c.F, tuple_ptr, jit_type_get_offset(tuple_jit_type, i), object->type.element_type(i).jit_type());
+			Compiler::compile_delete_temporary(c.F, el, object->type.element_type(i));
+		}
+
+		return Compiler::compile_convert(c.F, res, object->type.element_type(index), type);
 	} else {
 		assert(0);
 	}

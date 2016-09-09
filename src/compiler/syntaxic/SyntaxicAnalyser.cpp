@@ -406,6 +406,7 @@ Value* SyntaxicAnalyser::eatSimpleExpression(bool pipe_opened, bool set_opened) 
 			e = new Tuple();
 		} else {
 			e = eatExpression();
+			if (e == nullptr) return nullptr;
 
 			if (t->type == TokenType::COMMA) {
 				eat();

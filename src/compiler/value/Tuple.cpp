@@ -67,7 +67,7 @@ jit_value_t Tuple::compile(Compiler& c) const
 	jit_value_t ptr = jit_insn_address_of(c.F, val);
 	for (size_t i = 0; i < elements.size(); ++i) {
 		jit_value_t el = elements[i]->compile(c);
-		el = Compiler::compile_move_inc(c.F, el, type.element_type(i));
+		el = Compiler::compile_move(c.F, el, type.element_type(i));
 		jit_insn_store_relative(c.F, ptr, jit_type_get_offset(ty, i), el);
 	}
 	return val;

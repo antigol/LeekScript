@@ -32,6 +32,7 @@ int Test::all() {
 //	test_references();
 //	test_operations();
 //	test_system();
+	test_tuple();
 
 	double elapsed_secs = double(clock() - begin) / CLOCKS_PER_SEC;
 	int errors = (total - success_count);
