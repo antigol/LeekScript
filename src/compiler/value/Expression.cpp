@@ -101,6 +101,7 @@ unsigned Expression::line() const {
 	return 0;
 }
 
+// DONE 1
 void Expression::analyse_help(SemanticAnalyser* analyser)
 {
 	// No operator : just analyse v1 and return
@@ -128,6 +129,14 @@ void Expression::analyse_help(SemanticAnalyser* analyser)
 
 		v1->analyse(analyser);
 		v2->analyse(analyser);
+
+		if (!Type::intersection(v1->type, Type::ARITHMETIC, &v1->type)) {
+			add_error(analyser, SemanticException::MUST_BE_ARITHMETIC_TYPE);
+		}
+		if (!Type::intersection(v2->type, Type::ARITHMETIC, &v2->type)) {
+			add_error(analyser, SemanticException::MUST_BE_ARITHMETIC_TYPE);
+		}
+
 		type = Type::UNKNOWN;
 
 	} else if (op->type == TokenType::DOUBLE_EQUAL
@@ -139,13 +148,30 @@ void Expression::analyse_help(SemanticAnalyser* analyser)
 
 		v1->analyse(analyser);
 		v2->analyse(analyser);
+
+		if (!Type::intersection(v1->type, Type::LOGIC, &v1->type)) {
+			add_error(analyser, SemanticException::MUST_BE_LOGIC_TYPE);
+		}
+		if (!Type::intersection(v2->type, Type::LOGIC, &v2->type)) {
+			add_error(analyser, SemanticException::MUST_BE_LOGIC_TYPE);
+		}
+
 		type = Type::BOOLEAN;
 
 	} else if (op->type == TokenType::AND
-			   || op->type == TokenType::OR) {
+			   || op->type == TokenType::OR
+			   || op->type == TokenType::XOR) {
 
 		v1->analyse(analyser);
 		v2->analyse(analyser);
+
+		if (!Type::intersection(v1->type, Type::LOGIC, &v1->type)) {
+			add_error(analyser, SemanticException::MUST_BE_LOGIC_TYPE);
+		}
+		if (!Type::intersection(v2->type, Type::LOGIC, &v2->type)) {
+			add_error(analyser, SemanticException::MUST_BE_LOGIC_TYPE);
+		}
+
 		type = Type::BOOLEAN;
 
 	} else {
@@ -183,31 +209,20 @@ void Expression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
 		Type fiber = type.fiber_conversion();
-		v1->reanalyse(analyser, fiber); // (a...) tricky : v1->type might be updated from fonction argument modification
-		v2->reanalyse(analyser, fiber);
 
-		Type type1, type2;
-		if (!Type::intersection(v1->type, Type::ARITHMETIC, &type1)) {
-			v1->add_error(analyser, SemanticException::MUST_BE_ARITHMETIC_TYPE);
-		}
-		if (!Type::intersection(v2->type, Type::ARITHMETIC, &type2)) {
-			v2->add_error(analyser, SemanticException::MUST_BE_ARITHMETIC_TYPE);
-		}
-
-		Type result;
-		if (!Type::intersection(type1, type2, &result)) {
+		if (!Type::intersection(v2->type, fiber, &v2->type)) {
 			add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
 		}
 
-		v1->reanalyse(analyser, result);
-		v2->reanalyse(analyser, result);
+		do {
+			v1->reanalyse(analyser, v2->type);
+			v2->reanalyse(analyser, v1->type);
+		} while (analyser->errors.empty() && v1->type != v2->type);
 
-		// (...z) therefore this instruction is useful
-		if (!Type::intersection(type, result.image_conversion(), &type)) {
+		if (!Type::intersection(type, v1->type.image_conversion(), &type)) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
 
-		// TODO do {} while() here too ?
 	} else if (op->type == TokenType::DOUBLE_EQUAL
 			   || op->type == TokenType::DIFFERENT
 			   || op->type == TokenType::LOWER
@@ -224,13 +239,14 @@ void Expression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type
 		} while (analyser->errors.empty() && v1->type != v2->type);
 
 	} else if (op->type == TokenType::AND
-			   || op->type == TokenType::OR) {
+			   || op->type == TokenType::OR
+			   || op->type == TokenType::XOR) {
 		if (!Type::intersection(type, req_type)) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
 
-		v1->reanalyse(analyser, Type::LOGIC);
-		v2->reanalyse(analyser, Type::LOGIC);
+		v1->reanalyse(analyser, Type::UNKNOWN);
+		v2->reanalyse(analyser, Type::UNKNOWN);
 
 	} else {
 		assert(0);
@@ -281,7 +297,8 @@ void Expression::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 		v2->finalize(analyser, v1->type);
 
 	} else if (op->type == TokenType::AND
-			   || op->type == TokenType::OR) {
+			   || op->type == TokenType::OR
+			   || op->type == TokenType::XOR) {
 		if (!Type::intersection(type, req_type)) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
@@ -395,7 +412,8 @@ jit_value_t Expression::compile(Compiler& c) const
 		return res;
 
 	} else if (op->type == TokenType::AND
-			   || op->type == TokenType::OR) {
+			   || op->type == TokenType::OR
+			   || op->type == TokenType::XOR) {
 		// v1.type != v2.type
 		// type = boolean
 		jit_value_t x = Compiler::compile_is_true_delete_temporary(c.F, v1->compile(c), v1->type);
@@ -415,6 +433,11 @@ jit_value_t Expression::compile(Compiler& c) const
 				jit_insn_branch_if(c.F, x, &shortcut);
 				jit_value_t y = Compiler::compile_is_true_delete_temporary(c.F, v2->compile(c), v2->type);
 				jit_insn_store(c.F, res, y);
+				break;
+			}
+			case TokenType::XOR: {
+				jit_value_t y = Compiler::compile_is_true_delete_temporary(c.F, v2->compile(c), v2->type);
+				jit_insn_store(c.F, res, jit_insn_xor(c.F, x, y));
 				break;
 			}
 			default: {

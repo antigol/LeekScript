@@ -262,6 +262,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const
 			args.push_back(arguments[i]->compile(c));
 			args_types.push_back(function->type.argument_type(i).jit_type());
 
+			// TODO this is the job of the function
 			if (function->type.argument_type(i).must_manage_memory()) {
 				args[i] = VM::move_inc_obj(c.F, args[i]);
 			}
@@ -276,7 +277,7 @@ jit_value_t FunctionCall::compile(Compiler& c) const
 			jit_insn_store(c.F, res, val);
 		}
 
-		// Destroy temporary arguments
+		// TODO this is the job of the function
 		for (size_t i = 0; i < arguments.size(); ++i) {
 			if (function->type.argument_type(i).must_manage_memory()) {
 				VM::delete_ref(c.F, args[i]);

@@ -254,7 +254,7 @@ jit_value_t Compiler::compile_is_true_delete_temporary(jit_function_t F, jit_val
 	if (type.raw_type->nature() == Nature::LSVALUE) {
 		return call_native(F, LS_I32, { LS_POINTER }, (void*) CP_is_true, { v });
 	}
-	return v;
+	return jit_insn_to_bool(F, v);
 }
 
 }

@@ -1131,10 +1131,14 @@ TypeName* SyntaxicAnalyser::eatTypeName() {
 			tn->elements.push_back(eatTypeName());
 		}
 
-		if (t->type == TokenType::BIT_SHIFT_RIGHT) {
+		if (t->content == ">>") {
 			t->type = TokenType::GREATER;
 			t->content = ">";
 			t->size = 1;
+		} else if (t->content == ">>>") {
+			t->type = TokenType::BIT_SHIFT_RIGHT;
+			t->content = ">>";
+			t->size = 2;
 		} else {
 			eat(TokenType::GREATER);
 		}

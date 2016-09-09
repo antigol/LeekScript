@@ -44,7 +44,7 @@ static vector<vector<string>> type_literals = {
 	{ "->", "=>", "→" }, { "," }, { ":" }, { "if" }, { "else" }, { "match" }, { "for" }, { "in" },
 	{ "while" }, { "do" }, { "?" },
 
-	{ "or", "||" }, { "and", "&&" }, { "xor" },
+	{ "or", "||" }, { "and", "&&" }, { "xor", "^^" },
 
 	{ "." }, { "|" },
 
