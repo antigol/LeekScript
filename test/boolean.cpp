@@ -7,8 +7,8 @@ void Test::test_booleans() {
 //	success("new Boolean()", "false");
 	success("true", "true");
 	success("false", "false");
-//	success("!true", "false");
-//	success("!false", "true");
+	success("!true", "false");
+	success("!false", "true");
 	success("true and true", "true");
 	success("true and false", "false");
 	success("false and true", "false");

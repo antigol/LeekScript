@@ -29,8 +29,8 @@ void Test::test_general() {
 //	success("{}", "{}");
 //	success("{a: 12}", "{a: 12}");
 	success("{;}", "<void>");
-//	success("return 12", "12");
-//	success("return", "<void>");
+	success("return 12", "12");
+	success("return", "<void>");
 	success("'a' 'b' 'c'", "'c'");
 
 	header("Variables");

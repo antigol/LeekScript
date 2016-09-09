@@ -31,17 +31,17 @@ void Test::test_loops() {
 	 * While loops
 	 */
 	header("While loops");
-//	success("let i = 0 while (i < 10) { i++ } i", "10");
+	success("let i = 0 while (i < 10) { i++ } i", "10");
 //	success("let i = 0 let s = 0 while (i < 10) { s += i i++ } s", "45");
-//	success("let i = 0 while (i < 100) { i++ if (i == 50) break } i", "50");
-//	success("let i = 0 let a = 0 while (i < 10) { i++ if (i < 8) continue a++ } a", "3");
+	success("let i = 0 while (i < 100) { i++ if (i == 50) break } i", "50");
+	success("let i = 0 let a = 0 while (i < 10) { i++ if (i < 8) continue a++ } a", "3");
 	success("while (true) { break }", "<void>");
 
 	/*
 	 * For loops
 	 */
 	header("For loops");
-//	success("for let i = 0; ; i++ {}", "null");
+//	success("for let i = 0; ; i++ {}", "<void>");
 	success("for let i = 0; false; i++ {}", "<void>");
 	/*
 	success("for let i = 0; i < 10; i++ {}", "null");

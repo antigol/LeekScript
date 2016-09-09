@@ -31,9 +31,8 @@ unsigned PostfixExpression::line() const {
 void PostfixExpression::analyse_help(SemanticAnalyser* analyser)
 {
 	expression->analyse(analyser);
-	LeftValue* left = dynamic_cast<LeftValue*>(expression);
 
-	if (!left->isLeftValue()) {
+	if (!expression->isLeftValue()) {
 		add_error(analyser, SemanticException::VALUE_MUST_BE_A_LVALUE);
 	}
 	if (!Type::intersection(expression->left_type, Type::ARITHMETIC, &expression->left_type)) {
@@ -49,9 +48,7 @@ void PostfixExpression::reanalyse_help(SemanticAnalyser* analyser, const Type& r
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 
-	LeftValue* left = dynamic_cast<LeftValue*>(expression);
-	assert(left);
-	left->reanalyse_l(analyser, Type::UNKNOWN, type);
+	expression->reanalyse_l(analyser, Type::UNKNOWN, type);
 	type = expression->left_type;
 }
 
@@ -61,38 +58,34 @@ void PostfixExpression::finalize_help(SemanticAnalyser* analyser, const Type& re
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 
-	LeftValue* left = dynamic_cast<LeftValue*>(expression);
-	assert(left);
-	left->finalize_l(analyser, Type::UNKNOWN, type);
-	type = left->left_type;
+	expression->finalize_l(analyser, Type::UNKNOWN, type);
+	type = expression->left_type;
 }
 
 jit_value_t PostfixExpression::compile(Compiler& c) const
 {
-	LeftValue* left = dynamic_cast<LeftValue*>(expression);
-	assert(left);
-	jit_value_t x = left->compile_l(c);
-	jit_value_t y = jit_insn_load_relative(c.F, x, 0, left->left_type.jit_type());
+	jit_value_t ptr = expression->compile_l(c);
+	jit_value_t val = jit_insn_load_relative(c.F, ptr, 0, expression->left_type.jit_type());
 
 	switch (operatorr->type) {
 		case TokenType::PLUS_PLUS: {
-			if (left->left_type.raw_type->nature() == Nature::VALUE) {
-				jit_value_t old = jit_insn_load(c.F, y);
-				jit_value_t sum = jit_insn_add(c.F, y, VM::create_i32(c.F, 1));
-				jit_insn_store_relative(c.F, x, 0, sum);
+			if (expression->left_type.raw_type->nature() == Nature::VALUE) {
+				jit_value_t old = jit_insn_load(c.F, val);
+				jit_value_t res = jit_insn_add(c.F, val, VM::create_i32(c.F, 1));
+				jit_insn_store_relative(c.F, ptr, 0, res);
 				return old;
 			} else {
-				return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) &LSVar::ls_postinc, { y });
+				return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_postinc, { val });
 			}
 		}
 		case TokenType::MINUS_MINUS: {
 			if (expression->type.raw_type->nature() == Nature::VALUE) {
-				jit_value_t old = jit_insn_load(c.F, y);
-				jit_value_t sum = jit_insn_sub(c.F, y, VM::create_i32(c.F, 1));
-				jit_insn_store_relative(c.F, x, 0, sum);
+				jit_value_t old = jit_insn_load(c.F, val);
+				jit_value_t res = jit_insn_sub(c.F, val, VM::create_i32(c.F, 1));
+				jit_insn_store_relative(c.F, ptr, 0, res);
 				return old;
 			} else {
-				return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) &LSVar::ls_postdec, { y });
+				return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_postdec, { val });
 			}
 		}
 		default: break;
