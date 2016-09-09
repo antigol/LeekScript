@@ -78,7 +78,7 @@ unsigned Function::line() const {
 	return 0;
 }
 
-// DONE 1
+// DONE 2
 void Function::analyse_help(SemanticAnalyser* analyser)
 {
 	type = Type::FUNCTION;

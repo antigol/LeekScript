@@ -27,7 +27,7 @@ unsigned PostfixExpression::line() const {
 	return 0;
 }
 
-// DONE 1
+// DONE 2
 void PostfixExpression::analyse_help(SemanticAnalyser* analyser)
 {
 	expression->analyse(analyser);
@@ -36,10 +36,11 @@ void PostfixExpression::analyse_help(SemanticAnalyser* analyser)
 	if (!left->isLeftValue()) {
 		add_error(analyser, SemanticException::VALUE_MUST_BE_A_LVALUE);
 	}
-	type = expression->left_type;
-	if (!Type::intersection(type, Type::ARITHMETIC, &type)) {
+	if (!Type::intersection(expression->left_type, Type::ARITHMETIC, &expression->left_type)) {
 		add_error(analyser, SemanticException::MUST_BE_ARITHMETIC_TYPE);
 	}
+
+	type = expression->left_type;
 }
 
 void PostfixExpression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)

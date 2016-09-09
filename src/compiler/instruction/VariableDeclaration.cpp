@@ -40,7 +40,7 @@ unsigned VariableDeclaration::line() const
 	return 0;
 }
 
-// DONE 1
+// DONE 2
 void VariableDeclaration::analyse_help(SemanticAnalyser* analyser)
 {
 	Type var_type = Type::UNKNOWN;

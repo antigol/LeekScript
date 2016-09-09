@@ -36,7 +36,7 @@ unsigned Array::line() const {
 	return 0;
 }
 
-// DONE 1
+// DONE 2
 void Array::analyse_help(SemanticAnalyser* analyser)
 {
 	for (Value* ex : expressions) {

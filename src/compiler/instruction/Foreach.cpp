@@ -48,7 +48,7 @@ unsigned Foreach::line() const
 	return 0;
 }
 
-// DONE 1
+// DONE 2
 void Foreach::analyse_help(SemanticAnalyser* analyser)
 {
 	if (type.raw_type != &RawType::VEC) {

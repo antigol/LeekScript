@@ -36,7 +36,7 @@ unsigned FunctionCall::line() const {
 	return 0;
 }
 
-// DONE 1
+// DONE 2
 void FunctionCall::analyse_help(SemanticAnalyser* analyser)
 {
 	ObjectAccess* oa = dynamic_cast<ObjectAccess*>(function);

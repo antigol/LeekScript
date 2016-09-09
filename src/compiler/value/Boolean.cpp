@@ -24,6 +24,7 @@ unsigned Boolean::line() const {
 	return 0;
 }
 
+// DONE 2
 void Boolean::analyse_help(SemanticAnalyser*)
 {
 	constant = true;

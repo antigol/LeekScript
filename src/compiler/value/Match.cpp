@@ -51,7 +51,7 @@ unsigned Match::line() const {
 	return 0;
 }
 
-// DONE 1
+// DONE 2
 void Match::analyse_help(SemanticAnalyser* analyser)
 {
 	value->analyse(analyser);
@@ -102,7 +102,7 @@ void Match::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 				}
 			}
 		}
-	} while (new_type != old_type);
+	} while (new_type != old_type && analyser->errors.empty());
 
 	Type ret_type = type;
 	do {
@@ -114,7 +114,7 @@ void Match::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 				add_error(analyser, SemanticException::INCOMPATIBLE_TYPES);
 			}
 		}
-	} while (ret_type != type);
+	} while (ret_type != type && analyser->errors.empty());
 }
 
 void Match::finalize_help(SemanticAnalyser* analyser, const Type& req_type)

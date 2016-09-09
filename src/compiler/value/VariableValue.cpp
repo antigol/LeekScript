@@ -30,7 +30,7 @@ unsigned VariableValue::line() const {
 	return token->line;
 }
 
-// DONE 1
+// DONE 2
 void VariableValue::analyse_help(SemanticAnalyser* analyser)
 {
 	var = analyser->get_var(token);

@@ -36,6 +36,7 @@ unsigned Object::line() const {
 	return 0;
 }
 
+// DONE 0
 void Object::analyse_help(SemanticAnalyser* analyser)
 {
 	// TODO

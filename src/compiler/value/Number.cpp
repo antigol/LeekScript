@@ -40,6 +40,7 @@ unsigned Number::line() const {
 	return token->line;
 }
 
+// DONE 2
 void Number::analyse_help(SemanticAnalyser*)
 {
 	constant = true;

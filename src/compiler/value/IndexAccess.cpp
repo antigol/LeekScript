@@ -45,7 +45,7 @@ bool IndexAccess::isLeftValue() const
 	return key2 == nullptr && container->isLeftValue();
 }
 
-// DONE 1
+// DONE 2
 void IndexAccess::analyse_help(SemanticAnalyser* analyser)
 {
 	container->analyse(analyser);

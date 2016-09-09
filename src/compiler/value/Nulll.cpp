@@ -20,6 +20,7 @@ unsigned Nulll::line() const {
 	return 0;
 }
 
+// DONE 2
 void Nulll::analyse_help(SemanticAnalyser*)
 {
 	constant = true;

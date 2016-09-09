@@ -68,8 +68,23 @@ public:
 	static std::string tabs(int indent);
 
 protected:
+	/* Obligations
+	 *  - init type
+	 *  - call analyser methods (add_var enter_block...)
+	 */
 	virtual void analyse_help(SemanticAnalyser* analyser) = 0;
+
+	/* Obligations
+	 *  - do NOT call analyser methods (add_var enter_block...)
+	 *  - new type must blong in the intersection of old type and req_type
+	 */
 	virtual void reanalyse_help(SemanticAnalyser* analyser, const Type& req_type) = 0;
+
+	/* Obligations
+	 *  - do NOT call analyser methods (add_var enter_block...)
+	 *  - new type must blong in the intersection of old type and req_type
+	 *  - new type must be pure
+	 */
 	virtual void finalize_help(SemanticAnalyser* analyser, const Type& req_type) = 0;
 
 	bool analysed;

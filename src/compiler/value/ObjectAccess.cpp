@@ -32,6 +32,7 @@ unsigned ObjectAccess::line() const {
 	return 0;
 }
 
+// DONE 0
 void ObjectAccess::analyse_help(SemanticAnalyser* analyser)
 {
 	// TODO

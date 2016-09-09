@@ -27,6 +27,7 @@ unsigned Set::line() const {
 	return 0;
 }
 
+// DONE 0
 void Set::analyse_help(SemanticAnalyser* analyser)
 {
 	// TODO

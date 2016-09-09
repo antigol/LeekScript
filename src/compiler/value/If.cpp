@@ -39,10 +39,13 @@ unsigned If::line() const {
 	return 0;
 }
 
-// DONE 1
+// DONE 2
 void If::analyse_help(SemanticAnalyser* analyser)
 {
 	condition->analyse(analyser);
+	if (!Type::intersection(condition->type, Type::LOGIC, &condition->type)) {
+		add_error(analyser, SemanticException::MUST_BE_LOGIC_TYPE);
+	}
 
 	then->analyse(analyser);
 
@@ -65,7 +68,7 @@ void If::analyse_help(SemanticAnalyser* analyser)
 
 void If::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-	condition->reanalyse(analyser, Type::LOGIC);
+	condition->reanalyse(analyser, Type::UNKNOWN);
 
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
@@ -84,7 +87,7 @@ redo:
 			Type old_type = type;
 			if (!Type::intersection(then->type, elze->type, &type)) {
 				type = Type::VOID;
-			} else if (old_type != type) {
+			} else if (old_type != type && analyser->errors.empty()) {
 				goto redo;
 			}
 		}

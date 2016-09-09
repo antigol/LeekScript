@@ -38,7 +38,7 @@ unsigned For::line() const
 	return 0;
 }
 
-// DONE 1
+// DONE 2
 void For::analyse_help(SemanticAnalyser* analyser)
 {
 	if (type.raw_type != &RawType::VEC) {

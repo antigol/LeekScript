@@ -26,7 +26,7 @@ unsigned Return::line() const
 	return 0;
 }
 
-// DONE 1
+// DONE 2
 void Return::analyse_help(SemanticAnalyser* analyser)
 {
 	function = analyser->current_function();

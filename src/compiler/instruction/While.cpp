@@ -26,10 +26,14 @@ unsigned While::line() const
 	return 0;
 }
 
-// DONE 1
+// DONE 2
 void While::analyse_help(SemanticAnalyser* analyser)
 {
 	condition->analyse(analyser);
+	if (!Type::intersection(condition->type, Type::LOGIC, &condition->type)) {
+		add_error(analyser, SemanticException::MUST_BE_LOGIC_TYPE);
+	}
+
 	analyser->enter_loop();
 	body->analyse(analyser);
 	analyser->leave_loop();
@@ -41,7 +45,7 @@ void While::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 	if (!Type::intersection(type, req_type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-	condition->reanalyse(analyser, Type::LOGIC);
+	condition->reanalyse(analyser, Type::UNKNOWN);
 	body->reanalyse(analyser, Type::VOID);
 }
 
@@ -50,7 +54,7 @@ void While::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 	if (!Type::intersection(type, req_type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-	condition->finalize(analyser, Type::LOGIC);
+	condition->finalize(analyser, Type::UNKNOWN);
 	body->finalize(analyser, Type::VOID);
 }
 

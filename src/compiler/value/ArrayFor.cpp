@@ -22,6 +22,7 @@ unsigned ArrayFor::line() const {
 	return 0;
 }
 
+// DONE 2
 void ArrayFor::analyse_help(SemanticAnalyser* analyser)
 {
 	forr->type = Type::VEC;
@@ -31,13 +32,19 @@ void ArrayFor::analyse_help(SemanticAnalyser* analyser)
 
 void ArrayFor::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-	forr->reanalyse(analyser, req_type);
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	forr->reanalyse(analyser, type);
 	type = forr->type;
 }
 
 void ArrayFor::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
-	forr->finalize(analyser, req_type);
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	forr->finalize(analyser, type);
 	type = forr->type;
 	assert(type.is_pure() || !analyser->errors.empty());
 }

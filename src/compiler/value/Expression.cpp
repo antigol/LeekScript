@@ -101,7 +101,7 @@ unsigned Expression::line() const {
 	return 0;
 }
 
-// DONE 1
+// DONE 2
 void Expression::analyse_help(SemanticAnalyser* analyser)
 {
 	// No operator : just analyse v1 and return
@@ -182,8 +182,13 @@ void Expression::analyse_help(SemanticAnalyser* analyser)
 void Expression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
 	DBOUT(cout << "EX wr type=" << type << " req=" << req_type << endl);
+
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+
 	if (op == nullptr) {
-		v1->reanalyse(analyser, req_type);
+		v1->reanalyse(analyser, type);
 		type = v1->type;
 		return;
 	}
@@ -196,7 +201,7 @@ void Expression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type
 		do {
 			old_left = l1->left_type;
 			old_right = v2->type;
-			l1->reanalyse_l(analyser, req_type, v2->type);
+			l1->reanalyse_l(analyser, type, v2->type);
 			type = l1->type;
 			v2->reanalyse(analyser, l1->left_type);
 		} while (analyser->errors.empty() && (old_left != l1->left_type || old_right != v2->type));
@@ -205,9 +210,7 @@ void Expression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type
 			   || op->type == TokenType::MINUS
 			   || op->type == TokenType::TIMES
 			   || op->type == TokenType::DIVIDE) {
-		if (!Type::intersection(type, req_type, &type)) {
-			add_error(analyser, SemanticException::TYPE_MISMATCH);
-		}
+
 		Type fiber = type.fiber_conversion();
 
 		if (!Type::intersection(v2->type, fiber, &v2->type)) {
@@ -229,9 +232,6 @@ void Expression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type
 			   || op->type == TokenType::GREATER
 			   || op->type == TokenType::LOWER_EQUALS
 			   || op->type == TokenType::GREATER_EQUALS) {
-		if (!Type::intersection(type, req_type)) {
-			add_error(analyser, SemanticException::TYPE_MISMATCH);
-		}
 
 		do {
 			v1->reanalyse(analyser, v2->type);
@@ -241,9 +241,6 @@ void Expression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type
 	} else if (op->type == TokenType::AND
 			   || op->type == TokenType::OR
 			   || op->type == TokenType::XOR) {
-		if (!Type::intersection(type, req_type)) {
-			add_error(analyser, SemanticException::TYPE_MISMATCH);
-		}
 
 		v1->reanalyse(analyser, Type::UNKNOWN);
 		v2->reanalyse(analyser, Type::UNKNOWN);

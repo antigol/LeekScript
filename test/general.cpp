@@ -80,6 +80,7 @@ void Test::test_general() {
 	success("if 1 1", "<void>");
 	success("let x = if false return 42 else 12; x", "12");
 	success("let x = if true 12 else return 42; x", "12");
+	success("let x = { let y = 1 y = 'a' y } x", "'a'");
 
 
 //	success("'foo' ?? 'bar'", "'foo'");

@@ -37,7 +37,7 @@ unsigned Block::line() const {
 	return 0;
 }
 
-// DONE 1
+// DONE 2
 void Block::analyse_help(SemanticAnalyser* analyser)
 {
 	analyser->enter_block(this);
@@ -66,6 +66,11 @@ void Block::analyse_help(SemanticAnalyser* analyser)
 
 void Block::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 {
+	// tip! Intersection of any type with UNREACHABLE gives UNREACHABLE
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+
 	for (size_t i = 0; i < instructions.size(); ++i) {
 		Value* ins = instructions[i];
 
@@ -79,7 +84,7 @@ void Block::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 					}
 				}
 			} else {
-				ins->reanalyse(analyser, req_type);
+				ins->reanalyse(analyser, type);
 			}
 			type = ins->type;
 		} else {
@@ -95,14 +100,15 @@ void Block::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 		function->type.set_return_type(type);
 	}
 
-	// tip! Intersection of any type with UNREACHABLE gives UNREACHABLE
-	if (!Type::intersection(type, req_type)) {
-		add_error(analyser, SemanticException::TYPE_MISMATCH);
-	}
 }
 
 void Block::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 {
+	// tip! Intersection of any type with UNREACHABLE gives UNREACHABLE
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+
 	for (size_t i = 0; i < instructions.size(); ++i) {
 		Value* ins = instructions[i];
 
@@ -114,7 +120,7 @@ void Block::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 					function->type.set_return_type(ins->type);
 				}
 			} else {
-				ins->finalize(analyser, req_type);
+				ins->finalize(analyser, type);
 			}
 			type = ins->type;
 		} else {
@@ -126,9 +132,6 @@ void Block::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 		}
 	}
 
-	if (!Type::intersection(type, req_type)) {
-		add_error(analyser, SemanticException::TYPE_MISMATCH);
-	}
 	assert(type.is_pure() || !analyser->errors.empty());
 }
 

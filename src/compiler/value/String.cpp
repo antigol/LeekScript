@@ -24,6 +24,7 @@ unsigned String::line() const {
 	return token->line;
 }
 
+// DONE 2
 void String::analyse_help(SemanticAnalyser*)
 {
 	constant = true;

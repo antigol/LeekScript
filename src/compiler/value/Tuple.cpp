@@ -26,6 +26,7 @@ unsigned Tuple::line() const
 	return 0;
 }
 
+// DONE 2
 void Tuple::analyse_help(SemanticAnalyser* analyser)
 {
 	type = Type::TUPLE;

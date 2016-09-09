@@ -44,6 +44,7 @@ unsigned Map::line() const {
 	return 0;
 }
 
+// DONE 0
 void Map::analyse_help(SemanticAnalyser* analyser)
 {
 	// TODO
