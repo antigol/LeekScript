@@ -13,8 +13,8 @@ RawType::RawType(const string& name, const string& classname, const string& json
 
 const RawType RawType::UNKNOWN    ("?",           "",         "",         0,                nullptr,           Nature::UNKNOWN,  -200);
 const RawType RawType::VOID       ("void",        "",         "void",     0,                jit_type_void,     Nature::VOID,     11);
-const RawType RawType::UNREACHABLE("unreachable", "",         "",         0,                nullptr,           Nature::VOID,     12);
-const RawType RawType::LSVALUE    ("lsvalue",     "",         "",         sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  -100);
+const RawType RawType::UNREACHABLE("unr",         "",         "",         0,                nullptr,           Nature::VOID,     12);
+const RawType RawType::LSVALUE    ("lsval",       "",         "",         sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  -100);
 const RawType RawType::BOOLEAN    ("bool",        "Boolean",  "boolean",  sizeof (int32_t), jit_type_int,      Nature::VALUE,    0);
 const RawType RawType::I32        ("i32",         "Number",   "number",   sizeof (int32_t), jit_type_int,      Nature::VALUE,    1);
 const RawType RawType::F64        ("f64",         "Number",   "number",   sizeof (double),  jit_type_float64,  Nature::VALUE,    2);
@@ -864,52 +864,41 @@ bool Type::operator <(const Type& type) const
 	return ph < type.ph;
 }
 
-ostream& operator << (ostream& os, const Type& type) {
-
-	if (type == Type::VOID) {
-		return os << "{void}" << flush;
-	}
-	if (type == Type::UNREACHABLE) {
-		return os << "{unr}" << flush;
-	}
-	if (type.raw_type == &RawType::UNKNOWN && !type.alternative_types.empty()) {
+ostream& operator << (ostream& os, const Type& type)
+{
+	os << type.raw_type->name();
+	if (!type.alternative_types.empty()) {
 		os << "{";
-		for (auto it = type.alternative_types.begin(); it != type.alternative_types.end(); ++it) {
-			if (it != type.alternative_types.begin()) os << "|";
-			os << *it;
+		for (auto i = type.alternative_types.begin(); i != type.alternative_types.end(); ++i) {
+			if (i != type.alternative_types.begin()) os << "|";
+			os << *i;
 		}
 		os << "}";
-		if (type.ph > 0) os << "_" << type.ph;
-		return os << flush;
 	}
-
-	os << "{" << type.raw_type->name() << RawType::get_nature_symbol(type.raw_type->nature()) << flush;
-
-	if (type.raw_type == &RawType::FUNCTION) {
-		os << " (";
-		for (size_t t = 0; t < type.arguments_types.size(); ++t) {
-			if (t > 0) os << ", ";
-			os << type.arguments_types[t];
+	if (!type.elements_types.empty()) {
+		os << "<";
+		for (size_t i = 0; i < type.elements_types.size(); ++i) {
+			if (i > 0) os << ",";
+			os << type.elements_types[i];
 		}
-		os << ") → " << type.return_type();
+		os << ">";
 	}
-	if (type.raw_type == &RawType::VEC || type.raw_type == &RawType::SET) {
-		os << " of " << type.element_type(0);
-	}
-	if (type.raw_type == &RawType::MAP) {
-		os << " of " << type.element_type(0) << " → " << type.element_type(1);
-	}
-	if (type.raw_type == &RawType::TUPLE) {
-		os << " of (";
-		for (size_t t = 0; t < type.elements_types.size(); ++t) {
-			if (t > 0) os << ", ";
-			os << type.elements_types[t];
+	if (!type.arguments_types.empty() || !type.return_types.empty()) {
+		os << "(";
+		for (size_t i = 0; i < type.arguments_types.size(); ++i) {
+			if (i > 0) os << ",";
+			os << type.arguments_types[i];
 		}
 		os << ")";
+		if (!type.return_types.empty()) {
+			os << "->";
+			for (size_t i = 0; i < type.return_types.size(); ++i) {
+				if (i > 0) os << ",";
+				os << type.return_types[i];
+			}
+		}
 	}
-	os << "}";
-	if (type.ph > 0) os << "_" << type.ph;
-	return os << flush;
+	return os;
 }
 
 

@@ -83,10 +83,12 @@ void FunctionCall::reanalyse_help(SemanticAnalyser* analyser, const Type& req_ty
 
 		while (true) {
 			// get methods
-			methods = analyser->get_method(oa->field->content, req_method_type);
-			if (methods.empty()) {
-				add_error(analyser, SemanticException::METHOD_NOT_FOUND);
-				return;
+			if (methods.size() != 1 || !methods[0].type.is_pure()) {
+				methods = analyser->get_method(oa->field->content, req_method_type);
+				if (methods.empty()) {
+					add_error(analyser, SemanticException::METHOD_NOT_FOUND);
+					return;
+				}
 			}
 
 			// compute generic
@@ -162,43 +164,47 @@ void FunctionCall::finalize_help(SemanticAnalyser* analyser, const Type& req_typ
 	if (oa != nullptr) {
 
 		oa->object->finalize(analyser, Type::UNKNOWN);
-		Type req_type = Type::FUNCTION;
-		req_type.set_return_type(type.fiber_conversion());
-		req_type.add_argument_type(oa->object->type);
+		Type method_type = Type::FUNCTION;
+		method_type.set_return_type(type.fiber_conversion());
+		method_type.add_argument_type(oa->object->type);
 		for (size_t i = 0; i < arguments.size(); ++i) {
 			Value* a = arguments[i];
-			req_type.add_argument_type(a->type);
+			method_type.add_argument_type(a->type);
 		}
-		methods = analyser->get_method(oa->field->content, req_type);
-		if (methods.empty()) {
-			add_error(analyser, SemanticException::METHOD_NOT_FOUND);
-			return;
+		if (methods.size() != 1 || !methods[0].type.is_pure()) {
+			methods = analyser->get_method(oa->field->content, method_type);
+			if (methods.empty()) {
+				add_error(analyser, SemanticException::METHOD_NOT_FOUND);
+				return;
+			}
 		}
-		Type method_type = methods[0].type;
-
-		method_type.set_argument_type(0, oa->object->type);
-		if (!Type::intersection(method_type, methods[0].type, &method_type)) {
-			add_error(analyser, SemanticException::METHOD_NOT_FOUND);
-		}
+		method_type = methods[0].type;
 
 		for (size_t i = 0; i < arguments.size(); ++i) {
 			Value* a = arguments[i];
 			a->finalize(analyser, method_type.argument_type(i + 1));
 			method_type.set_argument_type(i + 1, a->type);
+
+			if (methods.size() != 1 || !methods[0].type.is_pure()) {
+				methods = analyser->get_method(oa->field->content, method_type);
+				if (methods.empty()) {
+					add_error(analyser, SemanticException::METHOD_NOT_FOUND);
+					return;
+				}
+			}
+			method_type = methods[0].type;
 		}
-		if (!Type::intersection(method_type, methods[0].type, &method_type)) {
-			add_error(analyser, SemanticException::METHOD_NOT_FOUND);
-		}
+
+		method_type.make_it_pure();
+		methods[0].type = method_type;
+		oa->type = method_type; // only for debug
 
 		if (!Type::intersection(type, method_type.return_type().image_conversion(), &type)) {
-			add_error(analyser, SemanticException::TYPE_MISMATCH);
+			add_error(analyser, SemanticException::METHOD_NOT_FOUND);
 		}
-		oa->type = method_type; // only for debug
 		type.make_it_pure();
 
-		methods[0].type = method_type;
 		assert(method_type.is_pure() || !analyser->errors.empty());
-
 	} else {
 
 		Type req_fun_type = function->type;

@@ -22,7 +22,7 @@ public:
 
 	void print(std::ostream&) const;
 
-	Type getInternalType(SemanticAnalyser*) const;
+	Type getInternalType() const;
 };
 
 }

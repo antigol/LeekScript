@@ -86,14 +86,18 @@ void Function::analyse_help(SemanticAnalyser* analyser)
 
 	for (size_t i = 0; i < arguments.size(); ++i) {
 		if (i < typeNames.size() && typeNames[i]) {
-			type.set_argument_type(i, typeNames[i]->getInternalType(analyser));
+			Type t = typeNames[i]->getInternalType();
+			if (t == Type::UNKNOWN) add_error(analyser, SemanticException::UNKNOWN_TYPE);
+			type.set_argument_type(i, t);
 		} else {
 			type.set_argument_type(i, Type::UNKNOWN);
 		}
 	}
 
 	if (returnType) {
-		type.set_return_type(returnType->getInternalType(analyser));
+		Type t = returnType->getInternalType();
+		if (t == Type::UNKNOWN) add_error(analyser, SemanticException::UNKNOWN_TYPE);
+		type.set_return_type(t);
 	} else {
 		type.set_return_type(Type::UNKNOWN);
 	}

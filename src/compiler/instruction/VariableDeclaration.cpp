@@ -46,7 +46,8 @@ void VariableDeclaration::analyse_help(SemanticAnalyser* analyser)
 	Type var_type = Type::UNKNOWN;
 
 	if (typeName) {
-		var_type = typeName->getInternalType(analyser);
+		var_type = typeName->getInternalType();
+		if (var_type == Type::UNKNOWN) add_error(analyser, SemanticException::UNKNOWN_TYPE);
 	}
 	if (expression) {
 		expression->analyse(analyser);
