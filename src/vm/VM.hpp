@@ -53,10 +53,6 @@ public:
 	static jit_value_t value_to_lsvalue(jit_function_t, jit_value_t, Type);
 	static jit_value_t get_refs(jit_function_t F, jit_value_t obj);
 	static void inc_refs(jit_function_t F, jit_value_t obj);
-	static void inc_refs_if_not_temp(jit_function_t F, jit_value_t obj);
-	static void dec_refs(jit_function_t F, jit_value_t obj);
-	static void delete_ref(jit_function_t F, jit_value_t obj);
-	static void delete_temporary(jit_function_t F, jit_value_t obj);
 	static void inc_ops(jit_function_t F, int add);
 	static void get_operations(jit_function_t F);
 	static void print_int(jit_function_t F, jit_value_t val);
@@ -72,8 +68,6 @@ public:
 	static jit_value_t create_default(jit_function_t F, const Type& type);
 	static jit_value_t create_vec(jit_function_t F, const Type& element_type, int cap = 0);
 	static void push_move_inc_vec(jit_function_t F, const Type& element_type, jit_value_t array, jit_value_t value);
-	static jit_value_t move_obj(jit_function_t F, jit_value_t ptr);
-	static jit_value_t move_inc_obj(jit_function_t F, jit_value_t ptr);
 	static jit_value_t clone_obj(jit_function_t F, jit_value_t ptr);
 	static jit_value_t clone_temporary_obj(jit_function_t F, jit_value_t ptr);
 };

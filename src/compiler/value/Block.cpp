@@ -147,14 +147,9 @@ jit_value_t Block::compile(Compiler& c) const {
 			break; // no need to compile after a return
 		}
 		if (i == instructions.size() - 1 && instructions[i]->type.raw_type->nature() != Nature::VOID) {
-			if (type.must_manage_memory()) {
-				jit_value_t ret = VM::move_obj(c.F, val); // TODO add true move by checking the variable scope
-				c.leave_block(c.F);
-				return ret;
-			} else {
-				c.leave_block(c.F);
-				return val;
-			}
+			val = Compiler::compile_move(c.F, val, type);
+			c.leave_block(c.F);
+			return val;
 		}
 	}
 	c.leave_block(c.F);

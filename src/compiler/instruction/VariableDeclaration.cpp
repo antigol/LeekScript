@@ -115,9 +115,7 @@ jit_value_t VariableDeclaration::compile(Compiler& c) const
 	if (expression) {
 		jit_value_t val = expression->compile(c);
 
-		if (expression->type.must_manage_memory()) {
-			val = VM::move_inc_obj(c.F, val);
-		}
+		val = Compiler::compile_move_inc(c.F, val, expression->type);
 
 		jit_insn_store(c.F, v, val);
 	} else {

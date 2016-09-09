@@ -53,21 +53,22 @@ void Tuple::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
-	type.make_it_pure();
-
 	for (size_t i = 0; i < elements.size(); ++i) {
 		Value* e = elements[i];
 		e->finalize(analyser, type.element_type(i));
+		type.set_element_type(i, e->type);
 	}
 }
 
 jit_value_t Tuple::compile(Compiler& c) const
 {
-	jit_value_t val = jit_value_create(c.F, type.jit_type());
+	jit_type_t ty = type.jit_type();
+	jit_value_t val = jit_value_create(c.F, ty);
 	jit_value_t ptr = jit_insn_address_of(c.F, val);
 	for (size_t i = 0; i < elements.size(); ++i) {
 		jit_value_t el = elements[i]->compile(c);
-		jit_insn_store_relative(c.F, ptr, jit_type_get_offset(type.jit_type(), i), el); // TODO : increment lsvalue
+		el = Compiler::compile_move_inc(c.F, el, type.element_type(i));
+		jit_insn_store_relative(c.F, ptr, jit_type_get_offset(ty, i), el);
 	}
 	return val;
 }

@@ -20,7 +20,7 @@ std::vector<std::string> split(const std::string &s, std::string delim) {
 	return v;
 }
 
-Context::Context(std::string ctx) {
+Context::Context(std::string ) {
 
 //	Json value = Json::parse(ctx);
 

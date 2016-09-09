@@ -108,7 +108,11 @@ Type::Type(const RawType* raw_type, const vector<Type>& elements_types) :
 
 bool Type::must_manage_memory() const {
 	assert(is_pure());
-	return raw_type->nature() == Nature::LSVALUE;
+	if (raw_type != &RawType::TUPLE) return raw_type->nature() == Nature::LSVALUE;
+	for (const Type& el : elements_types) {
+		if (el.must_manage_memory()) return true;
+	}
+	return false;
 }
 
 size_t Type::bytes() const

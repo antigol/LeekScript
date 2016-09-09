@@ -34,15 +34,11 @@ void Compiler::delete_variables_block(jit_function_t F, int deepness) {
 
 		for (auto it = variables[i].begin(); it != variables[i].end(); ++it) {
 
-//			std::cout << "delete " << var.first  << std::endl;
-
 			if (it->second.reference == true) {
 				continue;
 			}
 
-			if (it->second.type.must_manage_memory()) {
-				VM::delete_ref(F, it->second.value);
-			}
+			Compiler::compile_delete_ref(F, it->second.value, it->second.type);
 		}
 	}
 }
@@ -256,5 +252,81 @@ jit_value_t Compiler::compile_is_true_delete_temporary(jit_function_t F, jit_val
 	}
 	return jit_insn_to_bool(F, v);
 }
+
+void Compiler::compile_delete_ref(jit_function_t F, jit_value_t v, const Type& type)
+{
+	if (!type.must_manage_memory()) return;
+	if (type.raw_type->nature() == Nature::LSVALUE) {
+		Compiler::call_native(F, jit_type_void, { LS_POINTER }, (void*) LSValue::delete_ref, { v });
+		return;
+	}
+	if (type.raw_type == &RawType::TUPLE) {
+		// tuple.refs === ????
+		jit_value_t ptr = jit_insn_address_of(F, v);
+		jit_type_t ty = type.jit_type();
+		for (size_t i = 0; i < type.elements_types.size(); ++i) {
+			jit_value_t el = jit_insn_load_relative(F, ptr, jit_type_get_offset(ty, i), type.element_type(i).jit_type());
+			compile_delete_ref(F, el, type.element_type(i));
+		}
+		return;
+	}
+	assert(0);
+}
+
+void Compiler::compile_delete_temporary(jit_function_t F, jit_value_t v, const Type& type)
+{
+	if (!type.must_manage_memory()) return;
+	if (type.raw_type->nature() == Nature::LSVALUE) {
+		Compiler::call_native(F, jit_type_void, { LS_POINTER }, (void*) LSValue::delete_temporary, { v });
+		return;
+	}
+	if (type.raw_type == &RawType::TUPLE) {
+		// tuple.refs === ????
+		jit_value_t ptr = jit_insn_address_of(F, v);
+		jit_type_t ty = type.jit_type();
+		for (size_t i = 0; i < type.elements_types.size(); ++i) {
+			jit_value_t el = jit_insn_load_relative(F, ptr, jit_type_get_offset(ty, i), type.element_type(i).jit_type());
+			compile_delete_ref(F, el, type.element_type(i)); // this is not an error, delete a temporary tuple delete it anyway and it's content
+		}
+		return;
+	}
+	assert(0);
+}
+
+jit_value_t Compiler::compile_move_inc(jit_function_t F, jit_value_t v, const Type& type)
+{
+	if (!type.must_manage_memory()) return v;
+	if (type.raw_type->nature() == Nature::LSVALUE) {
+		return Compiler::call_native(F, LS_POINTER, { LS_POINTER }, (void*) LSValue::move_inc, { v });
+	}
+	if (type.raw_type == &RawType::TUPLE) {
+		// tuple.refs === ????
+//		v = jit_insn_load(F, v);
+//		jit_value_t ptr = jit_insn_address_of(F, v);
+//		jit_type_t ty = type.jit_type();
+//		for (size_t i = 0; i < type.elements_types.size(); ++i) {
+//			jit_nint offset = jit_type_get_offset(ty, i);
+//			jit_value_t el = jit_insn_load_relative(F, ptr, offset, type.element_type(i).jit_type());
+//			el = compile_move_inc(F, el, type.element_type(i));
+//			jit_insn_store_relative(F, ptr, offset, el);
+//		}
+		return v;
+	}
+	assert(0);
+}
+
+jit_value_t Compiler::compile_move(jit_function_t F, jit_value_t v, const Type& type)
+{
+	if (!type.must_manage_memory()) return v;
+	if (type.raw_type->nature() == Nature::LSVALUE) {
+		return Compiler::call_native(F, LS_POINTER, { LS_POINTER }, (void*) LSValue::move, { v });
+	}
+	if (type.raw_type == &RawType::TUPLE) {
+		// tuple.refs === ????
+		return v;
+	}
+	assert(0);
+}
+
 
 }

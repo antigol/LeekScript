@@ -183,9 +183,7 @@ jit_value_t Match::compile(Compiler& c) const {
 			jit_value_t ret = returns[i]->compile(c);
 			jit_insn_store(c.F, res, ret);
 			jit_insn_label(c.F, &label_end);
-			if (value->type.must_manage_memory()) {
-				VM::delete_temporary(c.F, v);
-			}
+			Compiler::compile_delete_temporary(c.F, v, value->type);
 			return res;
 		}
 
@@ -215,9 +213,7 @@ jit_value_t Match::compile(Compiler& c) const {
 	jit_insn_store(c.F, res, VM::create_default(c.F, type));
 
 	jit_insn_label(c.F, &label_end);
-	if (value->type.must_manage_memory()) {
-		VM::delete_temporary(c.F, v);
-	}
+	Compiler::compile_delete_temporary(c.F, v, value->type);
 	return res;
 }
 
@@ -246,18 +242,14 @@ jit_value_t Match::Pattern::match(Compiler &c, jit_value_t v, const Type& value_
 		if (begin) {
 			jit_value_t b = begin->compile(c);
 			ge = Compiler::compile_ge(c.F, v, value_type, b, begin->type);
-			if (begin->type.must_manage_memory()) {
-				VM::delete_temporary(c.F, b);
-			}
+			Compiler::compile_delete_temporary(c.F, b, begin->type);
 		}
 
 		jit_value_t lt = nullptr;
 		if (end) {
 			jit_value_t e = end->compile(c);
 			lt = Compiler::compile_lt(c.F, v, value_type, e, end->type);
-			if (end->type.must_manage_memory()) {
-				VM::delete_temporary(c.F, e);
-			}
+			Compiler::compile_delete_temporary(c.F, e, end->type);
 		}
 
 		if (ge) {
@@ -277,9 +269,7 @@ jit_value_t Match::Pattern::match(Compiler &c, jit_value_t v, const Type& value_
 	} else {
 		jit_value_t p = begin->compile(c);
 		jit_value_t cond = Compiler::compile_eq(c.F, v, value_type, p, begin->type);
-		if (begin->type.must_manage_memory()) {
-			VM::delete_temporary(c.F, p);
-		}
+		Compiler::compile_delete_temporary(c.F, p, begin->type);
 		return cond;
 	}
 }

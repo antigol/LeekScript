@@ -1,7 +1,6 @@
 #ifndef PREFIXEXPRESSION_HPP
 #define PREFIXEXPRESSION_HPP
 
-#include "Expression.hpp"
 #include "Value.hpp"
 #include "../lexical/Operator.hpp"
 

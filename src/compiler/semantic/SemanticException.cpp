@@ -64,6 +64,7 @@ std::string SemanticException::type_to_string(Type type) {
 		case Type::MUST_BE_LOGIC_TYPE: return "MUST_BE_LOGIC_TYPE";
 		case Type::RETURN_VOID: return "RETURN_VOID";
 		case Type::INFERENCE_TYPE_ERROR: return "INFERENCE_TYPE_ERROR";
+		case Type::NO_ATTRIBUTE_WITH_THIS_NAME: return "NO_ATTRIBUTE_WITH_THIS_NAME";
 
 		default:
 			return "UNKNOWN_ERROR";

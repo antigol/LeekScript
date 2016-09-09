@@ -32,87 +32,131 @@ unsigned ObjectAccess::line() const {
 	return 0;
 }
 
-// DONE 0
+bool ObjectAccess::isLeftValue() const
+{
+	return object->isLeftValue();
+}
+
+// DONE 2
 void ObjectAccess::analyse_help(SemanticAnalyser* analyser)
 {
-	// TODO
-	assert(0);
-	try {
-		ulong index = stoul(field->content);
-		object->analyse(analyser);
-
-		if (object->type.raw_type == &RawType::TUPLE && index < object->type.elements_types.size()) {
-			type = object->type.elements_types[index];
-		} else {
-			type = Type::VOID;
-		}
-
-	} catch (exception&) {
-		type = Type::VOID;
-	}
+	object->analyse(analyser);
+	left_type = Type::UNKNOWN;
+	type = Type::UNKNOWN;
 }
 
 void ObjectAccess::reanalyse_l_help(SemanticAnalyser* analyser, const Type& req_type, const Type& req_left_type)
 {
+	if (!Type::intersection(left_type, req_left_type, &left_type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
 
+	if (object->type.raw_type == &RawType::TUPLE) {
+		ulong index;
+		try {
+			index = stoul(field->content);
+		} catch (exception&) {
+			add_error(analyser, SemanticException::NO_ATTRIBUTE_WITH_THIS_NAME);
+			return;
+		}
+		if (index >= object->type.elements_types.size()) {
+			add_error(analyser, SemanticException::NO_ATTRIBUTE_WITH_THIS_NAME);
+		}
+
+		Type req_type = object->type;
+		req_type.set_element_type(index, type);
+		Type req_left_type = object->type;
+		req_left_type.set_element_type(index, left_type);
+
+		if (isLeftValue()) {
+			LeftValue* left = dynamic_cast<LeftValue*>(object);
+			left->reanalyse_l(analyser, req_type, req_left_type);
+			if (!Type::intersection(left_type, left->left_type.element_type(index), &left_type)) {
+				add_error(analyser, SemanticException::TYPE_MISMATCH);
+			}
+		} else {
+			object->reanalyse(analyser, req_type);
+		}
+		if (!Type::intersection(type, object->type.element_type(index).image_conversion(), &type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+	} else {
+		object->reanalyse(analyser, Type::UNKNOWN);
+	}
 }
 
 void ObjectAccess::finalize_l_help(SemanticAnalyser* analyser, const Type& req_type, const Type& req_left_type)
 {
-	assert(0);
-	try {
-		ulong index = stoul(field->content);
+	if (!Type::intersection(left_type, req_left_type, &left_type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	if (!Type::intersection(type, req_type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
 
-		if (object->type.raw_type == &RawType::TUPLE && index < object->type.elements_types.size()) {
-			if (!Type::intersection(type, req_type, &type)) {
-				stringstream oss;
-				print(oss, 0, false);
-				analyser->add_error({ SemanticException::TYPE_MISMATCH, line(), oss.str() });
-			}
-			Type tuple_type = Type::TUPLE;
-			tuple_type.elements_types.resize(object->type.elements_types.size(), Type::UNKNOWN);
-			tuple_type.elements_types[index] = type;
+	if (isLeftValue()) {
+		LeftValue* left = dynamic_cast<LeftValue*>(object);
+		left->finalize_l(analyser, Type::UNKNOWN, Type::UNKNOWN);
+	} else {
+		object->finalize(analyser, Type::UNKNOWN);
+	}
 
-			object->finalize(analyser, tuple_type);
-
-			type = object->type.elements_types[index];
-		} else {
-			type = Type::VOID;
+	if (object->type.raw_type == &RawType::TUPLE) {
+		ulong index;
+		try {
+			index = stoul(field->content);
+		} catch (exception&) {
+			add_error(analyser, SemanticException::NO_ATTRIBUTE_WITH_THIS_NAME);
+			return;
+		}
+		if (index >= object->type.elements_types.size()) {
+			add_error(analyser, SemanticException::NO_ATTRIBUTE_WITH_THIS_NAME);
 		}
 
-	} catch (exception&) {
-		type = Type::VOID;
+		if (isLeftValue()) {
+			LeftValue* left = dynamic_cast<LeftValue*>(object);
+			left_type = left->left_type.element_type(index);
+		}
+		if (!Type::intersection(type, object->type.element_type(index).image_conversion(), &type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+		type.make_it_pure();
+	} else {
+		add_error(analyser, SemanticException::NO_ATTRIBUTE_WITH_THIS_NAME);
 	}
 }
 
 jit_value_t ObjectAccess::compile(Compiler& c) const
 {
-	try {
+	if (object->type.raw_type == &RawType::TUPLE) {
 		ulong index = stoul(field->content);
 
-		if (object->type.raw_type == &RawType::TUPLE && index < object->type.elements_types.size()) {
-			jit_value_t ptr = jit_insn_address_of(c.F, object->compile(c));
-			jit_type_t obj_type = object->type.jit_type();
-			return jit_insn_load_relative(c.F, ptr, jit_type_get_offset(obj_type, index), object->type.element_type(index).jit_type());
-		}
+		jit_value_t ptr = jit_insn_address_of(c.F, object->compile(c));
+		jit_type_t ty = object->type.jit_type();
+		return jit_insn_load_relative(c.F, ptr, jit_type_get_offset(ty, index), object->type.element_type(index).jit_type());
 
-	} catch (exception&) {
+	} else {
+		assert(0);
 	}
 	return nullptr;
 }
 
 jit_value_t ObjectAccess::compile_l(Compiler& c) const
 {
-	try {
+	if (object->type.raw_type == &RawType::TUPLE) {
 		ulong index = stoul(field->content);
 
-		if (object->type.raw_type == &RawType::TUPLE && index < object->type.elements_types.size()) {
-			jit_value_t ptr = jit_insn_address_of(c.F, object->compile(c));
-			jit_type_t obj_type = object->type.jit_type();
-			return jit_insn_add_relative(c.F, ptr, jit_type_get_offset(obj_type, index));
-		}
+		LeftValue* left = dynamic_cast<LeftValue*>(object);
 
-	} catch (exception&) {
+		jit_value_t ptr = left->compile_l(c);
+		jit_type_t ty = object->type.jit_type();
+		return jit_insn_add_relative(c.F, ptr, jit_type_get_offset(ty, index));
+
+	} else {
+		assert(0);
 	}
 	return nullptr;
 }

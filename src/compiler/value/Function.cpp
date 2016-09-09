@@ -187,10 +187,9 @@ jit_value_t Function::compile(Compiler& c) const {
 
 	// Own the arguments
 	for (size_t i = 0; i < arguments.size(); ++i) {
-		if (type.argument_type(i).must_manage_memory()) {
-			jit_value_t p = jit_value_get_param(c.F, i);
-			jit_insn_store(c.F, p, VM::move_inc_obj(c.F, p));
-		}
+		jit_value_t p = jit_value_get_param(c.F, i);
+		jit_value_t q = Compiler::compile_move_inc(c.F, p, type.argument_type(i));
+		jit_insn_store(c.F, p, q); // hope if p=q its optimized
 	}
 
 	// Execute function
@@ -198,10 +197,7 @@ jit_value_t Function::compile(Compiler& c) const {
 
 	// Delete owned arguments
 	for (size_t i = 0; i < arguments.size(); ++i) {
-		if (type.argument_type(i).must_manage_memory()) {
-			jit_value_t p = jit_value_get_param(c.F, i);
-			VM::delete_ref(c.F, p);
-		}
+		Compiler::compile_delete_ref(c.F, jit_value_get_param(c.F, i), type.argument_type(i));
 	}
 
 	// Return

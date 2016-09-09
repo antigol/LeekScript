@@ -82,9 +82,7 @@ jit_value_t ExpressionInstruction::compile(Compiler& c) const {
 	jit_value_t v = value->compile(c);
 
 	if (type == Type::VOID) {
-		if (value->type.must_manage_memory()) {
-			VM::delete_temporary(c.F, v);
-		}
+		Compiler::compile_delete_temporary(c.F, v, value->type);
 		return nullptr;
 	} else {
 		return v;

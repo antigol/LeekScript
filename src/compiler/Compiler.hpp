@@ -64,6 +64,11 @@ public:
 
 	static jit_value_t compile_convert(jit_function_t F, jit_value_t v, const Type& t_in, const Type& t_out);
 	static jit_value_t compile_is_true_delete_temporary(jit_function_t F, jit_value_t v, const Type& type);
+
+	static void compile_delete_ref(jit_function_t F, jit_value_t v, const Type& type);
+	static void compile_delete_temporary(jit_function_t F, jit_value_t v, const Type& type);
+	static jit_value_t compile_move_inc(jit_function_t F, jit_value_t v, const Type& type);
+	static jit_value_t compile_move(jit_function_t F, jit_value_t v, const Type& type);
 };
 
 }

@@ -403,8 +403,8 @@ jit_value_t Expression::compile(Compiler& c) const
 			}
 		}
 
-		if (v1->type.must_manage_memory()) VM::delete_temporary(c.F, x);
-		if (v2->type.must_manage_memory()) VM::delete_temporary(c.F, y);
+		Compiler::compile_delete_temporary(c.F, x, v1->type);
+		Compiler::compile_delete_temporary(c.F, y, v2->type);
 
 		return res;
 

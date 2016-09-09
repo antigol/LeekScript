@@ -223,32 +223,6 @@ void VM::inc_refs(jit_function_t F, jit_value_t ptr) {
 	Compiler::call_native(F, jit_type_void, { LS_POINTER }, (void*) VM_inc_refs, { ptr });
 }
 
-void VM_inc_refs_if_not_temp(LSValue* val) {
-	if (val && val->refs != 0) {
-		val->refs++;
-	}
-}
-
-void VM::inc_refs_if_not_temp(jit_function_t F, jit_value_t ptr) {
-	Compiler::call_native(F, jit_type_void, { LS_POINTER }, (void*) VM_inc_refs_if_not_temp, { ptr });
-}
-
-void VM_dec_refs(LSValue* val) {
-	if (val) val->refs--;
-}
-
-void VM::dec_refs(jit_function_t F, jit_value_t ptr) {
-	Compiler::call_native(F, jit_type_void, { LS_POINTER }, (void*) VM_dec_refs, { ptr });
-}
-
-void VM::delete_ref(jit_function_t F, jit_value_t ptr) {
-	Compiler::call_native(F, jit_type_void, { LS_POINTER }, (void*) LSValue::delete_ref, { ptr });
-}
-
-void VM::delete_temporary(jit_function_t F, jit_value_t ptr) {
-	Compiler::call_native(F, jit_type_void, { LS_POINTER }, (void*) LSValue::delete_temporary, { ptr });
-}
-
 
 void VM_operation_exception() {
 	throw vm_operation_exception();
@@ -352,7 +326,16 @@ jit_value_t VM::create_default(jit_function_t F, const Type& type)
 	if (type == Type::F32) return create_f32(F, 0.0);
 	if (type == Type::F64) return create_f64(F, 0.0);
 	if (type.raw_type == &RawType::FUNCTION) return create_ptr(F, nullptr);
-
+	if (type.raw_type == &RawType::TUPLE) {
+		jit_type_t ty = type.jit_type();
+		jit_value_t val = jit_value_create(F, ty);
+		jit_value_t ptr = jit_insn_address_of(F, val);
+		for (size_t i = 0; i < type.elements_types.size(); ++i) {
+			jit_value_t el = create_default(F, type.element_type(i));
+			jit_insn_store_relative(F, ptr, jit_type_get_offset(ty, i), el);
+		}
+		return val;
+	}
 	assert(0);
 }
 
@@ -404,14 +387,6 @@ void VM::push_move_inc_vec(jit_function_t F, const Type& element_type, jit_value
 		assert(0);
 	}
 
-}
-
-jit_value_t VM::move_obj(jit_function_t F, jit_value_t ptr) {
-	return Compiler::call_native(F, LS_POINTER, { LS_POINTER }, (void*) LSValue::move, { ptr });
-}
-
-jit_value_t VM::move_inc_obj(jit_function_t F, jit_value_t ptr) {
-	return Compiler::call_native(F, LS_POINTER, { LS_POINTER }, (void*) LSValue::move_inc, { ptr });
 }
 
 LSValue* VM_clone(LSValue* val) {
