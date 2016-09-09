@@ -57,7 +57,6 @@ void Function::print(std::ostream& os, int indent, bool debug) const {
 			typeNames[i]->print(os);
 		}
 
-//
 //		if ((Value*)defaultValues.at(i) != nullptr) {
 //			os << " = ";
 //			defaultValues.at(i)->print(os);
@@ -68,8 +67,8 @@ void Function::print(std::ostream& os, int indent, bool debug) const {
 	if (debug) {
 		os << type.return_type();
 	}
-	os << " → ";
 	if (returnType) {
+		os << " → ";
 		returnType->print(os);
 	}
 	body->print(os, indent, debug);

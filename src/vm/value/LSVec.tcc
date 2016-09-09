@@ -129,7 +129,7 @@ bool LSVec<T>::eq(const LSVec<LSValue*>* that) const
 template <>
 inline bool LSVec<void*>::eq(const LSVec<void*>* that) const
 {
-	return *this == *that;
+	return *((vector<void*>*)this) == *that;
 }
 
 template <typename T>
@@ -153,7 +153,7 @@ inline bool LSVec<void*>::eq(const LSVec<int32_t>*) const
 template <>
 inline bool LSVec<int32_t>::eq(const LSVec<int32_t>* that) const
 {
-	return *this == *that;
+	return *((vector<int32_t>*)this) == *that;
 }
 
 template <>
@@ -184,7 +184,7 @@ inline bool LSVec<void*>::eq(const LSVec<double>*) const
 template <>
 inline bool LSVec<double>::eq(const LSVec<double>* that) const
 {
-	return *this == *that;
+	return *((vector<double>*)this) == *that;
 }
 
 template <>
