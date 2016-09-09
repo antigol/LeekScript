@@ -7,11 +7,19 @@ void Test::test_functions() {
 	 */
 	header("Functions");
 	success("function foo(x, y) { x + y } foo(1, 2)", "3");
+	success("function foo(x, y) { x + y } foo(foo('Hello', ' '), 'world')", "'Hello world'");
+	success("function foo(x, y) { y } foo(foo('Hello', ' '), 'world')", "'world'");
+	success("function foo(x) { x = 'a' } let x = 'b' foo(x) x", "'b'");
+	success("let f = function (x:vec<i32>, y) { if y { x } else { [] }} f([1], true)", "[1]");
+	success("let f = function (x, y) { if y { x } else { [] }} f([1], true)", "[1]");
+	success("let f = function (x) { return [42] 5 } f([1])", "[42]");
+	success("let f = function (x:vec<i32>, y) { if y { x } else { return [42] [[]] }} f([1], false)", "[42]");
+	success("function foo() { let x = 'a' return } foo()", "<void>");
 
-	sem_err("null()", ls::SemanticException::Type::CANNOT_CALL_VALUE, "null");
-	sem_err("12()", ls::SemanticException::Type::CANNOT_CALL_VALUE, "12");
-	sem_err("'hello'()", ls::SemanticException::Type::CANNOT_CALL_VALUE, "'hello'");
-	sem_err("[1, 2, 3]()", ls::SemanticException::Type::CANNOT_CALL_VALUE, "[1, 2, 3]");
+	sem_err("null()", ls::SemanticException::Type::TYPE_MISMATCH, "null");
+	sem_err("12()", ls::SemanticException::Type::TYPE_MISMATCH, "12");
+	sem_err("'hello'()", ls::SemanticException::Type::TYPE_MISMATCH, "'hello'");
+	sem_err("[1, 2, 3]()", ls::SemanticException::Type::TYPE_MISMATCH, "[1, 2, 3]");
 
 	/*
 	 * Lambdas
@@ -42,7 +50,7 @@ void Test::test_functions() {
 	success("1; 2", "2");
 	success("let x = 'leak' return '1'; 2", "'1'");
 	success("let x = '1' return x; 2", "'1'");
-//	success("let f = function(x) { if (x < 10) {return true} return 12 } [f(5), f(20)]", "[true, 12]");
+	success("let f = function(x) { if (x < 10) {return true} return 12 } [f(5), f(20)]", "[1, 12]");
 	//	success("let a = 10 a ~ x -> x ^ 2", "100");
 //	success("let f = x -> { let y = { if x == 0 { return 'error' } 1/x } '' + y } [f(-2), f(0), f(2)]", "['-0.5', 'error', '0.5']");
 	success("let f = i:i32 -> { [1 2 3][i] } f(1)", "2");

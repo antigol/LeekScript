@@ -78,23 +78,29 @@ void Return::finalize_help(SemanticAnalyser* analyser, const Type&)
 	//tip! type = UNREACHABLE
 }
 
-jit_value_t Return::compile(Compiler& c) const {
+jit_value_t Return::compile(Compiler& c) const
+{
+	jit_value_t v = nullptr;
 
 	if (expression) {
-		jit_value_t v = expression->compile(c);
+		v = expression->compile(c);
 
 		if (expression->type.must_manage_memory()) {
-			jit_value_t r = VM::move_obj(c.F, v);
-			c.delete_variables_block(c.F, c.get_current_function_blocks());
-			jit_insn_return(c.F, r);
-		} else {
-			c.delete_variables_block(c.F, c.get_current_function_blocks());
-			jit_insn_return(c.F, v);
+			v = VM::move_obj(c.F, v);
 		}
-	} else {
-		jit_insn_return(c.F, nullptr);
 	}
 
+	c.delete_variables_block(c.F, c.get_current_function_blocks());
+
+	// Delete temporary arguments
+	for (size_t i = 0; i < function->type.arguments_types.size(); ++i) {
+		if (function->type.argument_type(i).must_manage_memory()) {
+			jit_value_t p = jit_value_get_param(c.F, i);
+			VM::delete_ref(c.F, p);
+		}
+	}
+
+	jit_insn_return(c.F, v);
 	return nullptr;
 }
 

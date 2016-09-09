@@ -415,11 +415,23 @@ jit_value_t VM::move_inc_obj(jit_function_t F, jit_value_t ptr) {
 }
 
 LSValue* VM_clone(LSValue* val) {
+	if (val == nullptr) return nullptr;
 	return val->clone();
 }
 
 jit_value_t VM::clone_obj(jit_function_t F, jit_value_t ptr) {
 	return Compiler::call_native(F, LS_POINTER, { LS_POINTER }, (void*) VM_clone, { ptr });
+}
+
+LSValue* VM_clone_temporary(LSValue* val) {
+	if (val == nullptr) return nullptr;
+	if (val->refs == 0) return val->clone();
+	return val;
+}
+
+jit_value_t VM::clone_temporary_obj(jit_function_t F, jit_value_t ptr)
+{
+	return Compiler::call_native(F, LS_POINTER, { LS_POINTER }, (void*) VM_clone_temporary, { ptr });
 }
 
 }

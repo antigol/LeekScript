@@ -3,6 +3,11 @@
 
 namespace ls {
 
+#if DEBUG >= 1
+int Value::reanalyse_deepness = 0;
+int Value::reanalyse_maximum_deepness = 0;
+#endif
+
 Value::Value() {
 	constant = false;
 

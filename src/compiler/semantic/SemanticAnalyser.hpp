@@ -46,7 +46,9 @@ public:
 
 	Program* program;
 	bool in_program = false;
+#if DEBUG >= 1
 	int in_phase = 0; // only for debug 1=analyse 2=reanalyse 3=finalize
+#endif
 
 	std::vector<Module*> modules;
 

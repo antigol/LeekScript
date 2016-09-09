@@ -258,14 +258,8 @@ jit_value_t FunctionCall::compile(Compiler& c) const
 		vector<jit_type_t> args_types;
 
 		for (size_t i = 0; i < arguments.size(); ++i) {
-
 			args.push_back(arguments[i]->compile(c));
 			args_types.push_back(function->type.argument_type(i).jit_type());
-
-			// TODO this is the job of the function
-			if (function->type.argument_type(i).must_manage_memory()) {
-				args[i] = VM::move_inc_obj(c.F, args[i]);
-			}
 		}
 
 		jit_type_t jit_return_type = function->type.return_type().jit_type();
@@ -275,13 +269,6 @@ jit_value_t FunctionCall::compile(Compiler& c) const
 
 		if (function->type.return_type() != Type::VOID) {
 			jit_insn_store(c.F, res, val);
-		}
-
-		// TODO this is the job of the function
-		for (size_t i = 0; i < arguments.size(); ++i) {
-			if (function->type.argument_type(i).must_manage_memory()) {
-				VM::delete_ref(c.F, args[i]);
-			}
 		}
 
 		jit_insn_label(c.F, &label_end);

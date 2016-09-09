@@ -154,7 +154,7 @@ void Function::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 	assert(type.is_pure() || !analyser->errors.empty());
 }
 
-void Function::capture(SemanticVar* var)
+void Function::capture(SemanticVar* )
 {
 //	if (std::find(captures.begin(), captures.end(), var) == captures.end()) {
 //		captures.push_back(var);
@@ -182,8 +182,24 @@ jit_value_t Function::compile(Compiler& c) const {
 
 	c.enter_function(function);
 
+	// Own the arguments
+	for (size_t i = 0; i < arguments.size(); ++i) {
+		if (type.argument_type(i).must_manage_memory()) {
+			jit_value_t p = jit_value_get_param(c.F, i);
+			jit_insn_store(c.F, p, VM::move_inc_obj(c.F, p));
+		}
+	}
+
 	// Execute function
 	jit_value_t res = body->compile(c);
+
+	// Delete owned arguments
+	for (size_t i = 0; i < arguments.size(); ++i) {
+		if (type.argument_type(i).must_manage_memory()) {
+			jit_value_t p = jit_value_get_param(c.F, i);
+			VM::delete_ref(c.F, p);
+		}
+	}
 
 	// Return
 	jit_insn_return(function, res);

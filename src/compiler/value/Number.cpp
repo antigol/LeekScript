@@ -40,7 +40,7 @@ unsigned Number::line() const {
 	return token->line;
 }
 
-void Number::analyse_help(SemanticAnalyser* analyser)
+void Number::analyse_help(SemanticAnalyser*)
 {
 	constant = true;
 	if (value.find('.') != string::npos) {

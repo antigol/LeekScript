@@ -24,7 +24,7 @@ unsigned String::line() const {
 	return token->line;
 }
 
-void String::analyse_help(SemanticAnalyser* analyser)
+void String::analyse_help(SemanticAnalyser*)
 {
 	constant = true;
 	type = Type::VAR;

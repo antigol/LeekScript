@@ -18,6 +18,11 @@ public:
 	bool constant;
 	bool parenthesis = false;
 
+#if DEBUG >= 1
+	static int reanalyse_deepness;
+	static int reanalyse_maximum_deepness;
+#endif
+
 	Value();
 	virtual ~Value();
 
@@ -35,12 +40,24 @@ public:
 	}
 
 	inline void reanalyse(SemanticAnalyser* analyser, const Type& req_type) {
+#if DEBUG >= 1
 		assert(analyser->in_phase <= 2);
+		reanalyse_deepness++;
+		if (reanalyse_deepness > reanalyse_maximum_deepness) reanalyse_maximum_deepness = reanalyse_deepness;
+#endif
+
 		if (analysed) reanalyse_help(analyser, req_type);
+
+#if DEBUG >= 1
+		reanalyse_deepness--;
+#endif
 	}
 
 	void finalize(SemanticAnalyser* analyser, const Type& req_type) {
+#if DEBUG >= 1
 		assert(analyser->in_phase == 3);
+#endif
+
 		finalize_help(analyser, req_type);
 		analysed = false;
 	}

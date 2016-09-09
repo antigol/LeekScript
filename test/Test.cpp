@@ -25,7 +25,7 @@ int Test::all() {
 //	test_map();
 //	test_set();
 //	test_objects();
-//	test_functions();
+	test_functions();
 //	test_classes();
 	test_loops();
 	test_operators();
@@ -67,6 +67,9 @@ void Test::success(std::string code, std::string expected) {
 
 	if (res != expected) {
 		std::cout << "FAUX : " << code << "  =/=>  " << expected << "  got  " << res << std::endl;
+	} else if (ls::LSValue::obj_count != ls::LSValue::obj_deleted) {
+		std::cout << "LEAK : " << code << "  ===>  " << expected << std::endl;
+		success_count++;
 	} else {
 		std::cout << "OK   : " << code << "  ===>  " << expected << std::endl;
 		success_count++;

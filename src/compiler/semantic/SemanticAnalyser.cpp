@@ -37,22 +37,42 @@ void SemanticAnalyser::analyse(Program* program)
 	// Gives to each element a type
 	// but this type is not necessarly complete
 	in_program = true;
+
+#if DEBUG >= 1
 	in_phase = 1;
+#endif
 	program->main->analyse(this);
+#if DEBUG >= 1
 	in_phase = 0;
+#endif
 	if (!errors.empty()) return;
 
+#if DEBUG >= 1
+	Value::reanalyse_deepness = 0;
+	Value::reanalyse_maximum_deepness = 0;
 	in_phase = 2;
+#endif
+
 	program->main->reanalyse(this, Type::UNKNOWN);
+
+#if DEBUG >= 1
 	in_phase = 0;
+	cout << "maximum reanalyse deepness " << Value::reanalyse_maximum_deepness << endl;
+#endif
 }
 
 void SemanticAnalyser::finalize(Program* program)
 {
 	// Fix the uncomplete types
+#if DEBUG >= 1
 	in_phase = 3;
+#endif
+
 	program->main->finalize(this, Type::UNKNOWN); // TODO do not recreate variables enter_block and so on
+
+#if DEBUG >= 1
 	in_phase = 0;
+#endif
 }
 
 void SemanticAnalyser::enter_function(Function* f) {
