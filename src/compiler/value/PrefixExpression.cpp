@@ -43,21 +43,22 @@ void PrefixExpression::analyse_help(SemanticAnalyser* analyser)
 
 		LeftValue* left = dynamic_cast<LeftValue*>(expression);
 
-		if (!left->isLeftValue()) {
+		if (!left || !left->isLeftValue()) {
 			add_error(analyser, SemanticException::VALUE_MUST_BE_A_LVALUE);
+			return;
 		}
 		if (!Type::intersection(left->left_type, Type::ARITHMETIC, &left->left_type)) {
 			add_error(analyser, SemanticException::MUST_BE_ARITHMETIC_TYPE);
 		}
 
-		type = left->left_type;
+		type = left->left_type.image_conversion();
 	} else if (operatorr->type == TokenType::MINUS
 			   || operatorr->type == TokenType::TILDE) {
 
 		if (!Type::intersection(expression->type, Type::ARITHMETIC, &expression->type)) {
 			add_error(analyser, SemanticException::MUST_BE_ARITHMETIC_TYPE);
 		}
-		type = expression->type;
+		type = expression->type.image_conversion();
 	} else if (operatorr->type == TokenType::NOT) {
 		if (!Type::intersection(expression->type, Type::LOGIC, &expression->type)) {
 			add_error(analyser, SemanticException::MUST_BE_LOGIC_TYPE);
@@ -78,14 +79,18 @@ void PrefixExpression::reanalyse_help(SemanticAnalyser* analyser, const Type& re
 			|| operatorr->type == TokenType::MINUS_MINUS) {
 
 		LeftValue* left = dynamic_cast<LeftValue*>(expression);
-		left->reanalyse_l(analyser, Type::UNKNOWN, type);
-		type = left->left_type;
+		left->reanalyse_l(analyser, Type::UNKNOWN, type.fiber_conversion());
+		if (!Type::intersection(type, left->left_type.image_conversion(), &type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
 
 	} else if (operatorr->type == TokenType::MINUS
 			   || operatorr->type == TokenType::TILDE) {
 
-		expression->reanalyse(analyser, type);
-		type = expression->type;
+		expression->reanalyse(analyser, type.fiber_conversion());
+		if (!Type::intersection(type, expression->type.image_conversion(), &type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
 
 	} else if (operatorr->type == TokenType::NOT) {
 		expression->reanalyse(analyser, Type::UNKNOWN);
@@ -103,14 +108,21 @@ void PrefixExpression::finalize_help(SemanticAnalyser* analyser, const Type& req
 			|| operatorr->type == TokenType::MINUS_MINUS) {
 
 		LeftValue* left = dynamic_cast<LeftValue*>(expression);
-		left->finalize_l(analyser, Type::UNKNOWN, type);
-		type = left->left_type;
+		left->finalize_l(analyser, Type::UNKNOWN, type.fiber_conversion());
+		if (!Type::intersection(type, left->left_type.image_conversion(), &type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+		type.make_it_pure();
 
 	} else if (operatorr->type == TokenType::MINUS
 			   || operatorr->type == TokenType::TILDE) {
 
-		expression->finalize(analyser, type);
-		type = expression->type;
+		expression->finalize(analyser, type.fiber_conversion());
+		if (!Type::intersection(type, expression->type.image_conversion(), &type)) {
+			add_error(analyser, SemanticException::TYPE_MISMATCH);
+		}
+		type.make_it_pure();
+
 	} else if (operatorr->type == TokenType::NOT) {
 		expression->finalize(analyser, Type::UNKNOWN);
 	}
@@ -132,51 +144,57 @@ jit_value_t PrefixExpression::compile(Compiler& c) const
 
 		jit_value_t ptr = left->compile_l(c);
 		jit_value_t val = jit_insn_load_relative(c.F, ptr, 0, left->left_type.jit_type());
+		jit_value_t res = nullptr;
 
 		switch (operatorr->type) {
 			case TokenType::PLUS_PLUS: {
 				if (left->left_type.raw_type->nature() == Nature::VALUE) {
-					jit_value_t res = jit_insn_add(c.F, val, VM::create_i32(c.F, 1));
+					res = jit_insn_add(c.F, val, VM::create_i32(c.F, 1));
 					jit_insn_store_relative(c.F, ptr, 0, res);
-					return res;
 				} else {
-					return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_preinc, { val });
+					res = Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_preinc, { val });
 				}
+				break;
 			}
 			case TokenType::MINUS_MINUS: {
 				if (left->type.raw_type->nature() == Nature::VALUE) {
-					jit_value_t res = jit_insn_sub(c.F, val, VM::create_i32(c.F, 1));
+					res = jit_insn_sub(c.F, val, VM::create_i32(c.F, 1));
 					jit_insn_store_relative(c.F, ptr, 0, res);
-					return res;
 				} else {
-					return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_predec, { val });
+					res = Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_predec, { val });
 				}
+				break;
 			}
 			default: break;
 		}
+		return Compiler::compile_convert(c.F, res, left->left_type, type);
 
 	} else if (operatorr->type == TokenType::MINUS
 			   || operatorr->type == TokenType::TILDE) {
 
 		jit_value_t val = expression->compile(c);
+		jit_value_t res = nullptr;
 
 		switch (operatorr->type) {
 			case TokenType::MINUS: {
 				if (expression->type.raw_type->nature() == Nature::VALUE) {
-					return jit_insn_neg(c.F, val);
+					res = jit_insn_neg(c.F, val);
 				} else {
-					return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_minus, { val });
+					res = Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_minus, { val });
 				}
+				break;
 			}
 			case TokenType::TILDE: {
 				if (expression->type.raw_type->nature() == Nature::VALUE) {
-					return jit_insn_not(c.F, val);
+					res = jit_insn_not(c.F, val);
 				} else {
-					return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_tilde, { val });
+					res = Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_tilde, { val });
 				}
+				break;
 			}
 			default: break;
 		}
+		return Compiler::compile_convert(c.F, res, expression->type, type);
 
 	} else if (operatorr->type == TokenType::NOT) {
 		jit_value_t val = expression->compile(c);
