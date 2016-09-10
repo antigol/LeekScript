@@ -39,7 +39,7 @@ void PostfixExpression::analyse_help(SemanticAnalyser* analyser)
 		add_error(analyser, SemanticException::MUST_BE_ARITHMETIC_TYPE);
 	}
 
-	type = expression->left_type;
+	type = expression->left_type.image_conversion();
 }
 
 void PostfixExpression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
@@ -48,8 +48,10 @@ void PostfixExpression::reanalyse_help(SemanticAnalyser* analyser, const Type& r
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 
-	expression->reanalyse_l(analyser, Type::UNKNOWN, type);
-	type = expression->left_type;
+	expression->reanalyse_l(analyser, Type::UNKNOWN, type.fiber_conversion());
+	if (!Type::intersection(type, expression->left_type.image_conversion(), &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
 }
 
 void PostfixExpression::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
@@ -58,41 +60,46 @@ void PostfixExpression::finalize_help(SemanticAnalyser* analyser, const Type& re
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 
-	expression->finalize_l(analyser, Type::UNKNOWN, type);
-	type = expression->left_type;
+	expression->finalize_l(analyser, Type::UNKNOWN, type.fiber_conversion());
+	if (!Type::intersection(type, expression->left_type.image_conversion(), &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	type.make_it_pure();
 }
 
 jit_value_t PostfixExpression::compile(Compiler& c) const
 {
 	jit_value_t ptr = expression->compile_l(c);
 	jit_value_t val = jit_insn_load_relative(c.F, ptr, 0, expression->left_type.jit_type());
+	jit_value_t out = nullptr;
 
 	switch (operatorr->type) {
 		case TokenType::PLUS_PLUS: {
 			if (expression->left_type.raw_type->nature() == Nature::VALUE) {
-				jit_value_t old = jit_insn_load(c.F, val);
+				out = jit_insn_load(c.F, val);
 				jit_value_t res = jit_insn_add(c.F, val, VM::create_i32(c.F, 1));
 				jit_insn_store_relative(c.F, ptr, 0, res);
-				return old;
 			} else {
-				return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_postinc, { val });
+				out = Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_postinc, { val });
 			}
+			break;
 		}
 		case TokenType::MINUS_MINUS: {
 			if (expression->type.raw_type->nature() == Nature::VALUE) {
-				jit_value_t old = jit_insn_load(c.F, val);
+				out = jit_insn_load(c.F, val);
 				jit_value_t res = jit_insn_sub(c.F, val, VM::create_i32(c.F, 1));
 				jit_insn_store_relative(c.F, ptr, 0, res);
-				return old;
 			} else {
-				return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_postdec, { val });
+				out = Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_postdec, { val });
 			}
+			break;
 		}
-		default: break;
+		default: {
+			assert(0);
+		}
 	}
 
-	assert(0);
-	return nullptr;
+	return Compiler::compile_convert(c.F, out, expression->left_type, type);
 }
 
 }
