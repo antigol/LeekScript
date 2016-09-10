@@ -264,7 +264,8 @@ vector<Token> LexicalAnalyser::parseTokens(string code) {
 					} else if (other) {
 						tokens.push_back(Token(getTokenType(word, TokenType::UNKNOW), line, character, word));
 						other = false;
-						number = true;
+						if (tokens.back().type == TokenType::DOT) ident = true;
+						else number = true;
 						u8_toutf8(buff, 5, &c, 1);
 						word = buff;
 					} else {

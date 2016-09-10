@@ -550,10 +550,10 @@ Value* SyntaxicAnalyser::eatSimpleExpression(bool pipe_opened, bool set_opened) 
 				if (t->type == TokenType::NEW || t->type == TokenType::CLASS) {
 					oa->field = t;
 					eat();
-				} else if (t->type == TokenType::NUMBER) {
-					oa->field = t;
-					//					oa->isNumber = true;
-					eat();
+//				} else if (t->type == TokenType::NUMBER) {
+//					oa->field = t;
+//					oa->isNumber = true;
+//					eat();
 				} else {
 					oa->field = eatIdent();
 				}

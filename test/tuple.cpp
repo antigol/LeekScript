@@ -19,7 +19,7 @@ void Test::test_tuple() {
 	success("let x = (1, 1.5, 'test') x.1", "1.5");
 	success("let x = (1, 1.5, 'test') x.2", "'test'");
 
-	success("let x = (1, 1.5, 'test') let y = (x, 'nested') y. 0. 2", "'test'");
+	success("let x = (1, 1.5, 'test') let y = (x, 'nested') y.0.2", "'test'");
 	success("function foo(x, y) { (x, y.0) } let x = foo(('a', 'b'),('c', 'd')) x.1", "'c'");
 
 }

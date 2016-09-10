@@ -57,13 +57,16 @@ void ObjectAccess::reanalyse_l_help(SemanticAnalyser* analyser, const Type& req_
 	if (object->type.raw_type == &RawType::TUPLE) {
 		ulong index;
 		try {
-			index = stoul(field->content);
+			size_t end;
+			index = stoul(field->content, &end);
+			if (end != field->content.size()) index = -1;
 		} catch (exception&) {
 			add_error(analyser, SemanticException::NO_ATTRIBUTE_WITH_THIS_NAME);
 			return;
 		}
 		if (index >= object->type.elements_types.size()) {
 			add_error(analyser, SemanticException::NO_ATTRIBUTE_WITH_THIS_NAME);
+			return;
 		}
 
 		Type req_type = object->type;
@@ -107,13 +110,16 @@ void ObjectAccess::finalize_l_help(SemanticAnalyser* analyser, const Type& req_t
 	if (object->type.raw_type == &RawType::TUPLE) {
 		ulong index;
 		try {
-			index = stoul(field->content);
+			size_t end;
+			index = stoul(field->content, &end);
+			if (end != field->content.size()) index = -1;
 		} catch (exception&) {
 			add_error(analyser, SemanticException::NO_ATTRIBUTE_WITH_THIS_NAME);
 			return;
 		}
 		if (index >= object->type.elements_types.size()) {
 			add_error(analyser, SemanticException::NO_ATTRIBUTE_WITH_THIS_NAME);
+			return;
 		}
 
 		if (isLeftValue()) {
@@ -136,7 +142,6 @@ jit_value_t ObjectAccess::compile(Compiler& c) const
 
 		jit_value_t tuple_ptr = jit_insn_address_of(c.F, object->compile(c));
 		jit_type_t tuple_jit_type = object->type.jit_type();
-		jit_value_t res = jit_insn_load_relative(c.F, tuple_ptr, jit_type_get_offset(tuple_jit_type, index), object->type.element_type(index).jit_type());
 
 		for (size_t i = 0; i < object->type.elements_types.size(); ++i) {
 			if (i == index) continue;
@@ -145,6 +150,7 @@ jit_value_t ObjectAccess::compile(Compiler& c) const
 			Compiler::compile_delete_temporary(c.F, el, object->type.element_type(i));
 		}
 
+		jit_value_t res = jit_insn_load_relative(c.F, tuple_ptr, jit_type_get_offset(tuple_jit_type, index), object->type.element_type(index).jit_type());
 		return Compiler::compile_convert(c.F, res, object->type.element_type(index), type);
 	} else {
 		assert(0);

@@ -58,14 +58,12 @@ double Program::compile(VM& vm, const std::string& ctx, const ExecMode mode) {
 				cout << "{\"line\":" << error->token->line << ",\"message\":\"" << error->message << "\"}";
 			}
 			cout << "]}" << endl;
-			return -1;
-
 		} else {
 			for (auto error : syn.getErrors()) {
 				cout << "Line " << error->token->line << " : " <<  error->message << endl;
 			}
-			return -1;
 		}
+		return -1;
 	}
 
 	Context context { ctx };
