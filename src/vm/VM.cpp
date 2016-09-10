@@ -187,7 +187,7 @@ LSValue* VM_convert_i64(int64_t n) {
 	return new LSVar(n);
 }
 LSValue* VM_convert_bool(int32_t n) {
-	return new LSVar(n);
+	return new LSVar((bool) n);
 }
 LSValue* VM_convert_f32(float n) {
 	return new LSVar(n);

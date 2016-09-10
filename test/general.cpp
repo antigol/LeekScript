@@ -82,6 +82,7 @@ void Test::test_general() {
 	success("let x = if true 12 else return 42; x", "12");
 	success("let x = { let y = 1 y = 'a' y } x", "'a'");
 
+	success("let x = 'a' x = ![1,2] x = x == true", "false");
 
 //	success("'foo' ?? 'bar'", "'foo'");
 //	success("null ?? 'bar'", "'bar'");

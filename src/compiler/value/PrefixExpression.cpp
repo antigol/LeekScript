@@ -63,7 +63,7 @@ void PrefixExpression::analyse_help(SemanticAnalyser* analyser)
 		if (!Type::intersection(expression->type, Type::LOGIC, &expression->type)) {
 			add_error(analyser, SemanticException::MUST_BE_LOGIC_TYPE);
 		}
-		type = Type::BOOLEAN;
+		type = Type::BOOLEAN.image_conversion();
 	} else {
 		assert(0);
 	}
@@ -125,6 +125,7 @@ void PrefixExpression::finalize_help(SemanticAnalyser* analyser, const Type& req
 
 	} else if (operatorr->type == TokenType::NOT) {
 		expression->finalize(analyser, Type::UNKNOWN);
+		type.make_it_pure();
 	}
 }
 
@@ -198,12 +199,14 @@ jit_value_t PrefixExpression::compile(Compiler& c) const
 
 	} else if (operatorr->type == TokenType::NOT) {
 		jit_value_t val = expression->compile(c);
+		jit_value_t res = nullptr;
 
 		if (expression->type.raw_type->nature() == Nature::VALUE) {
-			return jit_insn_to_not_bool(c.F, val);
+			res = jit_insn_to_not_bool(c.F, val);
 		} else {
-			return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) PE_not, { val });
+			res = Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) PE_not, { val });
 		}
+		return Compiler::compile_convert(c.F, res, Type::BOOLEAN, type);
 	}
 
 	assert(0);

@@ -156,7 +156,7 @@ void Expression::analyse_help(SemanticAnalyser* analyser)
 			add_error(analyser, SemanticException::MUST_BE_LOGIC_TYPE);
 		}
 
-		type = Type::BOOLEAN;
+		type = Type::BOOLEAN.image_conversion();
 
 	} else if (op->type == TokenType::AND
 			   || op->type == TokenType::OR
@@ -172,7 +172,7 @@ void Expression::analyse_help(SemanticAnalyser* analyser)
 			add_error(analyser, SemanticException::MUST_BE_LOGIC_TYPE);
 		}
 
-		type = Type::BOOLEAN;
+		type = Type::BOOLEAN.image_conversion();
 
 	} else {
 		assert(0);
@@ -286,22 +286,24 @@ void Expression::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 			   || op->type == TokenType::GREATER
 			   || op->type == TokenType::LOWER_EQUALS
 			   || op->type == TokenType::GREATER_EQUALS) {
-		if (!Type::intersection(type, req_type)) {
+		if (!Type::intersection(type, req_type, &type)) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
 
 		v1->finalize(analyser, v2->type);
 		v2->finalize(analyser, v1->type);
+		type.make_it_pure();
 
 	} else if (op->type == TokenType::AND
 			   || op->type == TokenType::OR
 			   || op->type == TokenType::XOR) {
-		if (!Type::intersection(type, req_type)) {
+		if (!Type::intersection(type, req_type, &type)) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
 
 		v1->finalize(analyser, Type::LOGIC);
 		v2->finalize(analyser, Type::LOGIC);
+		type.make_it_pure();
 
 	} else {
 		assert(0);
@@ -406,7 +408,7 @@ jit_value_t Expression::compile(Compiler& c) const
 		Compiler::compile_delete_temporary(c.F, x, v1->type);
 		Compiler::compile_delete_temporary(c.F, y, v2->type);
 
-		return res;
+		return Compiler::compile_convert(c.F, res, Type::BOOLEAN, type);
 
 	} else if (op->type == TokenType::AND
 			   || op->type == TokenType::OR
@@ -443,7 +445,7 @@ jit_value_t Expression::compile(Compiler& c) const
 			}
 		}
 		jit_insn_label(c.F, &shortcut);
-		return res;
+		return Compiler::compile_convert(c.F, res, Type::BOOLEAN, type);
 	}
 
 	assert(0);
