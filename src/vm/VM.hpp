@@ -7,14 +7,6 @@
 
 #define OPERATION_LIMIT 10000000
 
-#define LS_I32 jit_type_int
-#define LS_I64 jit_type_long
-#define LS_F32 jit_type_float32
-#define LS_F64 jit_type_float64
-#define LS_BOOLEAN LS_I32
-#define LS_POINTER jit_type_void_ptr
-#define LS_VOID jit_type_void
-
 namespace ls {
 
 class Type;
@@ -50,24 +42,13 @@ public:
 	std::string execute(const std::string code, std::string ctx, ExecMode mode);
 
 	void add_module(Module* m);
-	static jit_value_t value_to_lsvalue(jit_function_t, jit_value_t, Type);
 	static jit_value_t get_refs(jit_function_t F, jit_value_t obj);
 	static void inc_refs(jit_function_t F, jit_value_t obj);
 	static void inc_ops(jit_function_t F, int add);
 	static void get_operations(jit_function_t F);
 	static void print_int(jit_function_t F, jit_value_t val);
-	static jit_value_t create_bool(jit_function_t F, bool value);
-	static jit_value_t create_i32(jit_function_t F, int32_t value);
-	static jit_value_t create_i64(jit_function_t F, int64_t value);
-	static jit_value_t create_f32(jit_function_t F, double value);
-	static jit_value_t create_f64(jit_function_t F, double value);
-	static jit_value_t create_ptr(jit_function_t F, void* value);
-	static jit_value_t create_null(jit_function_t F);
-	static jit_value_t create_lsbool(jit_function_t F, bool value);
-	static jit_value_t create_lsreal(jit_function_t F, double value);
-	static jit_value_t create_default(jit_function_t F, const Type& type);
-	static jit_value_t create_vec(jit_function_t F, const Type& element_type, int cap = 0);
-	static void push_move_inc_vec(jit_function_t F, const Type& element_type, jit_value_t array, jit_value_t value);
+//	static jit_value_t create_vec(jit_function_t F, const Type& element_type, int cap = 0);
+//	static void push_move_inc_vec(jit_function_t F, const Type& element_type, jit_value_t array, jit_value_t value);
 	static jit_value_t clone_obj(jit_function_t F, jit_value_t ptr);
 	static jit_value_t clone_temporary_obj(jit_function_t F, jit_value_t ptr);
 };

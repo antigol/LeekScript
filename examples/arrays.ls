@@ -1,19 +1,16 @@
-var a = []
-let n = 1000000
+let a = [1,2,3]
 
-for (var i = 0; i < n; ++i) {
-	a += i
-}
+a[0] = 90
+
+let b = a
+
+print(a)
+print(b)
 
 
-//a = a.map(x -> x + 1)
-
-return 'done'
-
-/* 
 print(a)
 
-for (var j = 0; j < n; ++j) {
-	a[j] = n - j
-}
-//print(a)
+let z = (a,a)
+
+print(z)
+

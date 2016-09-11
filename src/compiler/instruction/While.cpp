@@ -1,4 +1,5 @@
 #include "While.hpp"
+#include "../jit/jit_general.hpp"
 
 using namespace std;
 
@@ -67,7 +68,7 @@ jit_value_t While::compile(Compiler& c) const {
 	jit_insn_label(c.F, &label_cond);
 
 	// condition
-	jit_value_t cond = Compiler::compile_is_true_delete_temporary(c.F, condition->compile(c), condition->type);
+	jit_value_t cond = jit_general::is_true_delete_temporary(c.F, condition->compile(c), condition->type);
 	jit_insn_branch_if_not(c.F, cond, &label_end);
 
 	// body

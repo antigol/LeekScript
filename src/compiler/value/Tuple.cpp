@@ -1,4 +1,5 @@
 #include "Tuple.hpp"
+#include "../jit/jit_general.hpp"
 
 using namespace std;
 
@@ -45,6 +46,7 @@ void Tuple::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 	for (size_t i = 0; i < elements.size(); ++i) {
 		Value* e = elements[i];
 		e->reanalyse(analyser, type.element_type(i));
+		type.set_element_type(i, e->type);
 	}
 }
 
@@ -62,14 +64,15 @@ void Tuple::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 
 jit_value_t Tuple::compile(Compiler& c) const
 {
-	jit_type_t ty = type.jit_type();
-	jit_value_t val = jit_value_create(c.F, ty);
+	jit_type_t jit_type = type.jit_type();
+	jit_value_t val = jit_value_create(c.F, jit_type);
 	jit_value_t ptr = jit_insn_address_of(c.F, val);
 	for (size_t i = 0; i < elements.size(); ++i) {
 		jit_value_t el = elements[i]->compile(c);
-		el = Compiler::compile_move(c.F, el, type.element_type(i));
-		jit_insn_store_relative(c.F, ptr, jit_type_get_offset(ty, i), el);
+		el = jit_general::move(c.F, el, type.element_type(i));
+		jit_insn_store_relative(c.F, ptr, jit_type_get_offset(jit_type, i), el);
 	}
+	jit_type_free(jit_type);
 	return val;
 }
 

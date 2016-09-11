@@ -2,6 +2,7 @@
 #include "Function.hpp"
 #include "../../vm/VM.hpp"
 #include "../instruction/VariableDeclaration.hpp"
+#include "../jit/jit_general.hpp"
 
 using namespace std;
 
@@ -102,7 +103,7 @@ jit_value_t VariableValue::compile(Compiler& c) const
 			v = nullptr;
 	}
 
-	return Compiler::compile_convert(c.F, v, var->type, type);
+	return jit_general::convert(c.F, v, var->type, type);
 }
 
 jit_value_t VariableValue::compile_l(Compiler& c) const

@@ -1,6 +1,8 @@
 #include "For.hpp"
 #include "Return.hpp"
 #include "../../vm/LSValue.hpp"
+#include "../jit/jit_general.hpp"
+#include "../jit/jit_vec.hpp"
 
 using namespace std;
 
@@ -159,8 +161,8 @@ jit_value_t For::compile(Compiler& c) const {
 
 	jit_value_t output_v = nullptr;
 	if (type.raw_type == &RawType::VEC) {
-		output_v = VM::create_vec(c.F, type.element_type(0));
-		VM::inc_refs(c.F, output_v);
+		output_v = jit_vec::create(c.F);
+		jit_vec::inc_refs(c.F, output_v);
 		c.add_var("{output}", output_v, type, false); // Why create variable ? in case of `break 2` the output must be deleted
 	}
 
@@ -180,7 +182,7 @@ jit_value_t For::compile(Compiler& c) const {
 
 	// Cond
 	jit_insn_label(c.F, &label_cond);
-	jit_value_t condition_v = Compiler::compile_is_true_delete_temporary(c.F, condition->compile(c), condition->type);
+	jit_value_t condition_v = jit_general::is_true_delete_temporary(c.F, condition->compile(c), condition->type);
 
 	jit_insn_branch_if_not(c.F, condition_v, &label_end);
 
@@ -189,7 +191,7 @@ jit_value_t For::compile(Compiler& c) const {
 	jit_value_t body_v = body->compile(c);
 	if (output_v && body_v) {
 		// transfer the ownership of the temporary variable `body_v`
-		VM::push_move_inc_vec(c.F, type.element_type(0), output_v, body_v);
+		jit_vec::push_move_inc(c.F, type.element_type(0), output_v, body_v);
 	}
 	c.leave_loop();
 	jit_insn_label(c.F, &label_inc);

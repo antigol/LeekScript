@@ -1,5 +1,6 @@
 #include "String.hpp"
 #include "../../vm/value/LSVar.hpp"
+#include "../jit/jit_general.hpp"
 
 using namespace std;
 
@@ -53,7 +54,7 @@ LSValue* String_create(string* s) {
 jit_value_t String::compile(Compiler& c) const
 {
 	if (type == Type::VOID) return nullptr;
-	jit_value_t base = VM::create_ptr(c.F, (void*) &value);
+	jit_value_t base = jit_general::constant_ptr(c.F, (void*) &value);
 
 	jit_type_t args_types[1] = {LS_POINTER};
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_types, 1, 0);

@@ -1,4 +1,5 @@
 #include "Function.hpp"
+#include "../jit/jit_general.hpp"
 
 using namespace std;
 
@@ -188,7 +189,7 @@ jit_value_t Function::compile(Compiler& c) const {
 	// Own the arguments
 	for (size_t i = 0; i < arguments.size(); ++i) {
 		jit_value_t p = jit_value_get_param(c.F, i);
-		jit_value_t q = Compiler::compile_move_inc(c.F, p, type.argument_type(i));
+		jit_value_t q = jit_general::move_inc(c.F, p, type.argument_type(i));
 		jit_insn_store(c.F, p, q); // hope if p=q its optimized
 	}
 
@@ -197,7 +198,7 @@ jit_value_t Function::compile(Compiler& c) const {
 
 	// Delete owned arguments
 	for (size_t i = 0; i < arguments.size(); ++i) {
-		Compiler::compile_delete_ref(c.F, jit_value_get_param(c.F, i), type.argument_type(i));
+		jit_general::delete_ref(c.F, jit_value_get_param(c.F, i), type.argument_type(i));
 	}
 
 	// Return
@@ -215,7 +216,7 @@ jit_value_t Function::compile(Compiler& c) const {
 	// Create a function : 1 op
 	VM::inc_ops(c.F, 1);
 
-	return VM::create_ptr(c.F, f);
+	return jit_general::constant_ptr(c.F, f);
 }
 
 }

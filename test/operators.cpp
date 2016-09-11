@@ -13,6 +13,10 @@ void Test::test_operators() {
 	sem_err("null = x -> x", ls::SemanticException::Type::VALUE_MUST_BE_A_LVALUE, "<v>");
 //	sem_err("{} = 2.class", ls::SemanticException::Type::VALUE_MUST_BE_A_LVALUE, "<v>");
 
+	header("Operator ==");
+
+	success("let x = 'a' x = true x == true", "true");
+
 	header("Operator xor");
 
 	success("true xor true", "false");
@@ -38,7 +42,7 @@ void Test::test_operators() {
 	/*
 	 * Swap
 	 */
-	header("Swap");
+//	header("Swap");
 //	success("let a = 2 let b = 5 a <=> b [a, b]", "[5, 2]");
 //	success("let a = [1, 2, 3, 4] a[0] <=> a[3] a", "[4, 2, 3, 1]");
 //	success("let a = 12 let b = 5 let s = a <=> b s", "5");

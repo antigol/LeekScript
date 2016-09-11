@@ -1,6 +1,7 @@
 #include "Match.hpp"
 #include "../../vm/LSValue.hpp"
 #include "../semantic/SemanticAnalyser.hpp"
+#include "../jit/jit_general.hpp"
 
 using namespace std;
 
@@ -183,7 +184,7 @@ jit_value_t Match::compile(Compiler& c) const {
 			jit_value_t ret = returns[i]->compile(c);
 			jit_insn_store(c.F, res, ret);
 			jit_insn_label(c.F, &label_end);
-			Compiler::compile_delete_temporary(c.F, v, value->type);
+			jit_general::delete_temporary(c.F, v, value->type);
 			return res;
 		}
 
@@ -210,10 +211,10 @@ jit_value_t Match::compile(Compiler& c) const {
 	}
 	// In the case of no default pattern
 
-	jit_insn_store(c.F, res, VM::create_default(c.F, type));
+	jit_insn_store(c.F, res, jit_general::constant_default(c.F, type));
 
 	jit_insn_label(c.F, &label_end);
-	Compiler::compile_delete_temporary(c.F, v, value->type);
+	jit_general::delete_temporary(c.F, v, value->type);
 	return res;
 }
 
@@ -241,15 +242,15 @@ jit_value_t Match::Pattern::match(Compiler &c, jit_value_t v, const Type& value_
 		jit_value_t ge = nullptr;
 		if (begin) {
 			jit_value_t b = begin->compile(c);
-			ge = Compiler::compile_ge(c.F, v, value_type, b, begin->type);
-			Compiler::compile_delete_temporary(c.F, b, begin->type);
+			ge = jit_general::ge(c.F, v, value_type, b, begin->type);
+			jit_general::delete_temporary(c.F, b, begin->type);
 		}
 
 		jit_value_t lt = nullptr;
 		if (end) {
 			jit_value_t e = end->compile(c);
-			lt = Compiler::compile_lt(c.F, v, value_type, e, end->type);
-			Compiler::compile_delete_temporary(c.F, e, end->type);
+			lt = jit_general::lt(c.F, v, value_type, e, end->type);
+			jit_general::delete_temporary(c.F, e, end->type);
 		}
 
 		if (ge) {
@@ -268,8 +269,8 @@ jit_value_t Match::Pattern::match(Compiler &c, jit_value_t v, const Type& value_
 
 	} else {
 		jit_value_t p = begin->compile(c);
-		jit_value_t cond = Compiler::compile_eq(c.F, v, value_type, p, begin->type);
-		Compiler::compile_delete_temporary(c.F, p, begin->type);
+		jit_value_t cond = jit_general::eq(c.F, v, value_type, p, begin->type);
+		jit_general::delete_temporary(c.F, p, begin->type);
 		return cond;
 	}
 }

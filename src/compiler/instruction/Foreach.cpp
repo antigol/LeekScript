@@ -2,6 +2,7 @@
 #include "../../vm/value/LSVec.hpp"
 #include "../../vm/value/LSMap.hpp"
 #include "../../vm/value/LSSet.hpp"
+#include "../jit/jit_vec.hpp"
 
 using namespace std;
 
@@ -229,7 +230,7 @@ jit_value_t Foreach::compile(Compiler& c) const {
 	// Potential output [for ...]
 	jit_value_t output_v = nullptr;
 	if (type.raw_type == &RawType::VEC) {
-		output_v = VM::create_vec(c.F, type.element_type(0));
+		output_v = jit_vec::create(c.F);
 		VM::inc_refs(c.F, output_v);
 		c.add_var("{output}", output_v, type, false); // Why create variable ? in case of `break 2` the output must be deleted
 	}
@@ -334,35 +335,35 @@ void Foreach::compile_foreach(Compiler&c, jit_value_t container_v, jit_value_t o
 	// Variable it = begin()
 
 	jit_value_t it_v = jit_value_create(c.F, LS_POINTER);
-	jit_insn_store(c.F, it_v, Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) fun_begin, { container_v }));
+	jit_insn_store(c.F, it_v, jit_general::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) fun_begin, { container_v }));
 
 
 	// cond label:
 	jit_insn_label(c.F, &label_cond);
 
 	// Condition to continue
-	jit_value_t cond_v = Compiler::call_native(c.F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) fun_condition, { container_v, it_v });
+	jit_value_t cond_v = jit_general::call_native(c.F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) fun_condition, { container_v, it_v });
 	jit_insn_branch_if_not(c.F, cond_v, label_end);
 
 	// Get Value
-	jit_insn_store(c.F, value_v, Compiler::call_native(c.F, jit_value_type, { LS_POINTER }, (void*) fun_value, { it_v }));
+	jit_insn_store(c.F, value_v, jit_general::call_native(c.F, jit_value_type, { LS_POINTER }, (void*) fun_value, { it_v }));
 
 	// Get Key
 	if (key != nullptr) {
-		jit_insn_store(c.F, key_v, Compiler::call_native(c.F, jit_key_type, { LS_POINTER, LS_POINTER }, (void*) fun_key, { container_v, it_v }));
+		jit_insn_store(c.F, key_v, jit_general::call_native(c.F, jit_key_type, { LS_POINTER, LS_POINTER }, (void*) fun_key, { container_v, it_v }));
 	}
 
 	// Body
 	jit_value_t body_v = body->compile(c);
 	if (output_v && body_v) {
-		VM::push_move_inc_vec(c.F, type.element_type(0), output_v, body_v);
+		jit_vec::push_move_inc(c.F, type.element_type(0), output_v, body_v);
 	}
 
 
 	// it++
 	jit_insn_label(c.F, label_it);
 
-	jit_insn_store(c.F, it_v, Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) fun_inc, { it_v }));
+	jit_insn_store(c.F, it_v, jit_general::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) fun_inc, { it_v }));
 
 	// jump to cond
 	jit_insn_branch(c.F, &label_cond);

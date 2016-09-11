@@ -1,6 +1,7 @@
 #include "../../compiler/value/AbsoluteValue.hpp"
 #include "../semantic/SemanticAnalyser.hpp"
 #include "../../vm/value/LSVar.hpp"
+#include "../jit/jit_general.hpp"
 
 using namespace std;
 
@@ -53,7 +54,7 @@ void AbsoluteValue::finalize_help(SemanticAnalyser* analyser, const Type& req_ty
 jit_value_t AbsoluteValue::compile(Compiler& c) const
 {
 	jit_value_t ex = expression->compile(c);
-	return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_abso, { ex });
+	return jit_general::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_abso, { ex });
 }
 
 }

@@ -2,6 +2,8 @@
 #include "../../vm/VM.hpp"
 #include "../semantic/SemanticAnalyser.hpp"
 #include <cassert>
+#include "../jit/jit_general.hpp"
+#include "../jit/jit_var.hpp"
 
 using namespace std;
 
@@ -49,16 +51,16 @@ void Boolean::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 jit_value_t Boolean::compile(Compiler& c) const {
 
 	if (type == Type::VAR) {
-		return VM::create_lsbool(c.F, value);
+		return jit_var::create_bool(c.F, value);
 	}
 	if (type == Type::I32) {
-		return VM::create_i32(c.F, value);
+		return jit_general::constant_i32(c.F, value);
 	}
 	if (type == Type::I64) {
-		return VM::create_i64(c.F, value);
+		return jit_general::constant_i64(c.F, value);
 	}
 	if (type == Type::BOOLEAN) {
-		return VM::create_bool(c.F, value);
+		return jit_general::constant_bool(c.F, value);
 	}
 	assert(0);
 	return nullptr;

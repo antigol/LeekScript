@@ -2,6 +2,8 @@
 #include "../../vm/VM.hpp"
 #include <climits>
 #include <cassert>
+#include "../jit/jit_general.hpp"
+#include "../jit/jit_var.hpp"
 
 using namespace std;
 
@@ -72,19 +74,19 @@ jit_value_t Number::compile(Compiler& c) const
 	double v = stod_(value);
 
 	if (type == Type::VAR) {
-		return VM::create_lsreal(c.F, v);
+		return jit_var::create_real(c.F, v);
 	}
 	if (type == Type::F32) {
-		return VM::create_f32(c.F, v);
+		return jit_general::constant_f32(c.F, v);
 	}
 	if (type == Type::F64) {
-		return VM::create_f64(c.F, v);
+		return jit_general::constant_f64(c.F, v);
 	}
 	if (type == Type::I32) {
-		return VM::create_i32(c.F, v);
+		return jit_general::constant_i32(c.F, v);
 	}
 	if (type == Type::I64) {
-		return VM::create_i64(c.F, v);
+		return jit_general::constant_i64(c.F, v);
 	}
 	assert(0);
 	return nullptr;

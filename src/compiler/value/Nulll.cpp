@@ -1,4 +1,5 @@
 #include "Nulll.hpp"
+#include "../jit/jit_general.hpp"
 
 using namespace std;
 
@@ -43,7 +44,7 @@ void Nulll::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 }
 
 jit_value_t Nulll::compile(Compiler& c) const {
-	return VM::create_null(c.F);
+	return jit_general::constant_ptr(c.F, nullptr);
 }
 
 }

@@ -100,6 +100,8 @@ inline bool LSVec<LSValue*>::eq(const LSVec<LSValue*>* that) const
 		if (*i == nullptr) return false;
 		if (*j == nullptr) return false;
 		if (**i != **j) return false;
+		++i;
+		++j;
 	}
 	return true;
 }
@@ -122,6 +124,8 @@ bool LSVec<T>::eq(const LSVec<LSValue*>* that) const
 		LSVar* var = dynamic_cast<LSVar*>(*j);
 		if (var == nullptr) return false;
 		if (*i != var->real) return false;
+		++i;
+		++j;
 	}
 	return true;
 }
@@ -165,6 +169,8 @@ inline bool LSVec<double>::eq(const LSVec<int32_t>* that) const
 
 	while (i != this->end()) {
 		if (*i != *j) return false;
+		++i;
+		++j;
 	}
 	return true;
 }
@@ -196,6 +202,8 @@ inline bool LSVec<int32_t>::eq(const LSVec<double>* that) const
 
 	while (i != this->end()) {
 		if (*i != *j) return false;
+		++i;
+		++j;
 	}
 	return true;
 }

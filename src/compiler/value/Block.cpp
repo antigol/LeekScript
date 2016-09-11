@@ -4,6 +4,7 @@
 #include "Function.hpp"
 #include "../../vm/VM.hpp"
 #include "../../vm/LSValue.hpp"
+#include "../jit/jit_general.hpp"
 
 using namespace std;
 
@@ -147,7 +148,7 @@ jit_value_t Block::compile(Compiler& c) const {
 			break; // no need to compile after a return
 		}
 		if (i == instructions.size() - 1 && instructions[i]->type.raw_type->nature() != Nature::VOID) {
-			val = Compiler::compile_move(c.F, val, type);
+			val = jit_general::move(c.F, val, type);
 			c.leave_block(c.F);
 			return val;
 		}

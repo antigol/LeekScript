@@ -1,5 +1,6 @@
 #include "Return.hpp"
 #include "../value/Function.hpp"
+#include "../jit/jit_general.hpp"
 
 using namespace std;
 
@@ -85,14 +86,14 @@ jit_value_t Return::compile(Compiler& c) const
 	if (expression) {
 		v = expression->compile(c);
 
-		v = Compiler::compile_move(c.F, v, expression->type);
+		v = jit_general::move(c.F, v, expression->type);
 	}
 
 	c.delete_variables_block(c.F, c.get_current_function_blocks());
 
 	// Delete temporary arguments
 	for (size_t i = 0; i < function->type.arguments_types.size(); ++i) {
-		Compiler::compile_delete_ref(c.F, jit_value_get_param(c.F, i), function->type.argument_type(i));
+		jit_general::delete_ref(c.F, jit_value_get_param(c.F, i), function->type.argument_type(i));
 	}
 
 	jit_insn_return(c.F, v);

@@ -1,5 +1,6 @@
 #include "PostfixExpression.hpp"
 #include "../../vm/value/LSVar.hpp"
+#include "../jit/jit_general.hpp"
 
 using namespace std;
 
@@ -77,20 +78,20 @@ jit_value_t PostfixExpression::compile(Compiler& c) const
 		case TokenType::PLUS_PLUS: {
 			if (expression->left_type.raw_type->nature() == Nature::VALUE) {
 				out = jit_insn_load(c.F, val);
-				jit_value_t res = jit_insn_add(c.F, val, VM::create_i32(c.F, 1));
+				jit_value_t res = jit_insn_add(c.F, val, jit_general::constant_i32(c.F, 1));
 				jit_insn_store_relative(c.F, ptr, 0, res);
 			} else {
-				out = Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_postinc, { val });
+				out = jit_general::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_postinc, { val });
 			}
 			break;
 		}
 		case TokenType::MINUS_MINUS: {
 			if (expression->type.raw_type->nature() == Nature::VALUE) {
 				out = jit_insn_load(c.F, val);
-				jit_value_t res = jit_insn_sub(c.F, val, VM::create_i32(c.F, 1));
+				jit_value_t res = jit_insn_sub(c.F, val, jit_general::constant_i32(c.F, 1));
 				jit_insn_store_relative(c.F, ptr, 0, res);
 			} else {
-				out = Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_postdec, { val });
+				out = jit_general::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_postdec, { val });
 			}
 			break;
 		}
@@ -99,7 +100,7 @@ jit_value_t PostfixExpression::compile(Compiler& c) const
 		}
 	}
 
-	return Compiler::compile_convert(c.F, out, expression->left_type, type);
+	return jit_general::convert(c.F, out, expression->left_type, type);
 }
 
 }

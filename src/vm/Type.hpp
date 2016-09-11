@@ -20,9 +20,9 @@ private:
 	std::string _name;
 	std::string _clazz;
 	std::string _json_name;
-	size_t _bytes;
+	size_t _bytes; // TODO remove
 	jit_type_t _jit_type;
-	Nature _nature;
+	Nature _nature; // TODO remove
 	int id;
 
 	RawType() = delete;

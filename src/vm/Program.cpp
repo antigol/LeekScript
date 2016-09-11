@@ -184,11 +184,18 @@ string Program::execute() {
 		fun();
 		return "<tuple>";
 	}
-	auto fun = (LSValue* (*)()) closure;
-	LSValue* value = fun();
+	if (output_type.raw_type->nature() == Nature::LSVALUE) {
+		auto fun = (LSValue* (*)()) closure;
+		LSValue* value = fun();
+		stringstream oss;
+		LSValue::print(oss, value);
+		LSValue::delete_temporary(value);
+		return oss.str();
+	}
+	auto fun = (void* (*)()) closure;
+	fun();
 	stringstream oss;
-	LSValue::print(oss, value);
-	LSValue::delete_temporary(value);
+	oss << "<no output for " << output_type << ">";
 	return oss.str();
 }
 

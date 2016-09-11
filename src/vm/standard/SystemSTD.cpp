@@ -1,5 +1,5 @@
 #include "SystemSTD.hpp"
-
+#include "../../compiler/jit/jit_general.hpp"
 #include "../LSValue.hpp"
 #include <chrono>
 
@@ -86,6 +86,7 @@ void System_print_float(double v) {
 #pragma GCC diagnostic ignored "-Wpmf-conversions"
 #endif
 SystemSTD::SystemSTD() : Module("System") {
+
 /*
 	static_field("version", Type::INTEGER, (void*) &System_version);
 

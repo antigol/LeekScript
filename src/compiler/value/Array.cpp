@@ -3,6 +3,7 @@
 #include "../../vm/value/LSVec.hpp"
 #include "../semantic/SemanticAnalyser.hpp"
 #include <math.h>
+#include "../jit/jit_vec.hpp"
 
 using namespace std;
 
@@ -82,11 +83,11 @@ void Array::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 
 jit_value_t Array::compile(Compiler& c) const {
 
-	jit_value_t array = VM::create_vec(c.F, type.element_type(0), expressions.size());
+	jit_value_t array = jit_vec::create(c.F);
 
 	for (Value* val : expressions) {
 		jit_value_t v = val->compile(c);
-		VM::push_move_inc_vec(c.F, type.element_type(0), array, v);
+		jit_vec::push_move_inc(c.F, type.element_type(0), array, v);
 	}
 
 	// size of the array + 1 operations

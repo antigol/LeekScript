@@ -1,6 +1,7 @@
 #include "VariableDeclaration.hpp"
 #include "../../vm/LSValue.hpp"
 #include "../value/Reference.hpp"
+#include "../jit/jit_general.hpp"
 
 using namespace std;
 
@@ -115,11 +116,12 @@ jit_value_t VariableDeclaration::compile(Compiler& c) const
 	if (expression) {
 		jit_value_t val = expression->compile(c);
 
-		val = Compiler::compile_move_inc(c.F, val, expression->type);
+		val = jit_general::move_inc(c.F, val, expression->type);
 
 		jit_insn_store(c.F, v, val);
 	} else {
-		jit_insn_store(c.F, v, VM::create_default(c.F, var->type));
+		jit_insn_store(c.F, v, jit_general::constant_default(c.F, var->type));
+		jit_general::inc_refs(c.F, v, var->type);
 	}
 	return nullptr;
 }

@@ -1,6 +1,7 @@
 #include "If.hpp"
 #include "../../vm/LSValue.hpp"
 #include "../semantic/SemanticAnalyser.hpp"
+#include "../jit/jit_general.hpp"
 
 using namespace std;
 
@@ -129,7 +130,7 @@ jit_value_t If::compile(Compiler& c) const {
 	jit_label_t label_else = jit_label_undefined;
 	jit_label_t label_end = jit_label_undefined;
 
-	jit_value_t cond = Compiler::compile_is_true_delete_temporary(c.F, condition->compile(c), condition->type);
+	jit_value_t cond = jit_general::is_true_delete_temporary(c.F, condition->compile(c), condition->type);
 
 	jit_insn_branch_if_not(c.F, cond, &label_else);
 

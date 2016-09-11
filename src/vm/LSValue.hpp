@@ -51,6 +51,7 @@ public:
 	static LSValue* move_inc(LSValue* value);
 	static void delete_ref(LSValue* value);
 	static void delete_temporary(LSValue* value);
+	static void inc_refs(LSValue* value);
 
 	bool operator == (const LSValue& value) const { return value.req(this); }
 	bool operator != (const LSValue& value) const { return !value.req(this); }
@@ -151,6 +152,12 @@ inline void LSValue::delete_temporary(LSValue* value) {
 	if (value->refs == 0) {
 		delete value;
 	}
+}
+
+inline void LSValue::inc_refs(LSValue* value)
+{
+	if (value == nullptr) return;
+	value->refs++;
 }
 
 inline std::ostream& operator << (std::ostream& os, const LSValue* value) {

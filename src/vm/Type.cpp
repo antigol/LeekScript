@@ -2,10 +2,11 @@
 #include <cassert>
 #include <algorithm>
 #include <set>
+#include "../compiler/jit/jit_tuple.hpp"
+#include "../compiler/jit/jit_vec.hpp"
 
 using namespace std;
-
-namespace ls {
+using namespace ls;
 
 RawType::RawType(const string& name, const string& classname, const string& jsonname, size_t bytes, jit_type_t jit_type, Nature nature, int id)
 	: _name(name), _clazz(classname), _json_name(jsonname), _bytes(bytes), _jit_type(jit_type), _nature(nature), id(id)
@@ -21,7 +22,7 @@ const RawType RawType::F64        ("f64",         "Number",   "number",   sizeof
 const RawType RawType::I64        ("i64",         "Number",   "number",   sizeof (int64_t), jit_type_long,     Nature::VALUE,    300);
 const RawType RawType::F32        ("f32",         "Number",   "number",   sizeof (float),   jit_type_float32,  Nature::VALUE,    400);
 const RawType RawType::VAR        ("var",         "Variable", "variable", sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  5);
-const RawType RawType::VEC        ("vec",         "Vec",      "vec",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  6);
+const RawType RawType::VEC        ("vec",         "Vec",      "vec",      0,                nullptr,           Nature::VALUE,    6);
 const RawType RawType::MAP        ("map",         "Map",      "map",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  7);
 const RawType RawType::SET        ("set",         "Set",      "set",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  8);
 const RawType RawType::FUNCTION   ("fn",          "",         "fn",       sizeof (void*),   jit_type_void_ptr, Nature::VALUE,    9);
@@ -108,23 +109,28 @@ Type::Type(const RawType* raw_type, const vector<Type>& elements_types) :
 
 bool Type::must_manage_memory() const {
 	assert(is_pure());
-	if (raw_type != &RawType::TUPLE) return raw_type->nature() == Nature::LSVALUE;
-	for (const Type& el : elements_types) {
-		if (el.must_manage_memory()) return true;
+	if (raw_type->nature() == Nature::LSVALUE) return true;
+
+	if (raw_type == &RawType::TUPLE) {
+		for (const Type& el : elements_types) {
+			if (el.must_manage_memory()) return true;
+		}
+		return false;
 	}
+
+	if (raw_type == &RawType::VEC) return true;
+
 	return false;
 }
 
 size_t Type::bytes() const
 {
 	assert(is_pure());
-	if (raw_type->bytes() > 0) return raw_type->bytes();
-	if (raw_type == &RawType::TUPLE) {
-		size_t sum = 0;
-		for (const Type& type : elements_types) {
-			sum += type.bytes();
-		}
-		return sum;
+	jit_type_t type = jit_type();
+	if (type != nullptr) {
+		size_t size = jit_type_get_size(type);
+		jit_type_free(type);
+		return size;
 	}
 	return 0;
 }
@@ -133,13 +139,9 @@ jit_type_t Type::jit_type() const
 {
 	assert(is_pure());
 	if (raw_type->jit_type() != nullptr) return raw_type->jit_type();
-	if (raw_type == &RawType::TUPLE) {
-		vector<jit_type_t> fields;
-		for (const Type& type : elements_types) {
-			fields.push_back(type.jit_type());
-		}
-		return jit_type_create_struct(fields.data(), fields.size(), 0);
-	}
+	if (raw_type == &RawType::TUPLE) return jit_tuple::jit_type(*this);
+	if (raw_type == &RawType::VEC) return jit_vec::jit_type();
+	assert(0);
 	return nullptr;
 }
 
@@ -326,7 +328,7 @@ Type Type::element_type(size_t i) const {
 Type Type::image_conversion() const
 {
 	// return a generic type of all the possible convertion of any alternative of this
-	// All these convertions should be implemanted in Compiler::compile_convert
+	// All these convertions should be implemanted in jit_general::compile_convert
 	if (raw_type == &RawType::UNKNOWN) {
 		set<Type> result;
 		for (const Type& type : alternative_types) {
@@ -345,7 +347,7 @@ Type Type::image_conversion() const
 	if (*this == Type::I32) return Type({ Type::I32, Type::F64, Type::VAR });
 	if (*this == Type::F64) return Type({ Type::F64, Type::VAR });
 
-	// TODO add other possibilities here and in Compiler::compile_convert
+	// TODO add other possibilities here and in jit_general::compile_convert
 
 	return *this;
 }
@@ -353,7 +355,7 @@ Type Type::image_conversion() const
 Type Type::fiber_conversion() const
 {
 	// return a generic type of all the possible type that can be convert into this (or at least an alternative of this)
-	// All these convertions should be implemanted in Compiler::compile_convert
+	// All these convertions should be implemanted in jit_general::compile_convert
 	if (raw_type == &RawType::UNKNOWN) {
 		set<Type> result;
 		for (const Type& type : alternative_types) {
@@ -373,7 +375,7 @@ Type Type::fiber_conversion() const
 	if (*this == Type::F64) return Type({ Type::BOOLEAN, Type::I32, Type::F64 });
 	if (*this == Type::I32) return Type({ Type::BOOLEAN, Type::I32 });
 
-	// TODO add other possibilities here and in Compiler::compile_convert
+	// TODO add other possibilities here and in jit_general::compile_convert
 
 	return *this;
 }
@@ -868,6 +870,8 @@ bool Type::operator <(const Type& type) const
 	return ph < type.ph;
 }
 
+namespace ls {
+
 ostream& operator << (ostream& os, const Type& type)
 {
 	os << type.raw_type->name();
@@ -904,7 +908,5 @@ ostream& operator << (ostream& os, const Type& type)
 	}
 	return os;
 }
-
-
 
 }

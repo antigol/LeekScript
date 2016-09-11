@@ -1,5 +1,7 @@
 #include "FunctionCall.hpp"
 #include "ObjectAccess.hpp"
+#include "VariableValue.hpp"
+#include "../jit/jit_general.hpp"
 
 using namespace std;
 
@@ -40,6 +42,8 @@ unsigned FunctionCall::line() const {
 void FunctionCall::analyse_help(SemanticAnalyser* analyser)
 {
 	ObjectAccess* oa = dynamic_cast<ObjectAccess*>(function);
+	VariableValue* vv = dynamic_cast<VariableValue*>(function);
+
 	if (oa != nullptr) {
 
 		req_method_type = Type::FUNCTION;
@@ -58,16 +62,36 @@ void FunctionCall::analyse_help(SemanticAnalyser* analyser)
 
 		type = Type::UNKNOWN;
 
-	} else {
-
-		function->analyse(analyser);
-		for (Value* a : arguments) {
-			a->analyse(analyser);
-		}
-
-		// Convertion
-		type = function->type.return_type().image_conversion();
+		return;
 	}
+	if (vv != nullptr) {
+		if (vv->name == "string") {
+			type = Type::VAR;
+			for (Value* a : arguments) {
+				a->analyse(analyser);
+			}
+			if (arguments.size() != 1)
+				add_error(analyser, SemanticException::METHOD_NOT_FOUND);
+			return;
+		}
+		if (vv->name == "print") {
+			type = Type::VOID;
+			for (Value* a : arguments) {
+				a->analyse(analyser);
+			}
+			if (arguments.size() != 1)
+				add_error(analyser, SemanticException::METHOD_NOT_FOUND);
+			return;
+		}
+	}
+
+	function->analyse(analyser);
+	for (Value* a : arguments) {
+		a->analyse(analyser);
+	}
+
+	// Convertion
+	type = function->type.return_type().image_conversion();
 }
 
 void FunctionCall::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
@@ -77,6 +101,8 @@ void FunctionCall::reanalyse_help(SemanticAnalyser* analyser, const Type& req_ty
 	}
 
 	ObjectAccess* oa = dynamic_cast<ObjectAccess*>(function);
+	VariableValue* vv = dynamic_cast<VariableValue*>(function);
+
 	if (oa != nullptr) {
 
 		Type generic;
@@ -121,36 +147,52 @@ void FunctionCall::reanalyse_help(SemanticAnalyser* analyser, const Type& req_ty
 		}
 
 		oa->type = generic; // only for debug
+		return;
+	}
 
-	} else {
-		Type req_fun_type = Type::FUNCTION;
+	if (vv != nullptr) {
+		if (vv->name == "string") {
+			type = Type::VAR;
+			Value* a = arguments[0];
+			a->reanalyse(analyser, Type::UNKNOWN);
+			return;
+		}
+		if (vv->name == "print") {
+			type = Type::VOID;
+			Value* a = arguments[0];
+			a->reanalyse(analyser, Type::UNKNOWN);
+			return;
+		}
+	}
+
+
+	Type req_fun_type = Type::FUNCTION;
+	for (size_t i = 0; i < arguments.size(); ++i) {
+		Value* a = arguments[i];
+		a->reanalyse(analyser, req_fun_type.argument_type(i));
+		req_fun_type.set_argument_type(i, a->type);
+	}
+	req_fun_type.set_return_type(type.fiber_conversion());
+
+	Type old_fun_type = function->type;
+	function->reanalyse(analyser, req_fun_type);
+
+	while (old_fun_type != function->type) {
+		// The function.type has changed !
+		req_fun_type = function->type;
 		for (size_t i = 0; i < arguments.size(); ++i) {
 			Value* a = arguments[i];
 			a->reanalyse(analyser, req_fun_type.argument_type(i));
 			req_fun_type.set_argument_type(i, a->type);
 		}
-		req_fun_type.set_return_type(type.fiber_conversion());
 
-		Type old_fun_type = function->type;
+		old_fun_type = function->type;
 		function->reanalyse(analyser, req_fun_type);
+	}
 
-		while (old_fun_type != function->type) {
-			// The function.type has changed !
-			req_fun_type = function->type;
-			for (size_t i = 0; i < arguments.size(); ++i) {
-				Value* a = arguments[i];
-				a->reanalyse(analyser, req_fun_type.argument_type(i));
-				req_fun_type.set_argument_type(i, a->type);
-			}
-
-			old_fun_type = function->type;
-			function->reanalyse(analyser, req_fun_type);
-		}
-
-		// Convertion
-		if (!Type::intersection(type, function->type.return_type().image_conversion(), &type)) {
-			add_error(analyser, SemanticException::TYPE_MISMATCH);
-		}
+	// Convertion
+	if (!Type::intersection(type, function->type.return_type().image_conversion(), &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
 }
 
@@ -161,6 +203,8 @@ void FunctionCall::finalize_help(SemanticAnalyser* analyser, const Type& req_typ
 	}
 
 	ObjectAccess* oa = dynamic_cast<ObjectAccess*>(function);
+	VariableValue* vv = dynamic_cast<VariableValue*>(function);
+
 	if (oa != nullptr) {
 
 		oa->object->finalize(analyser, Type::UNKNOWN);
@@ -205,29 +249,45 @@ void FunctionCall::finalize_help(SemanticAnalyser* analyser, const Type& req_typ
 		type.make_it_pure();
 
 		assert(method_type.is_pure() || !analyser->errors.empty());
-	} else {
-
-		Type req_fun_type = function->type;
-		req_fun_type.set_return_type(type.fiber_conversion());
-
-		for (size_t i = 0; i < arguments.size(); ++i) {
-			Value* a = arguments[i];
-			a->finalize(analyser, function->type.argument_type(i));
-			req_fun_type.set_argument_type(i, a->type);
-		}
-		function->finalize(analyser, req_fun_type);
-
-		if (!Type::intersection(type, function->type.return_type().image_conversion(), &type)) {
-			add_error(analyser, SemanticException::TYPE_MISMATCH);
-		}
-		type.make_it_pure();
-
+		return;
 	}
+
+	if (vv != nullptr) {
+		if (vv->name == "string") {
+			type = Type::VAR;
+			Value* a = arguments[0];
+			a->finalize(analyser, Type::UNKNOWN);
+			return;
+		}
+		if (vv->name == "print") {
+			type = Type::VOID;
+			Value* a = arguments[0];
+			a->finalize(analyser, Type::UNKNOWN);
+			return;
+		}
+	}
+
+	Type req_fun_type = function->type;
+	req_fun_type.set_return_type(type.fiber_conversion());
+
+	for (size_t i = 0; i < arguments.size(); ++i) {
+		Value* a = arguments[i];
+		a->finalize(analyser, function->type.argument_type(i));
+		req_fun_type.set_argument_type(i, a->type);
+	}
+	function->finalize(analyser, req_fun_type);
+
+	if (!Type::intersection(type, function->type.return_type().image_conversion(), &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
+	type.make_it_pure();
 }
 
 jit_value_t FunctionCall::compile(Compiler& c) const
 {
 	ObjectAccess* oa = dynamic_cast<ObjectAccess*>(function);
+	VariableValue* vv = dynamic_cast<VariableValue*>(function);
+
 	if (oa != nullptr) {
 
 		vector<jit_value_t> args;
@@ -239,51 +299,63 @@ jit_value_t FunctionCall::compile(Compiler& c) const
 			args_types.push_back(arguments[i]->type.jit_type());
 		}
 		Type rt = methods[0].type.return_type();
-		return Compiler::compile_convert(c.F, Compiler::call_native(c.F, rt.jit_type(), args_types, methods[0].addr, args), rt, type);
-
-	} else {
-
-		jit_label_t label_end = jit_label_undefined;
-
-		jit_value_t fun = function->compile(c);
-		jit_value_t res = nullptr;
-
-		if (function->type.return_type() == Type::VOID) {
-			jit_insn_branch_if_not(c.F, fun, &label_end);
-		} else {
-			res = jit_value_create(c.F, function->type.return_type().jit_type());
-
-			jit_label_t label_ok= jit_label_undefined;
-			jit_insn_branch_if(c.F, fun, &label_ok);
-			jit_insn_store(c.F, res, VM::create_default(c.F, function->type.return_type()));
-			jit_insn_branch(c.F, &label_end);
-			jit_insn_label(c.F, &label_ok);
-		}
-
-		vector<jit_value_t> args;
-		vector<jit_type_t> args_types;
-
-		for (size_t i = 0; i < arguments.size(); ++i) {
-			args.push_back(arguments[i]->compile(c));
-			args_types.push_back(function->type.argument_type(i).jit_type());
-		}
-
-		jit_type_t jit_return_type = function->type.return_type().jit_type();
-
-		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_return_type, args_types.data(), arguments.size(), 0);
-		jit_value_t val = jit_insn_call_indirect(c.F, fun, sig, args.data(), arguments.size(), 0);
-
-		if (function->type.return_type() != Type::VOID) {
-			jit_insn_store(c.F, res, val);
-		}
-
-		jit_insn_label(c.F, &label_end);
-
-		// Custom function call : 1 op
-		VM::inc_ops(c.F, 1);
-
-		return Compiler::compile_convert(c.F, res, function->type.return_type(), type);
+		return jit_general::convert(c.F, jit_general::call_native(c.F, rt.jit_type(), args_types, methods[0].addr, args), rt, type);
 	}
+	if (vv != nullptr) {
+		if (vv->name == "string") {
+			jit_value_t a = arguments[0]->compile(c);
+			jit_value_t res = jit_general::string(c.F, a, arguments[0]->type);
+			jit_general::delete_temporary(c.F, a, arguments[0]->type);
+			return res;
+		}
+		if (vv->name == "print") {
+			jit_value_t a = arguments[0]->compile(c);
+			jit_general::print(c.F, a, arguments[0]->type);
+			jit_general::delete_temporary(c.F, a, arguments[0]->type);
+			return nullptr;
+		}
+	}
+
+	jit_label_t label_end = jit_label_undefined;
+
+	jit_value_t fun = function->compile(c);
+	jit_value_t res = nullptr;
+
+	if (function->type.return_type() == Type::VOID) {
+		jit_insn_branch_if_not(c.F, fun, &label_end);
+	} else {
+		res = jit_value_create(c.F, function->type.return_type().jit_type());
+
+		jit_label_t label_ok= jit_label_undefined;
+		jit_insn_branch_if(c.F, fun, &label_ok);
+		jit_insn_store(c.F, res, jit_general::constant_default(c.F, function->type.return_type()));
+		jit_insn_branch(c.F, &label_end);
+		jit_insn_label(c.F, &label_ok);
+	}
+
+	vector<jit_value_t> args;
+	vector<jit_type_t> args_types;
+
+	for (size_t i = 0; i < arguments.size(); ++i) {
+		args.push_back(arguments[i]->compile(c));
+		args_types.push_back(function->type.argument_type(i).jit_type());
+	}
+
+	jit_type_t jit_return_type = function->type.return_type().jit_type();
+
+	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_return_type, args_types.data(), arguments.size(), 0);
+	jit_value_t val = jit_insn_call_indirect(c.F, fun, sig, args.data(), arguments.size(), 0);
+
+	if (function->type.return_type() != Type::VOID) {
+		jit_insn_store(c.F, res, val);
+	}
+
+	jit_insn_label(c.F, &label_end);
+
+	// Custom function call : 1 op
+	VM::inc_ops(c.F, 1);
+
+	return jit_general::convert(c.F, res, function->type.return_type(), type);
 }
 
 }

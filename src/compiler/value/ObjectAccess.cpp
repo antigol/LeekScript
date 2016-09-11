@@ -1,5 +1,6 @@
 #include "ObjectAccess.hpp"
 #include <string>
+#include "../jit/jit_general.hpp"
 
 using namespace std;
 
@@ -147,11 +148,11 @@ jit_value_t ObjectAccess::compile(Compiler& c) const
 			if (i == index) continue;
 
 			jit_value_t el = jit_insn_load_relative(c.F, tuple_ptr, jit_type_get_offset(tuple_jit_type, i), object->type.element_type(i).jit_type());
-			Compiler::compile_delete_temporary(c.F, el, object->type.element_type(i));
+			jit_general::delete_temporary(c.F, el, object->type.element_type(i));
 		}
 
 		jit_value_t res = jit_insn_load_relative(c.F, tuple_ptr, jit_type_get_offset(tuple_jit_type, index), object->type.element_type(index).jit_type());
-		return Compiler::compile_convert(c.F, res, object->type.element_type(index), type);
+		return jit_general::convert(c.F, res, object->type.element_type(index), type);
 	} else {
 		assert(0);
 	}

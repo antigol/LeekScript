@@ -3,6 +3,7 @@
 #include "../../vm/value/LSVec.hpp"
 #include "../../vm/value/LSMap.hpp"
 #include "../../vm/value/LSVar.hpp"
+#include "../jit/jit_vec.hpp"
 
 using namespace std;
 
@@ -225,16 +226,18 @@ jit_value_t IndexAccess::compile(Compiler& c) const {
 
 		// VEC
 		if (container->type.raw_type == &RawType::VEC) {
-			if (container->type.element_type(0).raw_type->nature() == Nature::LSVALUE) val = Compiler::call_native(c.F, LS_POINTER, { LS_POINTER, LS_I32 }, (void*) IA_vec_lsptr, { a, k });
-			if (container->type.element_type(0) == Type::BOOLEAN)                      val = Compiler::call_native(c.F, LS_I32,     { LS_POINTER, LS_I32 }, (void*) IA_vec<int32_t>, { a, k });
-			if (container->type.element_type(0) == Type::I32)                          val = Compiler::call_native(c.F, LS_I32,     { LS_POINTER, LS_I32 }, (void*) IA_vec<int32_t>, { a, k });
-			if (container->type.element_type(0) == Type::F64)                          val = Compiler::call_native(c.F, LS_F64,     { LS_POINTER, LS_I32 }, (void*) IA_vec<double>, { a, k });
-			if (container->type.element_type(0).raw_type == &RawType::FUNCTION)        val = Compiler::call_native(c.F, LS_POINTER, { LS_POINTER, LS_I32 }, (void*) IA_vec<void*>, { a, k });
+//			if (container->type.element_type(0).raw_type->nature() == Nature::LSVALUE) val = jit_general::call_native(c.F, LS_POINTER, { LS_POINTER, LS_I32 }, (void*) IA_vec_lsptr, { a, k });
+//			if (container->type.element_type(0) == Type::BOOLEAN)                      val = jit_general::call_native(c.F, LS_I32,     { LS_POINTER, LS_I32 }, (void*) IA_vec<int32_t>, { a, k });
+//			if (container->type.element_type(0) == Type::I32)                          val = jit_general::call_native(c.F, LS_I32,     { LS_POINTER, LS_I32 }, (void*) IA_vec<int32_t>, { a, k });
+//			if (container->type.element_type(0) == Type::F64)                          val = jit_general::call_native(c.F, LS_F64,     { LS_POINTER, LS_I32 }, (void*) IA_vec<double>, { a, k });
+//			if (container->type.element_type(0).raw_type == &RawType::FUNCTION)        val = jit_general::call_native(c.F, LS_POINTER, { LS_POINTER, LS_I32 }, (void*) IA_vec<void*>, { a, k });
 			// TODO tuple
+			val = jit_vec::index(c.F, container->type.elements_types[0], a, k);
+			jit_vec::delete_temporary(c.F, container->type.elements_types[0], a);
 			assert(val);
 		}
 
-		return Compiler::compile_convert(c.F, val, container->type.element_type(0), type);
+		return jit_general::convert(c.F, val, container->type.element_type(0), type);
 
 	} else {
 		//jit_value_t k2 = key2->compile(c);
@@ -267,12 +270,13 @@ jit_value_t IndexAccess::compile_l(Compiler& c) const
 
 	// VEC
 	if (container->type.raw_type == &RawType::VEC) {
-		if (container->type.element_type(0).raw_type->nature() == Nature::LSVALUE) return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER, LS_I32 }, (void*) IA_l_vec_lsptr, { a, k });
-		if (container->type.element_type(0) == Type::BOOLEAN)                      return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER, LS_I32 }, (void*) IA_l_vec<int32_t>, { a, k });
-		if (container->type.element_type(0) == Type::I32)                          return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER, LS_I32 }, (void*) IA_l_vec<int32_t>, { a, k });
-		if (container->type.element_type(0) == Type::F64)                          return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER, LS_I32 }, (void*) IA_l_vec<double>, { a, k });
-		if (container->type.element_type(0).raw_type == &RawType::FUNCTION)        return Compiler::call_native(c.F, LS_POINTER, { LS_POINTER, LS_I32 }, (void*) IA_l_vec<void*>, { a, k });
+//		if (container->type.element_type(0).raw_type->nature() == Nature::LSVALUE) return jit_general::call_native(c.F, LS_POINTER, { LS_POINTER, LS_I32 }, (void*) IA_l_vec_lsptr, { a, k });
+//		if (container->type.element_type(0) == Type::BOOLEAN)                      return jit_general::call_native(c.F, LS_POINTER, { LS_POINTER, LS_I32 }, (void*) IA_l_vec<int32_t>, { a, k });
+//		if (container->type.element_type(0) == Type::I32)                          return jit_general::call_native(c.F, LS_POINTER, { LS_POINTER, LS_I32 }, (void*) IA_l_vec<int32_t>, { a, k });
+//		if (container->type.element_type(0) == Type::F64)                          return jit_general::call_native(c.F, LS_POINTER, { LS_POINTER, LS_I32 }, (void*) IA_l_vec<double>, { a, k });
+//		if (container->type.element_type(0).raw_type == &RawType::FUNCTION)        return jit_general::call_native(c.F, LS_POINTER, { LS_POINTER, LS_I32 }, (void*) IA_l_vec<void*>, { a, k });
 		// TODO tuple
+		return jit_vec::index_l(c.F, container->type.elements_types[0], a, k);
 		assert(0);
 	}
 	return nullptr;

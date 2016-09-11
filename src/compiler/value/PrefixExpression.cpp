@@ -3,6 +3,7 @@
 #include "VariableValue.hpp"
 #include "../../vm/value/LSVar.hpp"
 #include "../../vm/LSValue.hpp"
+#include "../jit/jit_general.hpp"
 
 using namespace std;
 
@@ -150,25 +151,25 @@ jit_value_t PrefixExpression::compile(Compiler& c) const
 		switch (operatorr->type) {
 			case TokenType::PLUS_PLUS: {
 				if (left->left_type.raw_type->nature() == Nature::VALUE) {
-					res = jit_insn_add(c.F, val, VM::create_i32(c.F, 1));
+					res = jit_insn_add(c.F, val, jit_general::constant_i32(c.F, 1));
 					jit_insn_store_relative(c.F, ptr, 0, res);
 				} else {
-					res = Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_preinc, { val });
+					res = jit_general::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_preinc, { val });
 				}
 				break;
 			}
 			case TokenType::MINUS_MINUS: {
 				if (left->type.raw_type->nature() == Nature::VALUE) {
-					res = jit_insn_sub(c.F, val, VM::create_i32(c.F, 1));
+					res = jit_insn_sub(c.F, val, jit_general::constant_i32(c.F, 1));
 					jit_insn_store_relative(c.F, ptr, 0, res);
 				} else {
-					res = Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_predec, { val });
+					res = jit_general::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_predec, { val });
 				}
 				break;
 			}
 			default: break;
 		}
-		return Compiler::compile_convert(c.F, res, left->left_type, type);
+		return jit_general::convert(c.F, res, left->left_type, type);
 
 	} else if (operatorr->type == TokenType::MINUS
 			   || operatorr->type == TokenType::TILDE) {
@@ -181,7 +182,7 @@ jit_value_t PrefixExpression::compile(Compiler& c) const
 				if (expression->type.raw_type->nature() == Nature::VALUE) {
 					res = jit_insn_neg(c.F, val);
 				} else {
-					res = Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_minus, { val });
+					res = jit_general::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_minus, { val });
 				}
 				break;
 			}
@@ -189,13 +190,13 @@ jit_value_t PrefixExpression::compile(Compiler& c) const
 				if (expression->type.raw_type->nature() == Nature::VALUE) {
 					res = jit_insn_not(c.F, val);
 				} else {
-					res = Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_tilde, { val });
+					res = jit_general::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_tilde, { val });
 				}
 				break;
 			}
 			default: break;
 		}
-		return Compiler::compile_convert(c.F, res, expression->type, type);
+		return jit_general::convert(c.F, res, expression->type, type);
 
 	} else if (operatorr->type == TokenType::NOT) {
 		jit_value_t val = expression->compile(c);
@@ -204,9 +205,9 @@ jit_value_t PrefixExpression::compile(Compiler& c) const
 		if (expression->type.raw_type->nature() == Nature::VALUE) {
 			res = jit_insn_to_not_bool(c.F, val);
 		} else {
-			res = Compiler::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) PE_not, { val });
+			res = jit_general::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) PE_not, { val });
 		}
-		return Compiler::compile_convert(c.F, res, Type::BOOLEAN, type);
+		return jit_general::convert(c.F, res, Type::BOOLEAN, type);
 	}
 
 	assert(0);

@@ -13,7 +13,7 @@
 #include "value/LSVec.hpp"
 #include "value/LSVar.hpp"
 #include "Program.hpp"
-#include "../compiler/Compiler.hpp"
+#include "../compiler/jit/jit_general.hpp"
 
 #include "standard/VecSTD.hpp"
 
@@ -180,39 +180,12 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 	return result;
 }
 
-LSValue* VM_convert_i32(int32_t n) {
-	return new LSVar(n);
-}
-LSValue* VM_convert_i64(int64_t n) {
-	return new LSVar(n);
-}
-LSValue* VM_convert_bool(int32_t n) {
-	return new LSVar((bool) n);
-}
-LSValue* VM_convert_f32(float n) {
-	return new LSVar(n);
-}
-LSValue* VM_convert_f64(double n) {
-	return new LSVar(n);
-}
-
-jit_value_t VM::value_to_lsvalue(jit_function_t F, jit_value_t v, Type type)
-{
-	if (type == Type::I32)     return Compiler::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_convert_i32, { v });
-	if (type == Type::I64)     return Compiler::call_native(F, LS_POINTER, { LS_I64 }, (void*) VM_convert_i64, { v });
-	if (type == Type::F32)     return Compiler::call_native(F, LS_POINTER, { LS_F32 }, (void*) VM_convert_f32, { v });
-	if (type == Type::F64)     return Compiler::call_native(F, LS_POINTER, { LS_F64 }, (void*) VM_convert_f64, { v });
-	if (type == Type::BOOLEAN) return Compiler::call_native(F, LS_POINTER, { LS_BOOLEAN }, (void*) VM_convert_bool, { v });
-	assert(0);
-	return nullptr;
-}
-
 int32_t VM_get_refs(LSValue* val) {
 	return val ? val->refs : 0;
 }
 
 jit_value_t VM::get_refs(jit_function_t F, jit_value_t ptr) {
-	return Compiler::call_native(F, LS_I32, { LS_POINTER }, (void*) VM_get_refs, { ptr });
+	return jit_general::call_native(F, LS_I32, { LS_POINTER }, (void*) VM_get_refs, { ptr });
 }
 
 void VM_inc_refs(LSValue* val) {
@@ -220,7 +193,7 @@ void VM_inc_refs(LSValue* val) {
 }
 
 void VM::inc_refs(jit_function_t F, jit_value_t ptr) {
-	Compiler::call_native(F, jit_type_void, { LS_POINTER }, (void*) VM_inc_refs, { ptr });
+	jit_general::call_native(F, jit_type_void, { LS_POINTER }, (void*) VM_inc_refs, { ptr });
 }
 
 
@@ -260,83 +233,7 @@ void VM_print_int(int val) {
 }
 
 void VM::print_int(jit_function_t F, jit_value_t val) {
-	Compiler::call_native(F, LS_VOID, { LS_I32 }, (void*) VM_print_int, { val });
-}
-
-jit_value_t VM::create_bool(jit_function_t F, bool value)
-{
-	return create_i32(F, value);
-}
-
-jit_value_t VM::create_i32(jit_function_t F, int32_t value)
-{
-	return jit_value_create_nint_constant(F, LS_I32, value);
-}
-
-jit_value_t VM::create_i64(jit_function_t F, int64_t value)
-{
-	return jit_value_create_long_constant(F, LS_I64, value);
-}
-
-jit_value_t VM::create_f32(jit_function_t F, double value)
-{
-	return jit_value_create_float32_constant(F, LS_F32, value);
-}
-
-jit_value_t VM::create_f64(jit_function_t F, double value)
-{
-	return jit_value_create_float64_constant(F, LS_F64, value);
-}
-
-jit_value_t VM::create_ptr(jit_function_t F, void* value)
-{
-	jit_constant_t constant = { LS_POINTER, { value } };
-	return jit_value_create_constant(F, &constant);
-}
-
-jit_value_t VM::create_null(jit_function_t F) {
-	return create_ptr(F, nullptr);
-}
-
-LSValue* VM_create_bool(int value) {
-	return new LSVar((bool) value);
-}
-
-jit_value_t VM::create_lsbool(jit_function_t F, bool value)
-{
-	return Compiler::call_native(F, LS_POINTER, { LS_BOOLEAN }, (void*) VM_create_bool, { create_bool(F, value) });
-}
-
-LSValue* VM_create_real(double value) {
-	return new LSVar(value);
-}
-
-jit_value_t VM::create_lsreal(jit_function_t F, double value)
-{
-	return Compiler::call_native(F, LS_POINTER, { LS_F64 }, (void*) VM_create_real, { create_f64(F, value) });
-}
-
-jit_value_t VM::create_default(jit_function_t F, const Type& type)
-{
-	if (type.raw_type->nature() == Nature::LSVALUE) return create_null(F);
-	if (type == Type::VOID) return nullptr;
-	if (type == Type::BOOLEAN) return create_bool(F, false);
-	if (type == Type::I32) return create_i32(F, 0);
-	if (type == Type::I64) return create_i64(F, 0);
-	if (type == Type::F32) return create_f32(F, 0.0);
-	if (type == Type::F64) return create_f64(F, 0.0);
-	if (type.raw_type == &RawType::FUNCTION) return create_ptr(F, nullptr);
-	if (type.raw_type == &RawType::TUPLE) {
-		jit_type_t ty = type.jit_type();
-		jit_value_t val = jit_value_create(F, ty);
-		jit_value_t ptr = jit_insn_address_of(F, val);
-		for (size_t i = 0; i < type.elements_types.size(); ++i) {
-			jit_value_t el = create_default(F, type.element_type(i));
-			jit_insn_store_relative(F, ptr, jit_type_get_offset(ty, i), el);
-		}
-		return val;
-	}
-	assert(0);
+	jit_general::call_native(F, LS_VOID, { LS_I32 }, (void*) VM_print_int, { val });
 }
 
 template <typename T>
@@ -346,48 +243,48 @@ LSVec<T>* VM_create_vec(int32_t cap) {
 	return vec;
 }
 
-jit_value_t VM::create_vec(jit_function_t F, const Type& element_type, int cap) {
-	jit_value_t s = create_i32(F, cap);
+//jit_value_t VM::create_vec(jit_function_t F, const Type& element_type, int cap) {
+//	jit_value_t s = jit_general::constant_i32(F, cap);
 
-	if (element_type == Type::BOOLEAN) return Compiler::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<int32_t>, { s });
-	if (element_type == Type::I32)     return Compiler::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<int32_t>, { s });
-	if (element_type == Type::F64)     return Compiler::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<double>, { s });
-	if (element_type.raw_type->nature() == Nature::LSVALUE)
-									   return Compiler::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<LSValue*>, { s });
-	if (element_type.raw_type == &RawType::FUNCTION)
-									   return Compiler::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<void*>, { s });
-	assert(0);
-}
+//	if (element_type == Type::BOOLEAN) return jit_general::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<int32_t>, { s });
+//	if (element_type == Type::I32)     return jit_general::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<int32_t>, { s });
+//	if (element_type == Type::F64)     return jit_general::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<double>, { s });
+//	if (element_type.raw_type->nature() == Nature::LSVALUE)
+//									   return jit_general::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<LSValue*>, { s });
+//	if (element_type.raw_type == &RawType::FUNCTION)
+//									   return jit_general::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<void*>, { s });
+//	assert(0);
+//}
 
-void VM_push_vec_lsptr(LSVec<LSValue*>* vec, LSValue* value) {
-	vec->push_back(LSValue::move_inc(value));
-}
+//void VM_push_vec_lsptr(LSVec<LSValue*>* vec, LSValue* value) {
+//	vec->push_back(LSValue::move_inc(value));
+//}
 
-template <typename T>
-void VM_push_vec(LSVec<T>* vec, T value) {
-	vec->push_back(value);
-}
+//template <typename T>
+//void VM_push_vec(LSVec<T>* vec, T value) {
+//	vec->push_back(value);
+//}
 
-void VM::push_move_inc_vec(jit_function_t F, const Type& element_type, jit_value_t vec, jit_value_t value) {
-	/* Because of the move, there is no need to call delete_temporary on the pushed value.
-	 * If value points to a temporary variable his ownership will be transfer to the vec.
-	 */
+//void VM::push_move_inc_vec(jit_function_t F, const Type& element_type, jit_value_t vec, jit_value_t value) {
+//	/* Because of the move, there is no need to call delete_temporary on the pushed value.
+//	 * If value points to a temporary variable his ownership will be transfer to the vec.
+//	 */
 
-	if (element_type == Type::BOOLEAN) {
-		Compiler::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec<int32_t>, { vec, value });
-	} else 	if (element_type == Type::I32) {
-		Compiler::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec<int32_t>, { vec, value });
-	} else 	if (element_type == Type::F64) {
-		Compiler::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec<double>, { vec, value });
-	} else 	if (element_type.raw_type->nature() == Nature::LSVALUE) {
-		Compiler::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec_lsptr, { vec, value });
-	} else if (element_type.raw_type == &RawType::FUNCTION) {
-		Compiler::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec<void*>, { vec, value });
-	} else {
-		assert(0);
-	}
+//	if (element_type == Type::BOOLEAN) {
+//		jit_general::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec<int32_t>, { vec, value });
+//	} else 	if (element_type == Type::I32) {
+//		jit_general::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec<int32_t>, { vec, value });
+//	} else 	if (element_type == Type::F64) {
+//		jit_general::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec<double>, { vec, value });
+//	} else 	if (element_type.raw_type->nature() == Nature::LSVALUE) {
+//		jit_general::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec_lsptr, { vec, value });
+//	} else if (element_type.raw_type == &RawType::FUNCTION) {
+//		jit_general::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec<void*>, { vec, value });
+//	} else {
+//		assert(0);
+//	}
 
-}
+//}
 
 LSValue* VM_clone(LSValue* val) {
 	if (val == nullptr) return nullptr;
@@ -395,7 +292,7 @@ LSValue* VM_clone(LSValue* val) {
 }
 
 jit_value_t VM::clone_obj(jit_function_t F, jit_value_t ptr) {
-	return Compiler::call_native(F, LS_POINTER, { LS_POINTER }, (void*) VM_clone, { ptr });
+	return jit_general::call_native(F, LS_POINTER, { LS_POINTER }, (void*) VM_clone, { ptr });
 }
 
 LSValue* VM_clone_temporary(LSValue* val) {
@@ -406,7 +303,7 @@ LSValue* VM_clone_temporary(LSValue* val) {
 
 jit_value_t VM::clone_temporary_obj(jit_function_t F, jit_value_t ptr)
 {
-	return Compiler::call_native(F, LS_POINTER, { LS_POINTER }, (void*) VM_clone_temporary, { ptr });
+	return jit_general::call_native(F, LS_POINTER, { LS_POINTER }, (void*) VM_clone_temporary, { ptr });
 }
 
 }

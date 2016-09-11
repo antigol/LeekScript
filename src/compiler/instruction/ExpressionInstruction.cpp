@@ -1,4 +1,5 @@
 #include "ExpressionInstruction.hpp"
+#include "../jit/jit_general.hpp"
 
 using namespace std;
 
@@ -82,7 +83,7 @@ jit_value_t ExpressionInstruction::compile(Compiler& c) const {
 	jit_value_t v = value->compile(c);
 
 	if (type == Type::VOID) {
-		Compiler::compile_delete_temporary(c.F, v, value->type);
+		jit_general::delete_temporary(c.F, v, value->type);
 		return nullptr;
 	} else {
 		return v;
