@@ -231,16 +231,14 @@ jit_value_t Foreach::compile(Compiler& c) const {
 	jit_value_t output_v = nullptr;
 	if (type.raw_type == &RawType::VEC) {
 		output_v = jit_vec::create(c.F);
-		VM::inc_refs(c.F, output_v);
+		jit_vec::inc_refs(c.F, output_v);
 		c.add_var("{output}", output_v, type, false); // Why create variable ? in case of `break 2` the output must be deleted
 	}
 
 	// Container (Array, Map or Set)
 	jit_value_t container_v = container->compile(c);
 
-	if (container->type.must_manage_memory()) {
-		VM::inc_refs(c.F, container_v);
-	}
+	jit_general::inc_refs(c.F, container_v, container->type);
 
 	c.add_var("{array}", container_v, container->type, false);
 

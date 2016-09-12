@@ -43,7 +43,6 @@ public:
 
 	void add_module(Module* m);
 	static jit_value_t get_refs(jit_function_t F, jit_value_t obj);
-	static void inc_refs(jit_function_t F, jit_value_t obj);
 	static void inc_ops(jit_function_t F, int add);
 	static void get_operations(jit_function_t F);
 	static void print_int(jit_function_t F, jit_value_t val);

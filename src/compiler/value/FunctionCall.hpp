@@ -15,7 +15,8 @@ public:
 	std::vector<Value*> arguments;
 
 	Type req_method_type;
-	std::vector<Method> methods;
+	Type res_method_type;
+	std::vector<Method*> methods;
 
 	FunctionCall();
 	virtual ~FunctionCall();

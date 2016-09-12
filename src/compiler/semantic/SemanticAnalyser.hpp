@@ -87,7 +87,7 @@ public:
 	SemanticVar* get_var_direct(std::string name);
 	std::map<std::string, SemanticVar*>& get_local_vars();
 
-	std::vector<Method> get_method(const std::string& name, const Type& method_type) const;
+	std::vector<Method*> get_method(const std::string& module_name, const std::string& name, const Type& method_type, Type* result_type) const;
 
 	void add_error(SemanticException ex);
 

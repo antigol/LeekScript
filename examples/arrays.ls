@@ -1,16 +1,18 @@
-let a = [1,2,3]
+let x = [(1,2), (1,2)]
 
-a[0] = 90
+x[0].1 = 1.5
+x[1].0 = 'test'
 
-let b = a
+x.push((1,1))
 
-print(a)
-print(b)
+ls.print(x)
+
+let y = [[]]
+ls.print(y[0].push('a'))
+ls.print(y[0])
 
 
-print(a)
 
-let z = (a,a)
-
-print(z)
-
+let z = []
+ls.print(z.push('a'))
+ls.print(z)

@@ -1,3 +1,4 @@
+/*
 #ifndef VM_DOC_DOCUMENTATION_HPP_
 #define VM_DOC_DOCUMENTATION_HPP_
 
@@ -19,3 +20,4 @@ public:
 }
 
 #endif
+*/

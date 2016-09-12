@@ -18,6 +18,7 @@ public:
 	static jit_value_t create_def(jit_function_t F, const Type& type);
 	static void inc_refs(jit_function_t F, jit_value_t v, const Type& type);
 	static void print(jit_function_t F, jit_value_t v, const Type& type);
+	static jit_value_t string(jit_function_t F, jit_value_t v, const Type& type);
 };
 }
 

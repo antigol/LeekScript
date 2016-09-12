@@ -1,3 +1,4 @@
+/*
 #include "Documentation.hpp"
 
 #include <iostream>
@@ -5,11 +6,6 @@
 #include <sstream>
 #include <algorithm>
 #include "../vm/standard/VecSTD.hpp"
-#include "../vm/standard/MapSTD.hpp"
-#include "../vm/standard/BooleanSTD.hpp"
-#include "../vm/standard/NumberSTD.hpp"
-#include "../vm/standard/ObjectSTD.hpp"
-#include "../vm/standard/StringSTD.hpp"
 using namespace std;
 
 namespace ls {
@@ -45,3 +41,4 @@ void Documentation::generate(ostream& os) {
 }
 
 }
+*/

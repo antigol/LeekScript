@@ -232,8 +232,7 @@ jit_value_t IndexAccess::compile(Compiler& c) const {
 //			if (container->type.element_type(0) == Type::F64)                          val = jit_general::call_native(c.F, LS_F64,     { LS_POINTER, LS_I32 }, (void*) IA_vec<double>, { a, k });
 //			if (container->type.element_type(0).raw_type == &RawType::FUNCTION)        val = jit_general::call_native(c.F, LS_POINTER, { LS_POINTER, LS_I32 }, (void*) IA_vec<void*>, { a, k });
 			// TODO tuple
-			val = jit_vec::index(c.F, container->type.elements_types[0], a, k);
-			jit_vec::delete_temporary(c.F, container->type.elements_types[0], a);
+			val = jit_vec::index_delete_temporary(c.F, container->type.elements_types[0], a, k);
 			assert(val);
 		}
 

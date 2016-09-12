@@ -3,17 +3,8 @@
 #include "../../compiler/instruction/ExpressionInstruction.hpp"
 #include "../../vm/Program.hpp"
 #include "../../vm/Context.hpp"
-#include "../../vm/standard/NullSTD.hpp"
-#include "../../vm/standard/NumberSTD.hpp"
-#include "../../vm/standard/BooleanSTD.hpp"
-#include "../../vm/standard/StringSTD.hpp"
 #include "../../vm/standard/VecSTD.hpp"
-#include "../../vm/standard/MapSTD.hpp"
-#include "../../vm/standard/SetSTD.hpp"
-#include "../../vm/standard/ObjectSTD.hpp"
 #include "../../vm/standard/SystemSTD.hpp"
-#include "../../vm/standard/FunctionSTD.hpp"
-#include "../../vm/standard/ClassSTD.hpp"
 #include "../../vm/value/LSVar.hpp"
 #include "SemanticException.hpp"
 #include "../instruction/VariableDeclaration.hpp"
@@ -217,25 +208,36 @@ map<string, SemanticVar*>& SemanticAnalyser::get_local_vars() {
 	return variables.back().back();
 }
 
-vector<Method> SemanticAnalyser::get_method(const string& name, const Type& method_type) const
+vector<Method*> SemanticAnalyser::get_method(const string& module_name, const string& name, const Type& method_type, Type* result_type) const
 {
-	string clazz = method_type.element_type(0).get_raw_type()->clazz();
-	if (clazz.empty()) {
-		vector<Method> methods;
+	vector<Method*> methods;
+
+	if (module_name.empty()) {
 		for (Module* module : modules) {
-			vector<Method> x = module->get_method_implementation(name, method_type);
-			methods.insert(methods.end(), x.begin(), x.end());
+			Type tmp;
+			Method* x = module->get_method_implementation(name, method_type, &tmp);
+			if (x) {
+				if (methods.empty()) {
+					*result_type = tmp;
+				} else {
+					*result_type = Type::union_of(*result_type, tmp);
+				}
+				methods.push_back(x);
+			}
 		}
-		return methods;
 	} else {
 		Module* module = nullptr;
 		for (size_t i = 0; i < modules.size(); ++i) {
-			if (modules[i]->name == clazz) module = modules[i];
+			if (modules[i]->name == module_name) module = modules[i];
 		}
-		if (module)	return module->get_method_implementation(name, method_type);
-		assert(0);
-		return vector<Method>();
+		if (module)	{
+			Method* x = module->get_method_implementation(name, method_type, result_type);
+			if (x) methods.push_back(x);
+		} else {
+			assert(0);
+		}
 	}
+	return methods;
 }
 
 void SemanticAnalyser::add_error(SemanticException ex) {

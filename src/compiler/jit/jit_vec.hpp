@@ -13,6 +13,7 @@ public:
 	static jit_value_t create(jit_function_t F);
 	static void push_move_inc(jit_function_t F, const Type& element_type, jit_value_t array, jit_value_t value);
 	static jit_value_t index(jit_function_t F, const Type& element_type, jit_value_t array, jit_value_t index);
+	static jit_value_t index_delete_temporary(jit_function_t F, const Type& element_type, jit_value_t array, jit_value_t index);
 	static jit_value_t index_l(jit_function_t F, const Type& element_type, jit_value_t array, jit_value_t index);
 	static jit_value_t size(jit_function_t F, const Type& element_type, jit_value_t array);
 	static void delete_ref(jit_function_t F, const Type& element_type, jit_value_t array);
@@ -23,6 +24,7 @@ public:
 	static void inc_refs(jit_function_t F, jit_value_t array);
 
 	static void print(jit_function_t F, const Type& element_type, jit_value_t array);
+	static jit_value_t string(jit_function_t F, const Type& element_type, jit_value_t array);
 };
 }
 #endif // JIT_VEC_H

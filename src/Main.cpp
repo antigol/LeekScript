@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
 	 * Generate the standard functions documentation
 	 */
 	if (argc > 1 && string(argv[1]) == "-doc") {
-		ls::Documentation().generate(cout);
+//		ls::Documentation().generate(cout);
 		return 0;
 	}
 

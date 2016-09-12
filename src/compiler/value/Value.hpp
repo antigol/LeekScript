@@ -44,6 +44,7 @@ public:
 		assert(analyser->in_phase <= 2);
 		reanalyse_deepness++;
 		if (reanalyse_deepness > reanalyse_maximum_deepness) reanalyse_maximum_deepness = reanalyse_deepness;
+		if (reanalyse_maximum_deepness > 1000) return;
 #endif
 
 		if (analysed) reanalyse_help(analyser, req_type);

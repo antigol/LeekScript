@@ -7,13 +7,13 @@ void Test::test_functions() {
 	 */
 	header("Functions");
 	success("function foo(x, y) { x + y } foo(1, 2)", "3");
-	success("function foo(x, y) { x + y } foo(foo('Hello', ' '), 'world')", "'Hello world'");
-	success("function foo(x, y) { y } foo(foo('Hello', ' '), 'world')", "'world'");
-	success("function foo(x) { x = 'a' } let x = 'b' foo(x) x", "'b'");
-	success("let f = function (x:vec<i32>, y) { if y { x } else { [] }} f([1], true)", "[1]");
-	success("let f = function (x, y) { if y { x } else { [] }} f([1], true)", "[1]");
-	success("let f = function (x) { return [42] 5 } f([1])", "[42]");
-	success("let f = function (x:vec<i32>, y) { if y { x } else { return [42] [[]] }} f([1], false)", "[42]");
+	success("function foo(x, y) { x + y } foo(foo('Hello', ' '), 'world')", "Hello world");
+	success("function foo(x, y) { y } foo(foo('Hello', ' '), 'world')", "world");
+	success("function foo(x) { x = 'a' } let x = 'b' foo(x) x", "b");
+	success("let f = function (x:vec<i32>, y) { if y { x } else { [] }} ls.string(f([1], true))", "[1]");
+	success("let f = function (x, y) { if y { x } else { [] }} ls.string(f([1], true))", "[1]");
+	success("let f = function (x) { return [42] 5 } ls.string(f([1]))", "[42]");
+	success("let f = function (x:vec<i32>, y) { if y { x } else { return [42] [[]] }} ls.string(f([1], false))", "[42]");
 	success("function foo() { let x = 'a' return } foo()", "<void>");
 
 	sem_err("null()", ls::SemanticException::Type::TYPE_MISMATCH, "null");
@@ -31,7 +31,7 @@ void Test::test_functions() {
 	success("let f = -> 12 f()", "12");
 	success("(x -> x)(12)", "12");
 	success("(x, y -> x + y)(12, 5)", "17");
-	success("( -> [])()", "[]");
+	success("ls.string(( -> [])())", "[]");
 	success("( -> 12)()", "12");
 	success("let f = x -> x f(5) + f(7)", "12");
 	success("[-> 12][0]()", "12");
@@ -44,21 +44,21 @@ void Test::test_functions() {
 //	success("[[[[[[[x -> x ** 2]]]]]]][0][0][0][0][0][0][0](12)", "144");
 	success("(-> -> 12)()()", "12");
 	success("let f = -> -> 12 f()()", "12");
-	success("let f = x -> -> 'salut' f(true)()", "'salut'");
-	success("let f = x -> [x, x, x] f(44)", "[44, 44, 44]");
+	success("let f = x -> -> 'salut' f(true)()", "salut");
+	success("let f = x -> [x, x, x] ls.string(f(44))", "[44, 44, 44]");
 //	success("let f = function(x) { let r = x ** 2 return r + 1 } f(10)", "101");
 	success("1; 2", "2");
-	success("let x = 'leak' return '1'; 2", "'1'");
-	success("let x = '1' return x; 2", "'1'");
-	success("let f = function(x) { if (x < 10) {return true} return 12 } [f(5), f(20)]", "[1, 12]");
+	success("let x = 'leak' return '1'; 2", "1");
+	success("let x = '1' return x; 2", "1");
+	success("let f = function(x) { if (x < 10) {return true} return 12 } ls.string([f(5), f(20)])", "[1, 12]");
 	//	success("let a = 10 a ~ x -> x ^ 2", "100");
-	success("let f = x -> { let y = { if x == 0 { return 'error' } 1/x } '' + y } [f(-2.0), f(0), f(2)]", "['-0.5', 'error', '0.5']");
+	success("let f = x -> { let y = { if x == 0 { return 'error' } 1/x } '' + y } ls.string([f(-2.0), f(0), f(2)])", "[-0.5, error, 0.5]");
 	success("let f = i:i32 -> { [1 2 3][i] } f(1)", "2");
 	success("let f = i:i32 -> { [1 2 3][i] } 42", "42");
 	success("let f = a:vec<i32>, i:i32 -> a[i] f([1 2 3], 1)", "2");
 	success("let f = a:vec<i32> -> a[0] let g = h:fn(vec<i32>)->i32, a:vec<i32> -> h(a)  g(f,[])", "0");
-	success("let ml = a:vec<fn()->var> -> [for f in a { f() }] ml([->'a', ->'b', ->'c'])", "['a', 'b', 'c']");
-	success("let ml = a:vec<fn()->var> -> [for f in a { f() }] let gf = -> { -> 'x'}  ml([for i in [1,2,3] { gf() }])", "['x', 'x', 'x']");
+	success("let ml = a:vec<fn()->var> -> [for f in a { f() }] ls.string(ml([->'a', ->'b', ->'c']))", "[a, b, c]");
+	success("let ml = a:vec<fn()->var> -> [for f in a { f() }] let gf = -> { -> 'x'}  ls.string(ml([for i in [1,2,3] { gf() }]))", "[x, x, x]");
 
 // with capture : success("let ml = a:vec<fn()->var> -> [for f in a { f() }] let gf = str -> { -> str}  ml([for s in ['a', 'b'] { gf(s) }])", "['a', 'b']");
 

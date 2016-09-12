@@ -1,4 +1,5 @@
 #include "jit_tuple.hpp"
+#include "../../vm/value/LSVar.hpp"
 #include <cassert>
 
 using namespace std;
@@ -174,5 +175,37 @@ void jit_tuple::print(jit_function_t F, jit_value_t v, const Type& type)
 	}
 	jit_general::call_native(F, LS_VOID, { }, (void*) jit_tuple_print_close, { });
 	jit_type_free(jit_type);
+}
+
+static LSVar* jit_tuple_string_open() { return new LSVar("("); }
+static void jit_tuple_string_close(LSVar* value) { value->text += ")"; }
+static void jit_tuple_string_comma(LSVar* value) { value->text += ", "; }
+static void jit_tuple_string_append(LSVar* value, LSVar* x) { value->text += x->text; delete x; }
+
+jit_value_t jit_tuple::string(jit_function_t F, jit_value_t v, const Type& type)
+{
+	assert(type.raw_type == &RawType::TUPLE);
+
+	jit_value_t res = jit_general::call_native(F, LS_POINTER, { }, (void*) jit_tuple_string_open, { });
+
+	jit_value_t ptr = jit_insn_address_of(F, v);
+	jit_type_t jit_type = type.jit_type();
+
+	for (size_t i = 0; i < type.elements_types.size(); ++i) {
+		jit_nint offset = jit_type_get_offset(jit_type, i);
+		jit_type_t jit_elem_type = type.element_type(i).jit_type();
+		jit_value_t el = jit_insn_load_relative(F, ptr, offset, jit_elem_type);
+
+		jit_value_t str = jit_general::string(F, el, type.elements_types[i]);
+		jit_general::call_native(F, LS_VOID, { LS_POINTER, LS_POINTER }, (void*) jit_tuple_string_append, { res, str });
+
+		jit_type_free(jit_elem_type);
+
+		if (i + 1 < type.elements_types.size() || type.elements_types.size() == 1)
+			jit_general::call_native(F, LS_VOID, { LS_POINTER }, (void*) jit_tuple_string_comma, { res });
+	}
+	jit_general::call_native(F, LS_VOID, { LS_POINTER }, (void*) jit_tuple_string_close, { res });
+	jit_type_free(jit_type);
+	return res;
 }
 

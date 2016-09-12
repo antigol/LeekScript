@@ -13,6 +13,7 @@ public:
 	static jit_value_t create_real(jit_function_t F, double value);
 
 	static void print(jit_function_t F, jit_value_t v);
+	static jit_value_t string(jit_function_t F, jit_value_t v);
 };
 }
 #endif // JIT_VAR_HPP

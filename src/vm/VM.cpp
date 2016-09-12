@@ -16,6 +16,7 @@
 #include "../compiler/jit/jit_general.hpp"
 
 #include "standard/VecSTD.hpp"
+#include "standard/SystemSTD.hpp"
 
 using namespace std;
 
@@ -23,6 +24,7 @@ namespace ls {
 
 VM::VM() {
 	add_module(new VecSTD());
+	add_module(new SystemSTD());
 }
 
 VM::~VM() {
@@ -188,16 +190,7 @@ jit_value_t VM::get_refs(jit_function_t F, jit_value_t ptr) {
 	return jit_general::call_native(F, LS_I32, { LS_POINTER }, (void*) VM_get_refs, { ptr });
 }
 
-void VM_inc_refs(LSValue* val) {
-	val->refs++;
-}
-
-void VM::inc_refs(jit_function_t F, jit_value_t ptr) {
-	jit_general::call_native(F, jit_type_void, { LS_POINTER }, (void*) VM_inc_refs, { ptr });
-}
-
-
-void VM_operation_exception() {
+static void VM_operation_exception() {
 	throw vm_operation_exception();
 }
 

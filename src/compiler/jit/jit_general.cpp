@@ -273,15 +273,17 @@ jit_value_t jit_general::constant_default(jit_function_t F, const Type& type)
 }
 
 template <typename T>
-void jit_general_print(T value)
-{
-	cout << value;
-}
+void jit_general_print(T value) { cout << value; }
+void jit_general_print_bool(int32_t value) { cout << (value ? "true" : "false"); }
 
 void jit_general::print(jit_function_t F, jit_value_t v, const Type& type)
 {
 	if (type == Type::VAR) {
 		jit_var::print(F, v);
+		return;
+	}
+	if (type == Type::BOOLEAN) {
+		call_native(F, LS_VOID, { LS_BOOLEAN }, (void*) jit_general_print_bool, { v });
 		return;
 	}
 	if (type == Type::I32) {
@@ -305,6 +307,23 @@ void jit_general::print(jit_function_t F, jit_value_t v, const Type& type)
 
 jit_value_t jit_general::string(jit_function_t F, jit_value_t v, const Type& type)
 {
+	if (type == Type::VAR) {
+		return jit_var::string(F, v);
+	}
+	if (type == Type::BOOLEAN
+			|| type == Type::I32
+			|| type == Type::F64) {
+		v = jit_var::convert(F, v, type);
+		jit_value_t res = jit_var::string(F, v);
+		jit_general::delete_temporary(F, v, Type::VAR);
+		return res;
+	}
+	if (type.raw_type == &RawType::TUPLE) {
+		return jit_tuple::string(F, v, type);
+	}
+	if (type.raw_type == &RawType::VEC) {
+		return jit_vec::string(F, type.elements_types[0], v);
+	}
 	assert(0);
 	return nullptr;
 }

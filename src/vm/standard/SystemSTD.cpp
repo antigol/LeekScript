@@ -3,28 +3,29 @@
 #include "../LSValue.hpp"
 #include <chrono>
 
+using namespace std;
+using namespace ls;
 
-namespace ls {
 
-long get_sec_time() {
+long System_get_sec_time() {
 	return std::chrono::duration_cast<std::chrono::seconds>(
 		std::chrono::system_clock::now().time_since_epoch()
 	).count();
 }
 
-long get_milli_time() {
+long System_get_milli_time() {
 	return std::chrono::duration_cast<std::chrono::milliseconds>(
 		std::chrono::system_clock::now().time_since_epoch()
 	).count();
 }
 
-long get_micro_time() {
+long System_get_micro_time() {
 	return std::chrono::duration_cast<std::chrono::microseconds>(
 		std::chrono::system_clock::now().time_since_epoch()
 	).count();
 }
 
-long get_nano_time() {
+long System_get_nano_time() {
 	return std::chrono::duration_cast<std::chrono::nanoseconds>(
 		std::chrono::system_clock::now().time_since_epoch()
 	).count();
@@ -37,22 +38,22 @@ jit_value_t System_operations(jit_function_t F) {
 
 jit_value_t System_time(jit_function_t F) {
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_I64, {}, 0, 0);
-	return jit_insn_call_native(F, "sec_time", (void*) get_sec_time, sig, {}, 0, JIT_CALL_NOTHROW);
+	return jit_insn_call_native(F, "sec_time", (void*) System_get_sec_time, sig, {}, 0, JIT_CALL_NOTHROW);
 }
 
 jit_value_t System_millitime(jit_function_t F) {
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_I64, {}, 0, 0);
-	return jit_insn_call_native(F, "milli_time", (void*) get_milli_time, sig, {}, 0, JIT_CALL_NOTHROW);
+	return jit_insn_call_native(F, "milli_time", (void*) System_get_milli_time, sig, {}, 0, JIT_CALL_NOTHROW);
 }
 
 jit_value_t System_microtime(jit_function_t F) {
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_I64, {}, 0, 0);
-	return jit_insn_call_native(F, "micro_time", (void*) get_micro_time, sig, {}, 0, JIT_CALL_NOTHROW);
+	return jit_insn_call_native(F, "micro_time", (void*) System_get_micro_time, sig, {}, 0, JIT_CALL_NOTHROW);
 }
 
 jit_value_t System_nanotime(jit_function_t F) {
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_I64, {}, 0, 0);
-	return jit_insn_call_native(F, "nano_time", (void*) get_nano_time, sig, {}, 0, JIT_CALL_NOTHROW);
+	return jit_insn_call_native(F, "nano_time", (void*) System_get_nano_time, sig, {}, 0, JIT_CALL_NOTHROW);
 }
 
 jit_value_t System_version(jit_function_t F) {
@@ -81,11 +82,42 @@ void System_print_float(double v) {
 	std::cout << v << std::endl;
 }
 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpmf-conversions"
-#endif
-SystemSTD::SystemSTD() : Module("System") {
+void System_print_ln() { cout << endl; }
+
+class Print : public Method {
+public:
+	Print() {
+		generic_type = Type::FUNCTION;
+		generic_type.add_argument_type(Type::UNKNOWN);
+		generic_type.set_return_type(Type::VOID);
+	}
+
+	virtual jit_value_t compile(Compiler &c, const Type& type, const vector<jit_value_t>& args) override {
+		jit_general::print(c.F, args[0], type.arguments_types[0]);
+		jit_general::call_native(c.F, LS_VOID, { }, (void*) System_print_ln, { });
+		return nullptr;
+	}
+};
+
+class String : public Method {
+public:
+	String() {
+		generic_type = Type::FUNCTION;
+		generic_type.add_argument_type(Type::UNKNOWN);
+		generic_type.set_return_type(Type::VAR);
+	}
+
+	virtual jit_value_t compile(Compiler &c, const Type& type, const vector<jit_value_t>& args) override {
+		jit_value_t res = jit_general::string(c.F, args[0], type.arguments_types[0]);
+		jit_general::delete_temporary(c.F, args[0], type.arguments_types[0]);
+		return res;
+	}
+};
+
+SystemSTD::SystemSTD() : Module("ls")
+{
+	methods["print"] = new Print();
+	methods["string"] = new String();
 
 /*
 	static_field("version", Type::INTEGER, (void*) &System_version);
@@ -106,10 +138,6 @@ SystemSTD::SystemSTD() : Module("System") {
 	});
 	*/
 }
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
 
 
-}
 

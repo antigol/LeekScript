@@ -58,3 +58,14 @@ void jit_var::print(jit_function_t F, jit_value_t v)
 {
 	jit_general::call_native(F, LS_VOID, { LS_POINTER }, (void*) jit_var_print, { v });
 }
+
+static LSVar* jit_var_string(LSVar* value) {
+	stringstream oss;
+	LSValue::print(oss, value);
+	return new LSVar(oss.str());
+}
+
+jit_value_t jit_var::string(jit_function_t F, jit_value_t v)
+{
+	return jit_general::call_native(F, LS_POINTER, { LS_POINTER }, (void*) jit_var_string, { v });
+}

@@ -1,4 +1,5 @@
 #include "jit_vec.hpp"
+#include "../../vm/value/LSVar.hpp"
 
 using namespace std;
 using namespace ls;
@@ -86,6 +87,72 @@ jit_value_t jit_vec::index(jit_function_t F, const Type& element_type, jit_value
 	jit_insn_label(F, &l2);
 	jit_type_free(jit_elem_type);
 	return jit_general::move(F, res, element_type);
+}
+
+jit_value_t jit_vec::index_delete_temporary(jit_function_t F, const Type& element_type, jit_value_t array, jit_value_t index)
+{
+	jit_type_t type = jit_type();
+	jit_type_t jit_elem_type = element_type.jit_type();
+
+	jit_value_t ptr  = jit_insn_address_of(F, array);
+	jit_value_t vec  = jit_insn_load_relative(F, ptr, 0, jit_type_void_ptr);
+	jit_value_t refs = jit_insn_load_relative(F, ptr, jit_type_get_offset(type, 1), jit_type_int);
+
+
+	// Index
+
+	jit_value_t begin = jit_general::call_native(F, jit_type_void_ptr, { jit_type_void_ptr }, (void*) jit_vec_begin, { vec });
+	jit_value_t end   = jit_general::call_native(F, jit_type_void_ptr, { jit_type_void_ptr }, (void*) jit_vec_end,   { vec });
+
+	jit_value_t elem_ptr = jit_insn_load_elem_address(F, begin, jit_insn_convert(F, index, jit_type_uint, 0), jit_elem_type);
+	jit_value_t res = jit_value_create(F, jit_elem_type);
+
+	jit_label_t good_index = jit_label_undefined;
+	jit_label_t end_index = jit_label_undefined;
+	jit_insn_branch_if(F, jit_insn_lt(F, elem_ptr, end), &good_index);
+
+	jit_insn_store(F, res, jit_general::constant_default(F, element_type));
+	jit_insn_branch(F, &end_index);
+
+	jit_insn_label(F, &good_index);
+	jit_insn_store(F, res, jit_insn_load_relative(F, elem_ptr, 0, jit_elem_type));
+
+	jit_insn_label(F, &end_index);
+
+	// Delete temporary
+
+	jit_label_t exit = jit_label_undefined;
+	jit_insn_branch_if(F, refs, &exit);
+
+	if (element_type.must_manage_memory()) {
+
+		jit_label_t stop = jit_label_undefined;
+		jit_label_t loop = jit_label_undefined;
+		jit_label_t increment = jit_label_undefined;
+		jit_insn_label(F, &loop);
+		jit_insn_branch_if(F, jit_insn_eq(F, begin, end), &stop);
+		jit_insn_branch_if(F, jit_insn_eq(F, begin, elem_ptr), &increment);
+
+		jit_general::delete_ref(F, jit_insn_load_relative(F, begin, 0, jit_elem_type), element_type);
+
+		jit_insn_label(F, &increment);
+		jit_insn_store(F, begin, jit_insn_add_relative(F, begin, jit_type_get_size(jit_elem_type)));
+
+		jit_insn_branch(F, &loop);
+		jit_insn_label(F, &stop);
+
+	}
+
+	jit_general::call_native(F, jit_type_void, { jit_type_void_ptr }, (void*) jit_vec_delete, { vec });
+
+	jit_insn_label(F, &exit);
+
+
+
+
+	jit_type_free(type);
+	jit_type_free(jit_elem_type);
+	return res;
 }
 
 jit_value_t jit_vec::index_l(jit_function_t F, const Type& element_type, jit_value_t array, jit_value_t index)
@@ -231,9 +298,9 @@ void jit_vec::inc_refs(jit_function_t F, jit_value_t array)
 	jit_type_free(type);
 }
 
-void jit_vec_print_open() { cout << "["; }
-void jit_vec_print_close() { cout << "]"; }
-void jit_vec_print_comma() { cout << ", "; }
+static void jit_vec_print_open() { cout << "["; }
+static void jit_vec_print_close() { cout << "]"; }
+static void jit_vec_print_comma() { cout << ", "; }
 
 void jit_vec::print(jit_function_t F, const Type& element_type, jit_value_t array)
 {
@@ -267,4 +334,46 @@ void jit_vec::print(jit_function_t F, const Type& element_type, jit_value_t arra
 
 	jit_type_free(type);
 	jit_type_free(jit_element_type);
+}
+
+static LSVar* jit_vec_string_open() { return new LSVar("["); }
+static void jit_vec_string_close(LSVar* value) { value->text += "]"; }
+static void jit_vec_string_comma(LSVar* value) { value->text += ", "; }
+static void jit_vec_string_append(LSVar* value, LSVar* x) { value->text += x->text; delete x; }
+
+jit_value_t jit_vec::string(jit_function_t F, const Type& element_type, jit_value_t array)
+{
+	jit_type_t type = jit_vec::jit_type();
+	jit_type_t jit_element_type = element_type.jit_type();
+
+	jit_value_t vec  = jit_insn_load_relative(F, jit_insn_address_of(F, array), 0, LS_POINTER);
+
+	jit_value_t res = jit_general::call_native(F, LS_POINTER, { }, (void*) jit_vec_string_open, { });
+
+	jit_value_t begin = jit_general::call_native(F, jit_type_void_ptr, { jit_type_void_ptr }, (void*) jit_vec_begin, { vec });
+	jit_value_t end   = jit_general::call_native(F, jit_type_void_ptr, { jit_type_void_ptr }, (void*) jit_vec_end,   { vec });
+
+	jit_label_t stop = jit_label_undefined;
+	jit_label_t loop = jit_label_undefined;
+	jit_insn_label(F, &loop);
+	jit_insn_branch_if(F, jit_insn_eq(F, begin, end), &stop);
+
+	jit_value_t elem = jit_insn_load_relative(F, begin, 0, jit_element_type);
+	jit_value_t str = jit_general::string(F, elem, element_type);
+	jit_general::call_native(F, LS_VOID, { LS_POINTER, LS_POINTER }, (void*) jit_vec_string_append, { res, str });
+
+	jit_insn_store(F, begin, jit_insn_add_relative(F, begin, jit_type_get_size(jit_element_type)));
+	jit_insn_branch_if(F, jit_insn_eq(F, begin, end), &stop);
+
+	jit_general::call_native(F, LS_VOID, { LS_POINTER }, (void*) jit_vec_string_comma, { res });
+
+	jit_insn_branch(F, &loop);
+	jit_insn_label(F, &stop);
+
+	jit_general::call_native(F, LS_VOID, { LS_POINTER }, (void*) jit_vec_string_close, { res });
+
+	jit_type_free(type);
+	jit_type_free(jit_element_type);
+
+	return res;
 }
