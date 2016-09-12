@@ -19,7 +19,7 @@ int Test::all() {
 
 	test_general();
 	test_booleans();
-//	test_numbers();
+	test_numbers();
 //	test_strings();
 //	test_arrays();
 //	test_map();

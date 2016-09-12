@@ -57,6 +57,7 @@ jit_value_t jit_general::eq(jit_function_t F, jit_value_t v1, const Type& t1, ji
 		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_eq, { v1, v2 });
 	}
 	if (t1.raw_type == &RawType::TUPLE && t2 == t1) return jit_tuple::eq(F, v1, v2, t1);
+	if (t1.raw_type == &RawType::VEC && t2 == t1) return jit_vec::eq(F, t1.elements_types[0], v1, v2);
 	assert(0);
 	return nullptr;
 }

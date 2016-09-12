@@ -19,6 +19,8 @@ public:
 	static void delete_ref(jit_function_t F, const Type& element_type, jit_value_t array);
 	static void delete_temporary(jit_function_t F, const Type& element_type, jit_value_t array);
 
+	static jit_value_t eq(jit_function_t F, const Type& element_type, jit_value_t array1, jit_value_t array2);
+
 	static jit_value_t move(jit_function_t F, const Type& element_type, jit_value_t array);
 	static jit_value_t move_inc(jit_function_t F, const Type& element_type, jit_value_t array);
 	static void inc_refs(jit_function_t F, jit_value_t array);

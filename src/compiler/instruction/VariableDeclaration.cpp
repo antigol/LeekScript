@@ -111,7 +111,6 @@ jit_value_t VariableDeclaration::compile(Compiler& c) const
 	}
 
 	jit_value_t v = jit_value_create(c.F, var->type.jit_type());
-	c.add_var(variable->content, v, var->type, false);
 
 	if (expression) {
 		jit_value_t val = expression->compile(c);
@@ -123,6 +122,8 @@ jit_value_t VariableDeclaration::compile(Compiler& c) const
 		jit_insn_store(c.F, v, jit_general::constant_default(c.F, var->type));
 		jit_general::inc_refs(c.F, v, var->type);
 	}
+
+	c.add_var(variable->content, v, var->type, false);
 	return nullptr;
 }
 

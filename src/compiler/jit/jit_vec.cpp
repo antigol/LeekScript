@@ -241,6 +241,54 @@ void jit_vec::delete_temporary(jit_function_t F, const Type& element_type, jit_v
 	jit_type_free(type);
 }
 
+jit_value_t jit_vec::eq(jit_function_t F, const Type& element_type, jit_value_t array1, jit_value_t array2)
+{
+	jit_type_t type = jit_vec::jit_type();
+	jit_type_t jit_element_type = element_type.jit_type();
+
+	jit_value_t vec1 = jit_insn_load_relative(F, jit_insn_address_of(F, array1), 0, LS_POINTER);
+	jit_value_t vec2 = jit_insn_load_relative(F, jit_insn_address_of(F, array2), 0, LS_POINTER);
+
+	jit_value_t beg1 = jit_general::call_native(F, jit_type_void_ptr, { jit_type_void_ptr }, (void*) jit_vec_begin, { vec1 });
+	jit_value_t end1 = jit_general::call_native(F, jit_type_void_ptr, { jit_type_void_ptr }, (void*) jit_vec_end,   { vec1 });
+
+	jit_value_t beg2 = jit_general::call_native(F, jit_type_void_ptr, { jit_type_void_ptr }, (void*) jit_vec_begin, { vec2 });
+	jit_value_t end2 = jit_general::call_native(F, jit_type_void_ptr, { jit_type_void_ptr }, (void*) jit_vec_end,   { vec2 });
+
+	jit_value_t res = jit_value_create(F, LS_BOOLEAN);
+	jit_insn_store(F, res, jit_general::constant_bool(F, false));
+
+	jit_label_t exit = jit_label_undefined;
+	jit_label_t stop = jit_label_undefined;
+	jit_label_t loop = jit_label_undefined;
+
+	// begin loop
+	jit_insn_label(F, &loop);
+	jit_insn_branch_if(F, jit_insn_eq(F, beg1, end1), &stop);
+	jit_insn_branch_if(F, jit_insn_eq(F, beg2, end2), &exit);
+
+	jit_value_t el1 = jit_insn_load_relative(F, beg1, 0, jit_element_type);
+	jit_value_t el2 = jit_insn_load_relative(F, beg2, 0, jit_element_type);
+	jit_value_t eq = jit_general::eq(F, el1, element_type, el2, element_type);
+	jit_insn_branch_if_not(F, eq, &exit);
+
+	jit_insn_store(F, beg1, jit_insn_add_relative(F, beg1, jit_type_get_size(jit_element_type)));
+	jit_insn_store(F, beg2, jit_insn_add_relative(F, beg2, jit_type_get_size(jit_element_type)));
+
+	jit_insn_branch(F, &loop);
+	jit_insn_label(F, &stop);
+	// end loop
+
+	jit_insn_store(F, res, jit_insn_eq(F, beg2, end2));
+
+	jit_insn_label(F, &exit);
+
+	jit_type_free(type);
+	jit_type_free(jit_element_type);
+
+	return res;
+}
+
 jit_value_t jit_vec::move(jit_function_t F, const Type& element_type, jit_value_t array)
 {
 	jit_type_t type = jit_vec::jit_type();

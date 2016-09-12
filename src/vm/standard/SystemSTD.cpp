@@ -18,6 +18,7 @@ public:
 
 	virtual jit_value_t compile(Compiler &c, const Type& type, const vector<jit_value_t>& args) override {
 		jit_general::print(c.F, args[0], type.arguments_types[0]);
+		jit_general::delete_temporary(c.F, args[0], type.arguments_types[0]);
 		jit_general::call_native(c.F, LS_VOID, { }, (void*) System_print_ln, { });
 		return nullptr;
 	}

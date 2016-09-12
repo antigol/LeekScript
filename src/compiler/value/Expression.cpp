@@ -126,7 +126,9 @@ void Expression::analyse_help(SemanticAnalyser* analyser)
 	} else if (op->type == TokenType::PLUS
 			   || op->type == TokenType::MINUS
 			   || op->type == TokenType::TIMES
-			   || op->type == TokenType::DIVIDE) {
+			   || op->type == TokenType::DIVIDE
+			   || op->type == TokenType::POWER
+			   || op->type == TokenType::MODULO) {
 
 		v1->analyse(analyser);
 		v2->analyse(analyser);
@@ -140,6 +142,31 @@ void Expression::analyse_help(SemanticAnalyser* analyser)
 
 		type = Type::UNKNOWN;
 
+	} else if (op->type == TokenType::PLUS_EQUAL
+			   || op->type == TokenType::MINUS_EQUAL
+			   || op->type == TokenType::TIMES_EQUAL
+			   || op->type == TokenType::DIVIDE_EQUAL
+			   || op->type == TokenType::POWER_EQUAL
+			   || op->type == TokenType::MODULO_EQUAL) {
+
+		if (!v1->isLeftValue()) {
+			v1->add_error(analyser, SemanticException::VALUE_MUST_BE_A_LVALUE);
+			return;
+		}
+		LeftValue* l1 = dynamic_cast<LeftValue*>(v1);
+
+		l1->analyse(analyser);
+		v2->analyse(analyser);
+
+		if (!Type::intersection(l1->left_type, Type::ARITHMETIC, &l1->left_type)) {
+			add_error(analyser, SemanticException::MUST_BE_ARITHMETIC_TYPE);
+		}
+		if (!Type::intersection(v2->type, Type::ARITHMETIC, &v2->type)) {
+			add_error(analyser, SemanticException::MUST_BE_ARITHMETIC_TYPE);
+		}
+
+		type = l1->type;
+
 	} else if (op->type == TokenType::DOUBLE_EQUAL
 			   || op->type == TokenType::DIFFERENT
 			   || op->type == TokenType::LOWER
@@ -149,13 +176,6 @@ void Expression::analyse_help(SemanticAnalyser* analyser)
 
 		v1->analyse(analyser);
 		v2->analyse(analyser);
-
-//		if (!Type::intersection(v1->type, Type::LOGIC, &v1->type)) {
-//			add_error(analyser, SemanticException::MUST_BE_LOGIC_TYPE);
-//		}
-//		if (!Type::intersection(v2->type, Type::LOGIC, &v2->type)) {
-//			add_error(analyser, SemanticException::MUST_BE_LOGIC_TYPE);
-//		}
 
 		type = Type::BOOLEAN.image_conversion();
 
@@ -210,7 +230,9 @@ void Expression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type
 	} else if (op->type == TokenType::PLUS
 			   || op->type == TokenType::MINUS
 			   || op->type == TokenType::TIMES
-			   || op->type == TokenType::DIVIDE) {
+			   || op->type == TokenType::DIVIDE
+			   || op->type == TokenType::POWER
+			   || op->type == TokenType::MODULO) {
 
 		Type fiber = type.fiber_conversion();
 
@@ -226,6 +248,25 @@ void Expression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type
 		if (!Type::intersection(type, v1->type.image_conversion(), &type)) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
+
+	} else if (op->type == TokenType::PLUS_EQUAL
+			   || op->type == TokenType::MINUS_EQUAL
+			   || op->type == TokenType::TIMES_EQUAL
+			   || op->type == TokenType::DIVIDE_EQUAL
+			   || op->type == TokenType::POWER_EQUAL
+			   || op->type == TokenType::MODULO_EQUAL) {
+
+		LeftValue* l1 = dynamic_cast<LeftValue*>(v1);
+
+		Type old_left, old_right;
+		do {
+			old_left = l1->left_type;
+			old_right = v2->type;
+			l1->reanalyse_l(analyser, type, v2->type);
+			type = l1->type;
+			v2->reanalyse(analyser, l1->left_type);
+		} while (analyser->errors.empty() && (old_left != l1->left_type || old_right != v2->type));
+
 
 	} else if (op->type == TokenType::DOUBLE_EQUAL
 			   || op->type == TokenType::DIFFERENT
@@ -273,7 +314,9 @@ void Expression::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 	} else if (op->type == TokenType::PLUS
 			   || op->type == TokenType::MINUS
 			   || op->type == TokenType::TIMES
-			   || op->type == TokenType::DIVIDE) {
+			   || op->type == TokenType::DIVIDE
+			   || op->type == TokenType::POWER
+			   || op->type == TokenType::MODULO) {
 
 		v1->finalize(analyser, req_type.fiber_conversion());
 		v2->finalize(analyser, v1->type);
@@ -282,6 +325,19 @@ void Expression::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
 		type.make_it_pure();
+
+	} else if (op->type == TokenType::PLUS_EQUAL
+			   || op->type == TokenType::MINUS_EQUAL
+			   || op->type == TokenType::TIMES_EQUAL
+			   || op->type == TokenType::DIVIDE_EQUAL
+			   || op->type == TokenType::POWER_EQUAL
+			   || op->type == TokenType::MODULO_EQUAL) {
+
+		LeftValue* l1 = dynamic_cast<LeftValue*>(v1);
+
+		l1->finalize_l(analyser, req_type, v2->type);
+		type = l1->type;
+		v2->finalize(analyser, l1->left_type);
 
 	} else if (op->type == TokenType::DOUBLE_EQUAL
 			   || op->type == TokenType::DIFFERENT
@@ -331,9 +387,10 @@ jit_value_t Expression::compile(Compiler& c) const
 		LeftValue* l1 = dynamic_cast<LeftValue*>(v1);
 		jit_value_t l = l1->compile_l(c);
 		jit_value_t v = v2->compile(c);
-		if (l1->left_type.must_manage_memory()) {
+		if (l1->left_type == Type::VAR) {
 			jit_general::call_native(c.F, LS_VOID, { LS_POINTER, LS_POINTER }, (void*) EX_store_lsptr, { l, v }); // TODO update for tuples
 		} else {
+			v = jit_general::move_inc(c.F, v, v2->type);
 			jit_insn_store_relative(c.F, l, 0, v);
 		}
 		return l1->compile(c);
@@ -341,7 +398,9 @@ jit_value_t Expression::compile(Compiler& c) const
 	} else if (op->type == TokenType::PLUS
 			   || op->type == TokenType::MINUS
 			   || op->type == TokenType::TIMES
-			   || op->type == TokenType::DIVIDE) {
+			   || op->type == TokenType::DIVIDE
+			   || op->type == TokenType::POWER
+			   || op->type == TokenType::MODULO) {
 
 		// v1.type => type
 		// v1.type = v2.type
@@ -378,11 +437,101 @@ jit_value_t Expression::compile(Compiler& c) const
 					return jit_general::convert(c.F, jit_insn_div(c.F, x, y), v1->type, type);
 				}
 			}
+			case TokenType::POWER: {
+				if (v1->type == Type::VAR) {
+					return jit_general::call_native(c.F, LS_POINTER, { LS_POINTER, LS_POINTER }, (void*) LSVar::ls_pow, { x, y });
+				} else {
+					return jit_general::convert(c.F, jit_insn_pow(c.F, x, y), v1->type, type);
+				}
+			}
+			case TokenType::MODULO: {
+				if (v1->type == Type::VAR) {
+					return jit_general::call_native(c.F, LS_POINTER, { LS_POINTER, LS_POINTER }, (void*) LSVar::ls_mod, { x, y });
+				} else {
+					return jit_general::convert(c.F, jit_insn_rem(c.F, x, y), v1->type, type);
+				}
+			}
 			default: {
 				assert(0);
 				return nullptr;
 			}
 		}
+
+	} else if (op->type == TokenType::PLUS_EQUAL
+			   || op->type == TokenType::MINUS_EQUAL
+			   || op->type == TokenType::TIMES_EQUAL
+			   || op->type == TokenType::DIVIDE_EQUAL
+			   || op->type == TokenType::POWER_EQUAL
+			   || op->type == TokenType::MODULO_EQUAL) {
+
+		// v1.type = type
+		// v1.left_type = v2.type
+		LeftValue* l1 = dynamic_cast<LeftValue*>(v1);
+		jit_type_t jit_left_type = l1->left_type.jit_type();
+
+		jit_value_t l = l1->compile_l(c);
+		jit_value_t x = jit_insn_load_relative(c.F, l, 0, jit_left_type);
+		jit_value_t y = v2->compile(c);
+
+		jit_type_free(jit_left_type);
+
+		switch (op->type) {
+			case TokenType::PLUS_EQUAL: {
+				if (v1->type == Type::VAR) {
+					return jit_general::call_native(c.F, LS_POINTER, { LS_POINTER, LS_POINTER }, (void*) LSVar::ls_add_eq, { x, y });
+				} else {
+					jit_insn_store_relative(c.F, l, 0, jit_insn_add(c.F, x, y));
+				}
+				break;
+			}
+			case TokenType::MINUS_EQUAL: {
+				if (v1->type == Type::VAR) {
+					return jit_general::call_native(c.F, LS_POINTER, { LS_POINTER, LS_POINTER }, (void*) LSVar::ls_sub_eq, { x, y });
+				} else {
+					jit_insn_store_relative(c.F, l, 0, jit_insn_sub(c.F, x, y));
+				}
+				break;
+			}
+			case TokenType::TIMES_EQUAL: {
+				if (v1->type == Type::VAR) {
+					return jit_general::call_native(c.F, LS_POINTER, { LS_POINTER, LS_POINTER }, (void*) LSVar::ls_mul_eq, { x, y });
+				} else {
+					jit_insn_store_relative(c.F, l, 0, jit_insn_mul(c.F, x, y));
+				}
+				break;
+			}
+			case TokenType::DIVIDE_EQUAL: {
+				if (v1->type == Type::VAR) {
+					return jit_general::call_native(c.F, LS_POINTER, { LS_POINTER, LS_POINTER }, (void*) LSVar::ls_div_eq, { x, y });
+				} else {
+					jit_insn_store_relative(c.F, l, 0, jit_insn_div(c.F, x, y));
+				}
+				break;
+			}
+			case TokenType::POWER_EQUAL: {
+				if (v1->type == Type::VAR) {
+					return jit_general::call_native(c.F, LS_POINTER, { LS_POINTER, LS_POINTER }, (void*) LSVar::ls_pow_eq, { x, y });
+				} else {
+					jit_insn_store_relative(c.F, l, 0, jit_insn_pow(c.F, x, y));
+				}
+				break;
+			}
+			case TokenType::MODULO_EQUAL: {
+				if (v1->type == Type::VAR) {
+					return jit_general::call_native(c.F, LS_POINTER, { LS_POINTER, LS_POINTER }, (void*) LSVar::ls_mod_eq, { x, y });
+				} else {
+					jit_insn_store_relative(c.F, l, 0, jit_insn_rem(c.F, x, y));
+				}
+				break;
+			}
+			default: {
+				assert(0);
+				return nullptr;
+			}
+		}
+
+		return l1->compile(c);
+
 	} else if (op->type == TokenType::DOUBLE_EQUAL
 			   || op->type == TokenType::DIFFERENT
 			   || op->type == TokenType::LOWER

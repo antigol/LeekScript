@@ -74,20 +74,23 @@ void jit_tuple::delete_ref(jit_function_t F, jit_value_t v, const Type& type)
 	assert(type.raw_type == &RawType::TUPLE);
 
 	jit_value_t ptr = jit_insn_address_of(F, v);
-	jit_type_t ty = type.jit_type();
+	jit_type_t jit_type = type.jit_type();
 	for (size_t i = 0; i < type.elements_types.size(); ++i) {
-		jit_value_t el = jit_insn_load_relative(F, ptr, jit_type_get_offset(ty, i), type.element_type(i).jit_type());
+		jit_value_t el = jit_insn_load_relative(F, ptr, jit_type_get_offset(jit_type, i), type.element_type(i).jit_type());
 		jit_general::delete_ref(F, el, type.element_type(i));
 	}
+	jit_type_free(jit_type);
 }
 
 void jit_tuple::delete_temporary(jit_function_t F, jit_value_t v, const Type& type)
 {
+	assert(type.raw_type == &RawType::TUPLE);
+
 	jit_value_t ptr = jit_insn_address_of(F, v);
 	jit_type_t jit_type = type.jit_type();
 	for (size_t i = 0; i < type.elements_types.size(); ++i) {
 		jit_value_t el = jit_insn_load_relative(F, ptr, jit_type_get_offset(jit_type, i), type.element_type(i).jit_type());
-		delete_temporary(F, el, type.element_type(i));
+		jit_general::delete_temporary(F, el, type.element_type(i));
 	}
 	jit_type_free(jit_type);
 }

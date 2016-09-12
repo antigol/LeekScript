@@ -197,7 +197,30 @@ LSVar* LSVar::ls_add(LSVar* x, LSVar* y)
 
 LSVar* LSVar::LSVar::ls_add_eq(LSVar* x, LSVar* y)
 {
+	if (!x && !y) return nullptr;
+	if (!x) {
+		return nullptr;
+	}
+	if (!y) {
+		if (x->type == TEXT) x->text += "null";
+		return x;
+	}
 
+	if ((x->type == REAL || x->type == BOOLEAN) && (y->type == REAL || y->type == BOOLEAN)) x->real += y->real;
+	else if (x->type == TEXT && y->type == TEXT) x->text += y->text;
+	else if (x->type == TEXT && y->type == REAL) x->text += y->to_string();
+	else if (x->type == REAL && y->type == TEXT) {
+		x->type = TEXT;
+		x->text = x->to_string() + y->text;
+	}
+	else if (x->type == TEXT && y->type == BOOLEAN) x->text += (y->real > 0.0 ? "true" : "false");
+	else if (x->type == BOOLEAN && y->type == TEXT) {
+		x->type = TEXT;
+		x->text = (x->real > 0.0 ? "true" : "false") + y->text;
+	}
+
+	if (y->refs == 0) delete y;
+	return x;
 }
 
 LSVar* LSVar::LSVar::ls_sub(LSVar* x, LSVar* y)
@@ -223,7 +246,18 @@ LSVar* LSVar::LSVar::ls_sub(LSVar* x, LSVar* y)
 
 LSVar* LSVar::LSVar::ls_sub_eq(LSVar* x, LSVar* y)
 {
+	if (!x && !y) return nullptr;
+	if (!x) {
+		return nullptr;
+	}
+	if (!y) {
+		return x;
+	}
 
+	if ((x->type == REAL || x->type == BOOLEAN) && (y->type == REAL || y->type == BOOLEAN)) x->real -= y->real;
+
+	if (y->refs == 0) delete y;
+	return x;
 }
 
 LSVar* LSVar::LSVar::ls_mul(LSVar* x, LSVar* y)
@@ -249,7 +283,18 @@ LSVar* LSVar::LSVar::ls_mul(LSVar* x, LSVar* y)
 
 LSVar* LSVar::LSVar::ls_mul_eq(LSVar* x, LSVar* y)
 {
+	if (!x && !y) return nullptr;
+	if (!x) {
+		return nullptr;
+	}
+	if (!y) {
+		return x;
+	}
 
+	if ((x->type == REAL || x->type == BOOLEAN) && (y->type == REAL || y->type == BOOLEAN)) x->real *= y->real;
+
+	if (y->refs == 0) delete y;
+	return x;
 }
 
 LSVar* LSVar::LSVar::ls_div(LSVar* x, LSVar* y)
@@ -275,27 +320,92 @@ LSVar* LSVar::LSVar::ls_div(LSVar* x, LSVar* y)
 
 LSVar* LSVar::LSVar::ls_div_eq(LSVar* x, LSVar* y)
 {
+	if (!x && !y) return nullptr;
+	if (!x) {
+		return nullptr;
+	}
+	if (!y) {
+		return x;
+	}
 
+	if ((x->type == REAL || x->type == BOOLEAN) && (y->type == REAL || y->type == BOOLEAN)) x->real /= y->real;
+
+	if (y->refs == 0) delete y;
+	return x;
 }
 
 LSVar* LSVar::LSVar::ls_pow(LSVar* x, LSVar* y)
 {
+	LSVar* r = nullptr;
 
+	if (!x && !y) return r;
+	if (!x) {
+		if (y->refs == 0) delete y;
+		return r;
+	}
+	if (!y) {
+		if (x->refs == 0) delete x;
+		return r;
+	}
+
+	if ((x->type == REAL || x->type == BOOLEAN) && (y->type == REAL || y->type == BOOLEAN)) r = new LSVar(std::pow(x->real, y->real));
+
+	if (x->refs == 0) delete x;
+	if (y->refs == 0) delete y;
+	return r;
 }
 
 LSVar* LSVar::LSVar::ls_pow_eq(LSVar* x, LSVar* y)
 {
+	if (!x && !y) return nullptr;
+	if (!x) {
+		return nullptr;
+	}
+	if (!y) {
+		return x;
+	}
 
+	if ((x->type == REAL || x->type == BOOLEAN) && (y->type == REAL || y->type == BOOLEAN)) x->real = std::pow(x->real, y->real);
+
+	if (y->refs == 0) delete y;
+	return x;
 }
 
 LSVar* LSVar::LSVar::ls_mod(LSVar* x, LSVar* y)
 {
+	LSVar* r = nullptr;
 
+	if (!x && !y) return r;
+	if (!x) {
+		if (y->refs == 0) delete y;
+		return r;
+	}
+	if (!y) {
+		if (x->refs == 0) delete x;
+		return r;
+	}
+
+	if ((x->type == REAL || x->type == BOOLEAN) && (y->type == REAL || y->type == BOOLEAN)) r = new LSVar(std::fmod(x->real, y->real));
+
+	if (x->refs == 0) delete x;
+	if (y->refs == 0) delete y;
+	return r;
 }
 
 LSVar* LSVar::LSVar::ls_mod_eq(LSVar* x, LSVar* y)
 {
+	if (!x && !y) return nullptr;
+	if (!x) {
+		return nullptr;
+	}
+	if (!y) {
+		return x;
+	}
 
+	if ((x->type == REAL || x->type == BOOLEAN) && (y->type == REAL || y->type == BOOLEAN)) x->real = std::fmod(x->real, y->real);
+
+	if (y->refs == 0) delete y;
+	return x;
 }
 
 }
