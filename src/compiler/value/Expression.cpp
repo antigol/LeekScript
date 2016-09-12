@@ -280,8 +280,6 @@ void Expression::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type
 			v2->reanalyse(analyser, v1->type);
 		} while (analyser->errors.empty() && v1->type != v2->type);
 
-		cout << v1->type << " == " << v2->type << endl;
-
 	} else if (op->type == TokenType::AND
 			   || op->type == TokenType::OR
 			   || op->type == TokenType::XOR) {

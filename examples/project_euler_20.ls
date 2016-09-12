@@ -1,30 +1,34 @@
-var digits = [1]
+let digits = [1]
 
-for p = 1; p <= 100; p++ {
-	for j = 0; j < digits.size(); ++j {
+for let p = 1; p <= 100; p++ {
+	for let j = 0; j < digits.size(); ++j {
 		digits[j] *= p
 	}
-	for i = 0; i < digits.size(); ++i {
+	for let i = 0; i < digits.size(); ++i {
 		if (9 < digits[i]) {
 			let m = digits[i] % 10
-			var q = (digits[i] - m) / 10
+			let q = (digits[i] - m) / 10
 			digits[i] = m
 			if (i < digits.size() - 1) {
 				digits[i + 1] += q
 			} else {
-				digits += q
+				digits.push(q)
 				break
 			}
 		}
 	}
-	var n = digits.size() - 1
+	let n = digits.size() - 1
 	while (9 < digits[n]) {
 		let mo = digits[n] % 10
 		let qu = (digits[n] - mo) / 10
 		digits[n] = mo
-		digits += qu
+		digits.push(qu)
 		n++
 	}
 }
 // print(~digits)
-digits.sum()
+let sum = 0
+for let i = 0; i < digits.size(); ++i {
+	sum += digits[i]
+}
+sum

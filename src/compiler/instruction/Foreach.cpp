@@ -146,86 +146,8 @@ void Foreach::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 	}
 }
 
-/*
- * Begin
- */
-LSVec<LSValue*>::iterator fun_begin_vec_all(LSVec<LSValue*>* array) {
-	return array->begin();
-}
-LSMap<LSValue*,LSValue*>::iterator fun_begin_map_all(LSMap<LSValue*,LSValue*>* map) {
-	return map->begin();
-}
-LSSet<LSValue*>::iterator fun_begin_set_all(LSSet<LSValue*>* set) {
-	return set->begin();
-}
-
-/*
- * Condition
- */
-bool fun_condition_vec_all(LSVec<LSValue*>* array, LSVec<LSValue*>::iterator it) {
-	return it != array->end();
-}
-bool fun_condition_map_all(LSMap<LSValue*,LSValue*>* map, LSMap<LSValue*,LSValue*>::iterator it) {
-	return it != map->end();
-}
-bool fun_condition_set_all(LSSet<LSValue*>* set, LSSet<LSValue*>::iterator it) {
-	return it != set->end();
-}
-
-/*
- * Value
- */
-template <typename T>
-T fun_value_vec(typename LSVec<T>::iterator it) {
-	return *it;
-}
-template <typename K, typename T>
-T fun_value_map(typename LSMap<K,T>::iterator it) {
-	return it->second;
-}
-template <typename T>
-T fun_value_set(typename LSSet<T>::iterator it) {
-	return *it;
-}
-
-
-/*
- * Key
- */
-template <typename T>
-int fun_key_vec(LSVec<T>* vec, typename LSVec<T>::iterator it) {
-	return distance(vec->begin(), it);
-}
-template <typename K, typename T>
-K fun_key_map(LSMap<K,T>*, typename LSMap<K,T>::iterator it) {
-	return it->first;
-}
-template <typename T>
-int fun_key_set(LSSet<T>* set, typename LSSet<T>::iterator it) {
-	return distance(set->begin(), it);
-}
-
-
-
-/*
- * Increment
- */
-template <typename T>
-typename LSVec<T>::iterator fun_inc_vec(typename LSVec<T>::iterator it) {
-	return ++it;
-}
-template <typename K, typename T>
-typename LSMap<K,T>::iterator fun_inc_map(typename LSMap<K,T>::iterator it) {
-	return ++it;
-}
-template <typename T>
-typename LSSet<T>::iterator fun_inc_set(typename LSSet<T>::iterator it) {
-	return ++it;
-}
-
 jit_value_t Foreach::compile(Compiler& c) const
 {
-	assert(0);
 	c.enter_block(); // { for x in [1, 2] {} }<-- this block
 
 	// Potential output [for ...]
@@ -257,116 +179,57 @@ jit_value_t Foreach::compile(Compiler& c) const
 	jit_label_t label_it = jit_label_undefined;
 	c.enter_loop(&label_end, &label_it);
 
-	// Static Selector
-	if (container->type == Type(&RawType::VEC, { Type::I32 })) {
-		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_vec_all, (void*) fun_condition_vec_all, (void*) fun_value_vec<int32_t>, (void*) fun_key_vec<int32_t>, (void*) fun_inc_vec<int32_t>,
-						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(&RawType::VEC, { Type::F64 })) {
-		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_vec_all, (void*) fun_condition_vec_all, (void*) fun_value_vec<double>, (void*) fun_key_vec<double>, (void*) fun_inc_vec<double>,
-						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (Type::intersection(container->type, Type(&RawType::VEC, { Type::VAR }))) {
-		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_vec_all, (void*) fun_condition_vec_all, (void*) fun_value_vec<LSValue*>, (void*) fun_key_vec<LSValue*>, (void*) fun_inc_vec<LSValue*>,
-						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (Type::intersection(container->type, Type(&RawType::VEC, { Type::UNKNOWN }))) { // tout le reste == functions
-		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_vec_all, (void*) fun_condition_vec_all, (void*) fun_value_vec<void*>, (void*) fun_key_vec<void*>, (void*) fun_inc_vec<void*>,
-						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (Type::intersection(container->type, Type(&RawType::MAP, { Type::VAR, Type::VAR }))) {
-		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map<LSValue*,LSValue*>, (void*) fun_key_map<LSValue*,LSValue*>, (void*) fun_inc_map<LSValue*,LSValue*>,
-						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (Type::intersection(container->type, Type(&RawType::MAP, { Type::VAR, Type::I32 }))) {
-		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map<LSValue*,int32_t>, (void*) fun_key_map<LSValue*,int32_t>, (void*) fun_inc_map<LSValue*,int32_t>,
-						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (Type::intersection(container->type, Type(&RawType::MAP, { Type::VAR, Type::F64 }))) {
-		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map<LSValue*,double>, (void*) fun_key_map<LSValue*,double>, (void*) fun_inc_map<LSValue*,double>,
-						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (Type::intersection(container->type, Type(&RawType::MAP, { Type::I32, Type::VAR }))) {
-		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map<int32_t,LSValue*>, (void*) fun_key_map<int32_t,LSValue*>, (void*) fun_inc_map<int32_t,LSValue*>,
-						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(&RawType::MAP, { Type::I32, Type::I32 })) {
-		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map<int32_t,int32_t>, (void*) fun_key_map<int32_t,int32_t>, (void*) fun_inc_map<int32_t,int32_t>,
-						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(&RawType::MAP, { Type::I32, Type::F64 })) {
-		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map<int32_t,double>, (void*) fun_key_map<int32_t,double>, (void*) fun_inc_map<int32_t,double>,
-						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(&RawType::SET, { Type::I32 })) {
-		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_set_all, (void*) fun_condition_set_all, (void*) fun_value_set<int>, (void*) fun_key_set<int>, (void*) fun_inc_set<int>,
-						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(&RawType::SET, { Type::F64 })) {
-		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_set_all, (void*) fun_condition_set_all, (void*) fun_value_set<double>, (void*) fun_key_set<double>, (void*) fun_inc_set<double>,
-						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (container->type == Type(&RawType::SET, { Type::VAR })) {
-		compile_foreach(c, container_v, output_v,
-						(void*) fun_begin_set_all, (void*) fun_condition_set_all, (void*) fun_value_set<LSValue*>, (void*) fun_key_set<LSValue*>, (void*) fun_inc_set<LSValue*>,
-						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	}
+	if (container->type.raw_type == &RawType::VEC) {
+		// iterators
+		pair<jit_value_t, jit_value_t> begin_end = jit_vec::begin_end(c.F, container_v);
+		jit_value_t begin = begin_end.first;
+		jit_value_t end = begin_end.second;
 
+		if (key != nullptr) {
+			jit_insn_store(c.F, key_v, jit_general::constant_i32(c.F, 0));
+		}
+
+		// cond label:
+		jit_label_t label_cond = jit_label_undefined;
+		jit_insn_label(c.F, &label_cond);
+
+		// Condition to continue
+		jit_insn_branch_if(c.F, jit_insn_eq(c.F, begin, end), &label_end);
+
+		// Get Value
+		jit_insn_store(c.F, value_v, jit_insn_load_relative(c.F, begin, 0, jit_value_type));
+
+		// Body
+		jit_value_t body_v = body->compile(c);
+		if (output_v && body_v) {
+			jit_vec::push_move_inc(c.F, type.elements_types[0], output_v, body_v);
+		}
+
+
+		// it++
+		jit_insn_label(c.F, &label_it);
+
+		// incrment key
+		if (key != nullptr) {
+			jit_insn_store(c.F, key_v, jit_insn_add(c.F, key_v, jit_general::constant_i32(c.F, 1)));
+		}
+
+		jit_insn_store(c.F, begin, jit_insn_add_relative(c.F, begin, jit_type_get_size(jit_value_type)));
+
+		// jump to cond
+		jit_insn_branch(c.F, &label_cond);
+	} else {
+		assert(0);
+	}
 	c.leave_loop();
 
 	// end label:
 	jit_insn_label(c.F, &label_end);
 
-	jit_value_t return_v = VM::clone_obj(c.F, output_v); // otherwise it is delete by the c.leave_block
+	jit_value_t return_v = jit_general::move(c.F, output_v, type); // otherwise it is delete by the c.leave_block
 	c.leave_block(c.F); // { for x in ['a' 'b'] { ... }<--- not this block }<--- this block
 
 	return return_v;
 }
-
-void Foreach::compile_foreach(Compiler&c, jit_value_t container_v, jit_value_t output_v,
-							  void* fun_begin, void* fun_condition, void* fun_value, void* fun_key, void* fun_inc,
-							  jit_label_t* label_it, jit_label_t* label_end,
-							  jit_type_t jit_value_type, jit_value_t value_v, jit_type_t jit_key_type, jit_value_t key_v) const {
-
-	// Labels
-	jit_label_t label_cond = jit_label_undefined;
-
-	// Variable it = begin()
-
-	jit_value_t it_v = jit_value_create(c.F, LS_POINTER);
-	jit_insn_store(c.F, it_v, jit_general::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) fun_begin, { container_v }));
-
-
-	// cond label:
-	jit_insn_label(c.F, &label_cond);
-
-	// Condition to continue
-	jit_value_t cond_v = jit_general::call_native(c.F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) fun_condition, { container_v, it_v });
-	jit_insn_branch_if_not(c.F, cond_v, label_end);
-
-	// Get Value
-	jit_insn_store(c.F, value_v, jit_general::call_native(c.F, jit_value_type, { LS_POINTER }, (void*) fun_value, { it_v }));
-
-	// Get Key
-	if (key != nullptr) {
-		jit_insn_store(c.F, key_v, jit_general::call_native(c.F, jit_key_type, { LS_POINTER, LS_POINTER }, (void*) fun_key, { container_v, it_v }));
-	}
-
-	// Body
-	jit_value_t body_v = body->compile(c);
-	if (output_v && body_v) {
-		jit_vec::push_move_inc(c.F, type.element_type(0), output_v, body_v);
-	}
-
-
-	// it++
-	jit_insn_label(c.F, label_it);
-
-	jit_insn_store(c.F, it_v, jit_general::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) fun_inc, { it_v }));
-
-	// jump to cond
-	jit_insn_branch(c.F, &label_cond);
-}
-
 
 }

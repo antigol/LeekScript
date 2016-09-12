@@ -241,6 +241,14 @@ void jit_vec::delete_temporary(jit_function_t F, const Type& element_type, jit_v
 	jit_type_free(type);
 }
 
+std::pair<jit_value_t, jit_value_t> jit_vec::begin_end(jit_function_t F, jit_value_t array)
+{
+	jit_value_t vec  = jit_insn_load_relative(F, jit_insn_address_of(F, array), 0, jit_type_void_ptr);
+	jit_value_t begin = jit_general::call_native(F, jit_type_void_ptr, { jit_type_void_ptr }, (void*) jit_vec_begin, { vec });
+	jit_value_t end   = jit_general::call_native(F, jit_type_void_ptr, { jit_type_void_ptr }, (void*) jit_vec_end, { vec });
+	return std::make_pair(begin, end);
+}
+
 jit_value_t jit_vec::eq(jit_function_t F, const Type& element_type, jit_value_t array1, jit_value_t array2)
 {
 	jit_type_t type = jit_vec::jit_type();

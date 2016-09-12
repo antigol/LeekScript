@@ -182,14 +182,6 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 	return result;
 }
 
-int32_t VM_get_refs(LSValue* val) {
-	return val ? val->refs : 0;
-}
-
-jit_value_t VM::get_refs(jit_function_t F, jit_value_t ptr) {
-	return jit_general::call_native(F, LS_I32, { LS_POINTER }, (void*) VM_get_refs, { ptr });
-}
-
 static void VM_operation_exception() {
 	throw vm_operation_exception();
 }
@@ -227,76 +219,6 @@ void VM_print_int(int val) {
 
 void VM::print_int(jit_function_t F, jit_value_t val) {
 	jit_general::call_native(F, LS_VOID, { LS_I32 }, (void*) VM_print_int, { val });
-}
-
-template <typename T>
-LSVec<T>* VM_create_vec(int32_t cap) {
-	LSVec<T>* vec = new LSVec<T>();
-	vec->reserve(cap);
-	return vec;
-}
-
-//jit_value_t VM::create_vec(jit_function_t F, const Type& element_type, int cap) {
-//	jit_value_t s = jit_general::constant_i32(F, cap);
-
-//	if (element_type == Type::BOOLEAN) return jit_general::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<int32_t>, { s });
-//	if (element_type == Type::I32)     return jit_general::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<int32_t>, { s });
-//	if (element_type == Type::F64)     return jit_general::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<double>, { s });
-//	if (element_type.raw_type->nature() == Nature::LSVALUE)
-//									   return jit_general::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<LSValue*>, { s });
-//	if (element_type.raw_type == &RawType::FUNCTION)
-//									   return jit_general::call_native(F, LS_POINTER, { LS_I32 }, (void*) VM_create_vec<void*>, { s });
-//	assert(0);
-//}
-
-//void VM_push_vec_lsptr(LSVec<LSValue*>* vec, LSValue* value) {
-//	vec->push_back(LSValue::move_inc(value));
-//}
-
-//template <typename T>
-//void VM_push_vec(LSVec<T>* vec, T value) {
-//	vec->push_back(value);
-//}
-
-//void VM::push_move_inc_vec(jit_function_t F, const Type& element_type, jit_value_t vec, jit_value_t value) {
-//	/* Because of the move, there is no need to call delete_temporary on the pushed value.
-//	 * If value points to a temporary variable his ownership will be transfer to the vec.
-//	 */
-
-//	if (element_type == Type::BOOLEAN) {
-//		jit_general::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec<int32_t>, { vec, value });
-//	} else 	if (element_type == Type::I32) {
-//		jit_general::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec<int32_t>, { vec, value });
-//	} else 	if (element_type == Type::F64) {
-//		jit_general::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec<double>, { vec, value });
-//	} else 	if (element_type.raw_type->nature() == Nature::LSVALUE) {
-//		jit_general::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec_lsptr, { vec, value });
-//	} else if (element_type.raw_type == &RawType::FUNCTION) {
-//		jit_general::call_native(F, LS_VOID, { LS_POINTER, element_type.jit_type() }, (void*) VM_push_vec<void*>, { vec, value });
-//	} else {
-//		assert(0);
-//	}
-
-//}
-
-LSValue* VM_clone(LSValue* val) {
-	if (val == nullptr) return nullptr;
-	return val->clone();
-}
-
-jit_value_t VM::clone_obj(jit_function_t F, jit_value_t ptr) {
-	return jit_general::call_native(F, LS_POINTER, { LS_POINTER }, (void*) VM_clone, { ptr });
-}
-
-LSValue* VM_clone_temporary(LSValue* val) {
-	if (val == nullptr) return nullptr;
-	if (val->refs == 0) return val->clone();
-	return val;
-}
-
-jit_value_t VM::clone_temporary_obj(jit_function_t F, jit_value_t ptr)
-{
-	return jit_general::call_native(F, LS_POINTER, { LS_POINTER }, (void*) VM_clone_temporary, { ptr });
 }
 
 }

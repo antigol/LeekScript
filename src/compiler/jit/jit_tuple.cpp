@@ -99,43 +99,58 @@ jit_value_t jit_tuple::move_inc(jit_function_t F, jit_value_t v, const Type& typ
 {
 	assert(type.raw_type == &RawType::TUPLE);
 
-	v = jit_insn_load(F, v);
-	jit_value_t ptr = jit_insn_address_of(F, v);
-	jit_type_t ty = type.jit_type();
+	jit_type_t jit_type = type.jit_type();
+
+	jit_value_t res = jit_value_create(F, jit_type);
+	jit_insn_store(F, res, v);
+	jit_value_t ptr = jit_insn_address_of(F, res);
 	for (size_t i = 0; i < type.elements_types.size(); ++i) {
-		jit_nint offset = jit_type_get_offset(ty, i);
-		jit_value_t el = jit_insn_load_relative(F, ptr, offset, type.element_type(i).jit_type());
-		el = jit_general::move_inc(F, el, type.element_type(i));
+		jit_type_t jit_elem_type = type.elements_types[i].jit_type();
+
+		jit_nint offset = jit_type_get_offset(jit_type, i);
+		jit_value_t el = jit_insn_load_relative(F, ptr, offset, jit_elem_type);
+		el = jit_general::move_inc(F, el, type.elements_types[i]);
 		jit_insn_store_relative(F, ptr, offset, el);
+
+		jit_type_free(jit_elem_type);
 	}
-	return v;
+	jit_type_free(jit_type);
+	return res;
 }
 
 jit_value_t jit_tuple::move(jit_function_t F, jit_value_t v, const Type& type)
 {
 	assert(type.raw_type == &RawType::TUPLE);
 
-	v = jit_insn_load(F, v);
-	jit_value_t ptr = jit_insn_address_of(F, v);
-	jit_type_t ty = type.jit_type();
+	jit_type_t jit_type = type.jit_type();
+
+	jit_value_t res = jit_value_create(F, jit_type);
+	jit_insn_store(F, res, v);
+	jit_value_t ptr = jit_insn_address_of(F, res);
 	for (size_t i = 0; i < type.elements_types.size(); ++i) {
-		jit_nint offset = jit_type_get_offset(ty, i);
-		jit_value_t el = jit_insn_load_relative(F, ptr, offset, type.element_type(i).jit_type());
-		el = jit_general::move(F, el, type.element_type(i));
+		jit_type_t jit_elem_type = type.elements_types[i].jit_type();
+
+		jit_nint offset = jit_type_get_offset(jit_type, i);
+		jit_value_t el = jit_insn_load_relative(F, ptr, offset, jit_elem_type);
+		el = jit_general::move(F, el, type.elements_types[i]);
 		jit_insn_store_relative(F, ptr, offset, el);
+
+		jit_type_free(jit_elem_type);
 	}
-	return v;
+	jit_type_free(jit_type);
+	return res;
 }
 
 jit_value_t jit_tuple::create_def(jit_function_t F, const Type& type)
 {
-	jit_type_t ty = type.jit_type();
-	jit_value_t val = jit_value_create(F, ty);
+	jit_type_t jit_type = type.jit_type();
+	jit_value_t val = jit_value_create(F, jit_type);
 	jit_value_t ptr = jit_insn_address_of(F, val);
 	for (size_t i = 0; i < type.elements_types.size(); ++i) {
 		jit_value_t el = jit_general::constant_default(F, type.element_type(i));
-		jit_insn_store_relative(F, ptr, jit_type_get_offset(ty, i), el);
+		jit_insn_store_relative(F, ptr, jit_type_get_offset(jit_type, i), el);
 	}
+	jit_type_free(jit_type);
 	return val;
 }
 
@@ -144,13 +159,13 @@ void jit_tuple::inc_refs(jit_function_t F, jit_value_t v, const Type& type)
 	assert(type.raw_type == &RawType::TUPLE);
 
 	jit_value_t ptr = jit_insn_address_of(F, v);
-	jit_type_t ty = type.jit_type();
+	jit_type_t jit_type = type.jit_type();
 	for (size_t i = 0; i < type.elements_types.size(); ++i) {
-		jit_nint offset = jit_type_get_offset(ty, i);
+		jit_nint offset = jit_type_get_offset(jit_type, i);
 		jit_value_t el = jit_insn_load_relative(F, ptr, offset, type.element_type(i).jit_type());
 		jit_general::inc_refs(F, el, type.elements_types[i]);
 	}
-	jit_type_free(ty);
+	jit_type_free(jit_type);
 }
 
 void jit_tuple_print_open() { cout << "("; }

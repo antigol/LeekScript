@@ -174,7 +174,7 @@ jit_value_t For::compile(Compiler& c) const {
 	for (Value* ins : inits) {
 		ins->compile(c);
 		if (dynamic_cast<Return*>(ins)) {
-			jit_value_t return_v = VM::clone_obj(c.F, output_v);
+			jit_value_t return_v = jit_general::move(c.F, output_v, type);
 			c.leave_block(c.F);
 			return return_v;
 		}
@@ -209,7 +209,7 @@ jit_value_t For::compile(Compiler& c) const {
 
 	// End
 	jit_insn_label(c.F, &label_end);
-	jit_value_t return_v = VM::clone_obj(c.F, output_v);
+	jit_value_t return_v = jit_general::move(c.F, output_v, type);
 	c.leave_block(c.F);
 	return return_v;
 }

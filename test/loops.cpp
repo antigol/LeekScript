@@ -32,7 +32,7 @@ void Test::test_loops() {
 	 */
 	header("While loops");
 	success("let i = 0 while (i < 10) { i++ } i", "10");
-//	success("let i = 0 let s = 0 while (i < 10) { s += i i++ } s", "45");
+	success("let i = 0 let s = 0 while (i < 10) { s += i i++ } s", "45");
 	success("let i = 0 while (i < 100) { i++ if (i == 50) break } i", "50");
 	success("let i = 0 let a = 0 while (i < 10) { i++ if (i < 8) continue a++ } a", "3");
 	success("while (true) { break }", "<void>");
@@ -59,7 +59,7 @@ void Test::test_loops() {
 	 */
 	header("Foreach loops");
 	success("for v in [1, 2, 3, 4] {}", "<void>");
-	/*
+
 	success("let s = 0 for v in [1, 2, 3, 4] { s += v } s", "10");
 	success_almost("let s = 0 for v in [1.2, 2, 3.76, 4.01] { s += v } s", 10.969999999999998863);
 	success("let s = '' for v in ['salut ', 'ça ', 'va ?'] { s += v } s", "'salut ça va ?'");
@@ -77,15 +77,14 @@ void Test::test_loops() {
 	success("let y = '' for k, x in { let x = <> x.insert(4) x } { y += k + ':' + x } y", "'0:4'");
 //	success("let fs = [] fs.push(s -> {let sum = 0 for v in s {sum += v} sum}) fs[0](<1,2>)", "3");
 //	success("let fs = [] fs.push(s -> {[for v in s {v}]}) fs[0](<2,1>)", "[1, 2]");
-*/
+
 	/*
 	 * Array For
 	 */
 	header("Array For");
-	/*
+
 	success("[for let i = 0; i < 5; ++i { i }]", "[0, 1, 2, 3, 4]");
 	success("[for let i = 1; i <= 10; ++i { [for let j = 1; j <= 3; ++j { if i == 3 break 2 i * j}] }]", "[[1, 2, 3], [2, 4, 6]]");
-	*/
 	success("[for x in [1, 2, 3] { x }]", "[1, 2, 3]");
 //	success("let a = ['a': 'b'] [for k, x in a { k+x }]", "['ab']");
 //	success("[for x in [1, 2, 3] {[ for y in [1, 2, 3] { if y == 2 continue x * y }] }]", "[[1, 3], [2, 6], [3, 9]]");
