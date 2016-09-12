@@ -47,7 +47,8 @@ void Test::test_general() {
 //	success("let ♫☯🐖👽 = 5 let 🐨 = 2 ♫☯🐖👽 ** 🐨", "25");
 
 	sem_err("a", ls::SemanticException::Type::UNDEFINED_VARIABLE, "a");
-	sem_err("let a = 2 let a = 5", ls::SemanticException::Type::VARIABLE_ALREADY_DEFINED, "a");
+//	sem_err("let a = 2 let a = 5", ls::SemanticException::Type::VARIABLE_ALREADY_DEFINED, "a");
+	success("let x = ['a','b'] let x = 1 x", "1");
 
 	success("let a = 12 a", "12");
 	success("let a = 12 { let a = 5 } a", "12");

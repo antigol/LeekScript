@@ -42,13 +42,9 @@ public:
 };
 
 class SemanticAnalyser {
-public:
 
 	Program* program;
 	bool in_program = false;
-#if DEBUG >= 1
-	int in_phase = 0; // only for debug 1=analyse 2=reanalyse 3=finalize
-#endif
 
 	std::vector<Module*> modules;
 
@@ -60,6 +56,11 @@ public:
 	std::stack<Function*> functions_stack;
 	std::stack<int> loops;
 
+public:
+
+#if DEBUG >= 1
+	int in_phase = 0; // only for debug 1=analyse 2=reanalyse 3=finalize
+#endif
 	std::vector<SemanticException> errors;
 
 	SemanticAnalyser(const std::vector<Module*>& modules);

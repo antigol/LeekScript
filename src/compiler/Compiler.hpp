@@ -21,16 +21,17 @@ public:
 };
 
 class Compiler {
-public:
 
-	jit_function_t F = nullptr;
 	std::stack<jit_function_t> functions;
 	std::vector<int> functions_blocks; // how many blocks are open in the current loop
 
 	std::vector<int> loops_blocks; // how many blocks are open in the current loop
 	std::vector<jit_label_t*> loops_end_labels;
 	std::vector<jit_label_t*> loops_cond_labels;
-	std::vector<std::map<std::string, CompilerVar>> variables;
+	std::vector<std::multimap<std::string, CompilerVar>> variables;
+
+public:
+	jit_function_t F = nullptr;
 
 	Compiler();
 	virtual ~Compiler();
@@ -44,8 +45,7 @@ public:
 
 	void add_var(const std::string& name, jit_value_t value, const Type& type, bool ref);
 	CompilerVar& get_var(const std::string& name);
-	void set_var_type(std::string& name, const Type& type);
-	std::map<std::string, CompilerVar> get_vars();
+	std::multimap<std::string, CompilerVar> get_vars();
 
 	void enter_loop(jit_label_t*, jit_label_t*);
 	void leave_loop();

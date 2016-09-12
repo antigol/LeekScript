@@ -13,7 +13,7 @@ Compiler::Compiler() {}
 Compiler::~Compiler() {}
 
 void Compiler::enter_block() {
-	variables.push_back(std::map<std::string, CompilerVar> {});
+	variables.push_back(std::multimap<std::string, CompilerVar>());
 	if (!loops_blocks.empty()) {
 		loops_blocks.back()++;
 	}
@@ -45,7 +45,7 @@ void Compiler::delete_variables_block(jit_function_t F, int deepness) {
 }
 
 void Compiler::enter_function(jit_function_t F) {
-	variables.push_back(std::map<std::string, CompilerVar> {});
+	variables.push_back(std::multimap<std::string, CompilerVar>());
 	functions.push(F);
 	functions_blocks.push_back(0);
 	this->F = F;
@@ -63,24 +63,22 @@ int Compiler::get_current_function_blocks() const {
 }
 
 void Compiler::add_var(const std::string& name, jit_value_t value, const Type& type, bool ref) {
-	variables.back()[name] = {value, type, ref};
+	variables.back().insert(pair<string, CompilerVar>(name, {value, type, ref}));
 }
 
 CompilerVar& Compiler::get_var(const std::string& name) {
 	for (int i = variables.size() - 1; i >= 0; --i) {
-		auto it = variables[i].find(name);
-		if (it != variables[i].end()) {
-			return it->second;
+		auto it = variables[i].equal_range(name);
+		if (it.first != it.second) {
+			auto i = it.second;
+			--i;
+			return i->second;
 		}
 	}
 	return *((CompilerVar*) nullptr); // Should not reach this line
 }
 
-void Compiler::set_var_type(std::string& name, const Type& type) {
-	variables.back().at(name).type = type;
-}
-
-std::map<std::string, CompilerVar> Compiler::get_vars() {
+std::multimap<std::string, CompilerVar> Compiler::get_vars() {
 	return variables.back();
 }
 

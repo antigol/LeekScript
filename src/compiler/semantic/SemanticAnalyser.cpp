@@ -145,13 +145,13 @@ SemanticVar* SemanticAnalyser::add_var(Token* v, Type type, Value* scope, Variab
 		return var;
 	}
 
-	if (variables.back().back().find(v->content) != variables.back().back().end()) {
-		add_error({ SemanticException::VARIABLE_ALREADY_DEFINED, v->line, v->content });
-	}
+//	if (variables.back().back().find(v->content) != variables.back().back().end()) {
+//		add_error({ SemanticException::VARIABLE_ALREADY_DEFINED, v->line, v->content });
+//	}
 
 	SemanticVar* var = new SemanticVar(v->content, VarScope::LOCAL, type, 0, scope, vd, current_function());
 
-	variables.back().back().insert(pair<string, SemanticVar*>(v->content, var));
+	variables.back().back()[v->content] = var;
 	return var;
 }
 
