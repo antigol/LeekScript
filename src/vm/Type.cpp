@@ -8,45 +8,39 @@
 using namespace std;
 using namespace ls;
 
-RawType::RawType(const string& name, const string& classname, const string& jsonname, size_t bytes, jit_type_t jit_type, Nature nature, int id)
-	: _name(name), _clazz(classname), _json_name(jsonname), _bytes(bytes), _jit_type(jit_type), _nature(nature), id(id)
+RawType::RawType(const string& name, const string& classname, const string& jsonname, jit_type_t jit_type, int id)
+	: _name(name), _clazz(classname), _json_name(jsonname), _jit_type(jit_type), id(id)
 {}
 
-const RawType RawType::UNKNOWN    ("?",           "",         "",         0,                nullptr,           Nature::UNKNOWN,  -200);
-const RawType RawType::VOID       ("void",        "",         "void",     0,                jit_type_void,     Nature::VOID,     11);
-const RawType RawType::UNREACHABLE("unr",         "",         "",         0,                nullptr,           Nature::VOID,     12);
-const RawType RawType::LSVALUE    ("lsval",       "",         "",         sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  -100);
-const RawType RawType::BOOLEAN    ("bool",        "Boolean",  "boolean",  sizeof (int32_t), jit_type_int,      Nature::VALUE,    0);
-const RawType RawType::I32        ("i32",         "Number",   "number",   sizeof (int32_t), jit_type_int,      Nature::VALUE,    1);
-const RawType RawType::F64        ("f64",         "Number",   "number",   sizeof (double),  jit_type_float64,  Nature::VALUE,    2);
-const RawType RawType::I64        ("i64",         "Number",   "number",   sizeof (int64_t), jit_type_long,     Nature::VALUE,    300);
-const RawType RawType::F32        ("f32",         "Number",   "number",   sizeof (float),   jit_type_float32,  Nature::VALUE,    400);
-const RawType RawType::VAR        ("var",         "Variable", "variable", sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  5);
-const RawType RawType::VEC        ("vec",         "Vec",      "vec",      0,                nullptr,           Nature::VALUE,    6);
-const RawType RawType::MAP        ("map",         "Map",      "map",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  7);
-const RawType RawType::SET        ("set",         "Set",      "set",      sizeof (void*),   jit_type_void_ptr, Nature::LSVALUE,  8);
-const RawType RawType::FUNCTION   ("fn",          "",         "fn",       sizeof (void*),   jit_type_void_ptr, Nature::VALUE,    9);
-const RawType RawType::TUPLE      ("tuple",       "Tuple",    "tuple",    0,                nullptr,           Nature::VALUE,    10);
+const RawType RawType::UNKNOWN    ("?",           "",         "",          nullptr,            -200);
+const RawType RawType::VOID       ("void",        "",         "void",      jit_type_void,      11);
+const RawType RawType::UNREACHABLE("unr",         "",         "",          nullptr,            12);
+const RawType RawType::BOOLEAN    ("bool",        "Boolean",  "boolean",   jit_type_int,       0);
+const RawType RawType::I32        ("i32",         "Number",   "number",    jit_type_int,       1);
+const RawType RawType::F64        ("f64",         "Number",   "number",    jit_type_float64,   2);
+const RawType RawType::VAR        ("var",         "Variable", "variable",  jit_type_void_ptr,  5);
+const RawType RawType::VEC        ("vec",         "Vec",      "vec",       nullptr,            6);
+const RawType RawType::MAP        ("map",         "Map",      "map",       nullptr,            7);
+const RawType RawType::SET        ("set",         "Set",      "set",       nullptr,            8);
+const RawType RawType::FUNCTION   ("fn",          "",         "fn",        jit_type_void_ptr,  9);
+const RawType RawType::TUPLE      ("tuple",       "Tuple",    "tuple",     nullptr,            10);
 
 const Type Type::UNKNOWN     (&RawType::UNKNOWN);
-const Type Type::LSVALUE     (&RawType::LSVALUE);
 const Type Type::VOID        (&RawType::VOID);
 const Type Type::UNREACHABLE (&RawType::UNREACHABLE);
 const Type Type::VAR         (&RawType::VAR);
 const Type Type::BOOLEAN     (&RawType::BOOLEAN);
 const Type Type::I32         (&RawType::I32);
-const Type Type::I64         (&RawType::I64);
-const Type Type::F32         (&RawType::F32);
 const Type Type::F64         (&RawType::F64);
 const Type Type::VEC         (&RawType::VEC,     { Type::UNKNOWN });
 const Type Type::MAP         (&RawType::MAP,     { Type::UNKNOWN, Type::UNKNOWN });
 const Type Type::SET         (&RawType::SET,     { Type::UNKNOWN });
 const Type Type::FUNCTION    (&RawType::FUNCTION);
 const Type Type::TUPLE       (&RawType::TUPLE);
-const Type Type::ARITHMETIC  ({ Type::VAR, Type::BOOLEAN, Type::I32, /*Type::I64, Type::F32, */Type::F64 });
-const Type Type::LOGIC       ({ Type::LSVALUE, Type::ARITHMETIC });
+const Type Type::ARITHMETIC  ({ Type::VAR, Type::BOOLEAN, Type::I32, Type::F64 });
+const Type Type::LOGIC       ({ Type::ARITHMETIC });
 const Type Type::INDEXABLE   ({ Type::VEC, Type::MAP });
-const Type Type::VALUE_NUMBER({ Type::BOOLEAN, Type::I32, /*Type::I64, Type::F32, */Type::F64 });
+const Type Type::VALUE_NUMBER({ Type::BOOLEAN, Type::I32, Type::F64 });
 
 bool RawType::operator ==(const RawType& type) const {
 	return id == type.id;
@@ -55,37 +49,6 @@ bool RawType::operator ==(const RawType& type) const {
 bool RawType::operator <(const RawType& type) const
 {
 	return id < type.id;
-}
-
-
-string RawType::get_nature_name(const Nature& nature) {
-	switch (nature) {
-		case Nature::LSVALUE:
-			return "POINTER";
-		case Nature::UNKNOWN:
-			return "UNKNOWN";
-		case Nature::VALUE:
-			return "VALUE";
-		case Nature::VOID:
-			return "VOID";
-		default:
-			return "??";
-	}
-}
-
-string RawType::get_nature_symbol(const Nature& nature) {
-	switch (nature) {
-		case Nature::LSVALUE:
-			return "*";
-		case Nature::UNKNOWN:
-			return "?";
-		case Nature::VALUE:
-			return "";
-		case Nature::VOID:
-			return "void";
-		default:
-			return "???";
-	}
 }
 
 Type::Type() :
@@ -109,7 +72,7 @@ Type::Type(const RawType* raw_type, const vector<Type>& elements_types) :
 
 bool Type::must_manage_memory() const {
 	assert(is_pure());
-	if (raw_type->nature() == Nature::LSVALUE) return true;
+	if (raw_type == &RawType::VAR) return true;
 
 	if (raw_type == &RawType::TUPLE) {
 		for (const Type& el : elements_types) {
@@ -200,7 +163,7 @@ void Type::set_element_type(size_t index, const Type& type) {
 
 bool Type::is_pure() const
 {
-	if (raw_type == &RawType::UNKNOWN || raw_type == &RawType::LSVALUE) return false;
+	if (raw_type == &RawType::UNKNOWN) return false;
 	if (raw_type == &RawType::FUNCTION && return_types.empty()) return false;
 	for (const Type& x : elements_types)  if (!x.is_pure()) return false;
 	for (const Type& x : return_types)    if (!x.is_pure()) return false;
@@ -218,10 +181,6 @@ void Type::make_it_pure()
 			*this = tmp;
 			make_it_pure();
 		}
-		return;
-	}
-	if (raw_type == &RawType::LSVALUE) {
-		*this = Type::VAR; // smallset id of lsvalue rawtypes
 		return;
 	}
 	if (raw_type == &RawType::FUNCTION && return_types.empty()) {
@@ -370,7 +329,6 @@ Type Type::fiber_conversion() const
 		return union_iter(result.begin(), result.end());
 	}
 
-	if (*this == Type::LSVALUE) return Type({ Type::BOOLEAN, Type::I32, Type::F64, Type::LSVALUE });
 	if (*this == Type::VAR) return Type({ Type::BOOLEAN, Type::I32, Type::F64, Type::VAR });
 	if (*this == Type::F64) return Type({ Type::BOOLEAN, Type::I32, Type::F64 });
 	if (*this == Type::I32) return Type({ Type::BOOLEAN, Type::I32 });
@@ -384,7 +342,6 @@ bool Type::intersection(const Type& t1, const Type& t2, Type* result)
 {
 	/* UNKNOWN with no alternative is the set of all types (infinite set)
 	 * UNKNOWN with alternative is a set of elements
-	 * LSVALUE is the set of types of nature lsvalue (infinite set)
 	 * All the other types are considered as signlet
 	 * intersection of any X with UNREACHABLE gives X
 	 *
@@ -578,30 +535,6 @@ int Type::priv_intersection_ph(Type* t1, Type& f1, Type* t2, Type& f2, Type* tr,
 		return priv_intersection_ph(t2, f2, t1, f1, tr, fr);
 	}
 
-	if (t1->raw_type == &RawType::LSVALUE) {
-		if (t2->raw_type->nature() == Nature::LSVALUE) {
-			*tr = *t2;
-			if (t1->ph > 0) tr->ph = t1->ph;
-
-			// in case t1 && t2 are both ph > 0
-			uint32_t old_ph = t2->ph;
-			uint32_t new_ph = tr->ph;
-			f1.replace_placeholder_id(old_ph, new_ph);
-			f2.replace_placeholder_id(old_ph, new_ph);
-			fr.replace_placeholder_id(old_ph, new_ph);
-
-			// update ph types
-			f1.replace_placeholder_type(new_ph, *t2);
-			f2.replace_placeholder_type(new_ph, *t2);
-			fr.replace_placeholder_type(new_ph, *t2);
-			return 1;
-		}
-		return 0;
-	}
-	if (t2->raw_type == &RawType::LSVALUE) {
-		return priv_intersection_ph(t2, f2, t1, f1, tr, fr);
-	}
-
 	if (t1->raw_type == &RawType::FUNCTION && t1->return_types.empty()) {
 		if (t2->raw_type == &RawType::FUNCTION) {
 			*tr = *t2;
@@ -724,21 +657,6 @@ int Type::priv_intersection_phfree(const Type* t1, const Type* t2, Type* tr)
 		return 1;
 	}
 
-	if (t1->raw_type == &RawType::LSVALUE) {
-		if (t2->raw_type->nature() == Nature::LSVALUE) {
-			*tr = *t2;
-			return 1;
-		}
-		return 0;
-	}
-	if (t2->raw_type == &RawType::LSVALUE) {
-		if (t1->raw_type->nature() == Nature::LSVALUE) {
-			*tr = *t1;
-			return 1;
-		}
-		return 0;
-	}
-
 	if (t1->raw_type == &RawType::FUNCTION && t1->return_types.empty()) {
 		if (t2->raw_type == &RawType::FUNCTION) {
 			*tr = *t2;
@@ -807,9 +725,6 @@ Type Type::union_of(const Type& t1, const Type& t2)
 		result.alternative_types.insert(t1);
 		return result;
 	}
-	// l'un des deux est un generic de lsvalue
-	if (t1.raw_type == &RawType::LSVALUE && t2.raw_type->nature() == Nature::LSVALUE) return Type::LSVALUE;
-	if (t2.raw_type == &RawType::LSVALUE && t1.raw_type->nature() == Nature::LSVALUE) return Type::LSVALUE;
 
 	// l'un des deux est un generic de fonction
 	if (t1.raw_type == &RawType::FUNCTION && t1.return_types.empty() && t2.raw_type == &RawType::FUNCTION) return Type::FUNCTION;

@@ -56,9 +56,6 @@ jit_value_t Boolean::compile(Compiler& c) const {
 	if (type == Type::I32) {
 		return jit_general::constant_i32(c.F, value);
 	}
-	if (type == Type::I64) {
-		return jit_general::constant_i64(c.F, value);
-	}
 	if (type == Type::BOOLEAN) {
 		return jit_general::constant_bool(c.F, value);
 	}

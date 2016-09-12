@@ -34,10 +34,10 @@ void Test::test_operators() {
 	success("'salut' xor 0", "true");
 	success("'salut' xor ''", "true");
 
-	success("[] xor ''", "false");
-	success("[] xor 777", "true");
-	success("[1, 2, 3] xor [4, 5, 6]", "false");
-	success("[] xor [4, 5, 6]", "true");
+//	success("[] xor ''", "false");
+//	success("[] xor 777", "true");
+//	success("[1, 2, 3] xor [4, 5, 6]", "false");
+//	success("[] xor [4, 5, 6]", "true");
 
 	/*
 	 * Swap

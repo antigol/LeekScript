@@ -11,41 +11,30 @@
 
 namespace ls {
 
-enum class Nature {
-	UNKNOWN, VALUE, LSVALUE, VOID
-};
-
 class RawType {
 private:
 	std::string _name;
 	std::string _clazz;
 	std::string _json_name;
-	size_t _bytes; // TODO remove
 	jit_type_t _jit_type;
-	Nature _nature; // TODO remove
 	int id;
 
 	RawType() = delete;
 	RawType(const RawType&) = delete;
-	RawType(const std::string& name, const std::string& classname, const std::string& jsonname, size_t bytes, jit_type_t jit_type, Nature nature, int id);
+	RawType(const std::string& name, const std::string& classname, const std::string& jsonname, jit_type_t jit_type, int id);
 
 public:
 	const std::string name()      const { return _name; }
 	const std::string clazz()     const { return _clazz; }
 	const std::string json_name() const { return _json_name; }
-	size_t bytes()                const { return _bytes; }
 	jit_type_t jit_type()         const { return _jit_type; }
-	Nature nature()               const { return _nature; }
 
 	static const RawType UNKNOWN;
 	static const RawType VOID;
 	static const RawType UNREACHABLE;
-	static const RawType LSVALUE;
 	static const RawType VAR;
 	static const RawType BOOLEAN;
 	static const RawType I32;
-	static const RawType I64;
-	static const RawType F32;
 	static const RawType F64;
 	static const RawType VEC;
 	static const RawType MAP;
@@ -56,9 +45,6 @@ public:
 	bool operator ==(const RawType& type) const;
 	inline bool operator !=(const RawType& type) const { return !(*this == type); }
 	bool operator <(const RawType& type) const;
-
-	static std::string get_nature_name(const Nature& nature);
-	static std::string get_nature_symbol(const Nature& nature);
 };
 
 // null < bool,number < text < vec < map < set < function < tuple
@@ -133,15 +119,12 @@ public:
 
 
 	static const Type UNKNOWN; // generic for any type if elements_types is empty, otherwise any of the elements_types
-	static const Type LSVALUE; // generic for any lsvalue type
 
 	static const Type VOID; // for part of code that returns nothing
 	static const Type UNREACHABLE; // for part of code that can't be reached
 	static const Type VAR; // LSVALUE
 	static const Type BOOLEAN;
 	static const Type I32;
-	static const Type I64;
-	static const Type F32;
 	static const Type F64;
 	static const Type VEC; // LSVALUE
 	static const Type MAP; // LSVALUE

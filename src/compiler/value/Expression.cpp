@@ -351,28 +351,28 @@ jit_value_t Expression::compile(Compiler& c) const
 		switch (op->type) {
 			case TokenType::PLUS: {
 
-				if (v1->type.raw_type->nature() == Nature::LSVALUE) {
+				if (v1->type == Type::VAR) {
 					return jit_general::call_native(c.F, LS_POINTER, { LS_POINTER, LS_POINTER }, (void*) LSVar::ls_add, { x, y });
 				} else {
 					return jit_general::convert(c.F, jit_insn_add(c.F, x, y), v1->type, type);
 				}
 			}
 			case TokenType::MINUS: {
-				if (v1->type.raw_type->nature() == Nature::LSVALUE) {
+				if (v1->type == Type::VAR) {
 					return jit_general::call_native(c.F, LS_POINTER, { LS_POINTER, LS_POINTER }, (void*) LSVar::ls_sub, { x, y });
 				} else {
 					return jit_general::convert(c.F, jit_insn_sub(c.F, x, y), v1->type, type);
 				}
 			}
 			case TokenType::TIMES: {
-				if (v1->type.raw_type->nature() == Nature::LSVALUE) {
+				if (v1->type == Type::VAR) {
 					return jit_general::call_native(c.F, LS_POINTER, { LS_POINTER, LS_POINTER }, (void*) LSVar::ls_mul, { x, y });
 				} else {
 					return jit_general::convert(c.F, jit_insn_mul(c.F, x, y), v1->type, type);
 				}
 			}
 			case TokenType::DIVIDE: {
-				if (v1->type.raw_type->nature() == Nature::LSVALUE) {
+				if (v1->type == Type::VAR) {
 					return jit_general::call_native(c.F, LS_POINTER, { LS_POINTER, LS_POINTER }, (void*) LSVar::ls_div, { x, y });
 				} else {
 					return jit_general::convert(c.F, jit_insn_div(c.F, x, y), v1->type, type);

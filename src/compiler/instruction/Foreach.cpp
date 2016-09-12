@@ -223,8 +223,9 @@ typename LSSet<T>::iterator fun_inc_set(typename LSSet<T>::iterator it) {
 	return ++it;
 }
 
-jit_value_t Foreach::compile(Compiler& c) const {
-
+jit_value_t Foreach::compile(Compiler& c) const
+{
+	assert(0);
 	c.enter_block(); // { for x in [1, 2] {} }<-- this block
 
 	// Potential output [for ...]
@@ -265,7 +266,7 @@ jit_value_t Foreach::compile(Compiler& c) const {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_vec_all, (void*) fun_condition_vec_all, (void*) fun_value_vec<double>, (void*) fun_key_vec<double>, (void*) fun_inc_vec<double>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (Type::intersection(container->type, Type(&RawType::VEC, { Type::LSVALUE }))) {
+	} else if (Type::intersection(container->type, Type(&RawType::VEC, { Type::VAR }))) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_vec_all, (void*) fun_condition_vec_all, (void*) fun_value_vec<LSValue*>, (void*) fun_key_vec<LSValue*>, (void*) fun_inc_vec<LSValue*>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
@@ -273,19 +274,19 @@ jit_value_t Foreach::compile(Compiler& c) const {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_vec_all, (void*) fun_condition_vec_all, (void*) fun_value_vec<void*>, (void*) fun_key_vec<void*>, (void*) fun_inc_vec<void*>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (Type::intersection(container->type, Type(&RawType::MAP, { Type::LSVALUE, Type::LSVALUE }))) {
+	} else if (Type::intersection(container->type, Type(&RawType::MAP, { Type::VAR, Type::VAR }))) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map<LSValue*,LSValue*>, (void*) fun_key_map<LSValue*,LSValue*>, (void*) fun_inc_map<LSValue*,LSValue*>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (Type::intersection(container->type, Type(&RawType::MAP, { Type::LSVALUE, Type::I32 }))) {
+	} else if (Type::intersection(container->type, Type(&RawType::MAP, { Type::VAR, Type::I32 }))) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map<LSValue*,int32_t>, (void*) fun_key_map<LSValue*,int32_t>, (void*) fun_inc_map<LSValue*,int32_t>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (Type::intersection(container->type, Type(&RawType::MAP, { Type::LSVALUE, Type::F64 }))) {
+	} else if (Type::intersection(container->type, Type(&RawType::MAP, { Type::VAR, Type::F64 }))) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map<LSValue*,double>, (void*) fun_key_map<LSValue*,double>, (void*) fun_inc_map<LSValue*,double>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (Type::intersection(container->type, Type(&RawType::MAP, { Type::I32, Type::LSVALUE }))) {
+	} else if (Type::intersection(container->type, Type(&RawType::MAP, { Type::I32, Type::VAR }))) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map<int32_t,LSValue*>, (void*) fun_key_map<int32_t,LSValue*>, (void*) fun_inc_map<int32_t,LSValue*>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);

@@ -53,7 +53,7 @@ jit_value_t jit_general::eq(jit_function_t F, jit_value_t v1, const Type& t1, ji
 {
 	if (Type::intersection(t1, Type::VALUE_NUMBER) && Type::intersection(t2, Type::VALUE_NUMBER)) return jit_insn_eq(F, v1, v2);
 	if (t1.raw_type == &RawType::FUNCTION && t2.raw_type == &RawType::FUNCTION) return jit_insn_eq(F, v1, v2);
-	if (t1.raw_type->nature() == Nature::LSVALUE && t2.raw_type->nature() == Nature::LSVALUE) {
+	if (t1 == Type::VAR && t2 == Type::VAR) {
 		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_eq, { v1, v2 });
 	}
 	if (t1.raw_type == &RawType::TUPLE && t2 == t1) return jit_tuple::eq(F, v1, v2, t1);
@@ -65,7 +65,7 @@ jit_value_t jit_general::ne(jit_function_t F, jit_value_t v1, const Type& t1, ji
 {
 	if (Type::intersection(t1, Type::VALUE_NUMBER) && Type::intersection(t2, Type::VALUE_NUMBER)) return jit_insn_ne(F, v1, v2);
 	if (t1.raw_type == &RawType::FUNCTION && t2.raw_type == &RawType::FUNCTION) return jit_insn_ne(F, v1, v2);
-	if (t1.raw_type->nature() == Nature::LSVALUE && t2.raw_type->nature() == Nature::LSVALUE) {
+	if (t1 == Type::VAR && t2 == Type::VAR) {
 		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_ne, { v1, v2 });
 	}
 	return jit_insn_to_not_bool(F, eq(F, v1, t1, v2, t2));
@@ -75,7 +75,7 @@ jit_value_t jit_general::lt(jit_function_t F, jit_value_t v1, const Type& t1, ji
 {
 	if (Type::intersection(t1, Type::VALUE_NUMBER) && Type::intersection(t2, Type::VALUE_NUMBER)) return jit_insn_lt(F, v1, v2);
 	if (t1.raw_type == &RawType::FUNCTION && t2.raw_type == &RawType::FUNCTION) return jit_insn_lt(F, v1, v2);
-	if (t1.raw_type->nature() == Nature::LSVALUE && t2.raw_type->nature() == Nature::LSVALUE) {
+	if (t1 == Type::VAR && t2 == Type::VAR) {
 		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_lt, { v1, v2 });
 	}
 	if (t1.raw_type == &RawType::TUPLE && t2 == t1) return jit_tuple::lt(F, v1, v2, t1);
@@ -87,7 +87,7 @@ jit_value_t jit_general::le(jit_function_t F, jit_value_t v1, const Type& t1, ji
 {
 	if (Type::intersection(t1, Type::VALUE_NUMBER) && Type::intersection(t2, Type::VALUE_NUMBER)) return jit_insn_le(F, v1, v2);
 	if (t1.raw_type == &RawType::FUNCTION && t2.raw_type == &RawType::FUNCTION) return jit_insn_le(F, v1, v2);
-	if (t1.raw_type->nature() == Nature::LSVALUE && t2.raw_type->nature() == Nature::LSVALUE) {
+	if (t1 == Type::VAR && t2 == Type::VAR) {
 		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_le, { v1, v2 });
 	}
 	return jit_insn_to_not_bool(F, lt(F, v2, t2, v1, t1));
@@ -97,7 +97,7 @@ jit_value_t jit_general::gt(jit_function_t F, jit_value_t v1, const Type& t1, ji
 {
 	if (Type::intersection(t1, Type::VALUE_NUMBER) && Type::intersection(t2, Type::VALUE_NUMBER)) return jit_insn_gt(F, v1, v2);
 	if (t1.raw_type == &RawType::FUNCTION && t2.raw_type == &RawType::FUNCTION) return jit_insn_gt(F, v1, v2);
-	if (t1.raw_type->nature() == Nature::LSVALUE && t2.raw_type->nature() == Nature::LSVALUE) {
+	if (t1 == Type::VAR && t2 == Type::VAR) {
 		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_gt, { v1, v2 });
 	}
 	return lt(F, v2, t2, v1, t1);
@@ -107,7 +107,7 @@ jit_value_t jit_general::ge(jit_function_t F, jit_value_t v1, const Type& t1, ji
 {
 	if (Type::intersection(t1, Type::VALUE_NUMBER) && Type::intersection(t2, Type::VALUE_NUMBER)) return jit_insn_ge(F, v1, v2);
 	if (t1.raw_type == &RawType::FUNCTION && t2.raw_type == &RawType::FUNCTION) return jit_insn_ge(F, v1, v2);
-	if (t1.raw_type->nature() == Nature::LSVALUE && t2.raw_type->nature() == Nature::LSVALUE) {
+	if (t1 == Type::VAR && t2 == Type::VAR) {
 		return call_native(F, jit_type_sys_bool, { LS_POINTER, LS_POINTER }, (void*) CP_ge, { v1, v2 });
 	}
 	return jit_insn_to_not_bool(F, lt(F, v1, t1, v2, t2));
@@ -141,7 +141,7 @@ int32_t CP_is_true(LSValue* val) {
 
 jit_value_t jit_general::is_true_delete_temporary(jit_function_t F, jit_value_t v, const Type& type)
 {
-	if (type.raw_type->nature() == Nature::LSVALUE) {
+	if (type == Type::VAR) {
 		return call_native(F, LS_I32, { LS_POINTER }, (void*) CP_is_true, { v });
 	}
 	if (Type::intersection(type, Type::VALUE_NUMBER)) return jit_insn_to_bool(F, v);
@@ -153,7 +153,7 @@ void jit_general::delete_ref(jit_function_t F, jit_value_t v, const Type& type)
 	assert(type.is_pure());
 
 	if (!type.must_manage_memory()) return;
-	if (type.raw_type->nature() == Nature::LSVALUE) {
+	if (type == Type::VAR) {
 		jit_general::call_native(F, jit_type_void, { LS_POINTER }, (void*) LSValue::delete_ref, { v });
 		return;
 	}
@@ -171,7 +171,7 @@ void jit_general::delete_ref(jit_function_t F, jit_value_t v, const Type& type)
 void jit_general::delete_temporary(jit_function_t F, jit_value_t v, const Type& type)
 {
 	if (!type.must_manage_memory()) return;
-	if (type.raw_type->nature() == Nature::LSVALUE) {
+	if (type == Type::VAR) {
 		jit_general::call_native(F, jit_type_void, { LS_POINTER }, (void*) LSValue::delete_temporary, { v });
 		return;
 	}
@@ -189,7 +189,7 @@ void jit_general::delete_temporary(jit_function_t F, jit_value_t v, const Type& 
 jit_value_t jit_general::move_inc(jit_function_t F, jit_value_t v, const Type& type)
 {
 	if (!type.must_manage_memory()) return v;
-	if (type.raw_type->nature() == Nature::LSVALUE) {
+	if (type == Type::VAR) {
 		return jit_general::call_native(F, LS_POINTER, { LS_POINTER }, (void*) LSValue::move_inc, { v });
 	}
 	if (type.raw_type == &RawType::TUPLE) return jit_tuple::move_inc(F, v, type);
@@ -200,7 +200,7 @@ jit_value_t jit_general::move_inc(jit_function_t F, jit_value_t v, const Type& t
 jit_value_t jit_general::move(jit_function_t F, jit_value_t v, const Type& type)
 {
 	if (!type.must_manage_memory()) return v;
-	if (type.raw_type->nature() == Nature::LSVALUE) {
+	if (type == Type::VAR) {
 		return jit_general::call_native(F, LS_POINTER, { LS_POINTER }, (void*) LSValue::move, { v });
 	}
 	if (type.raw_type == &RawType::TUPLE) return jit_tuple::move(F, v, type);
@@ -211,7 +211,7 @@ jit_value_t jit_general::move(jit_function_t F, jit_value_t v, const Type& type)
 void jit_general::inc_refs(jit_function_t F, jit_value_t v, const Type& type)
 {
 	if (!type.must_manage_memory()) return;
-	if (type.raw_type->nature() == Nature::LSVALUE) {
+	if (type == Type::VAR) {
 		jit_general::call_native(F, LS_VOID, { LS_POINTER }, (void*) LSValue::inc_refs, { v });
 		return;
 	}
@@ -259,12 +259,10 @@ jit_value_t jit_general::constant_ptr(jit_function_t F, void* value)
 
 jit_value_t jit_general::constant_default(jit_function_t F, const Type& type)
 {
-	if (type.raw_type->nature() == Nature::LSVALUE) return constant_ptr(F, nullptr);
+	if (type == Type::VAR) return constant_ptr(F, nullptr);
 	if (type == Type::VOID) return nullptr;
 	if (type == Type::BOOLEAN) return constant_bool(F, false);
 	if (type == Type::I32) return constant_i32(F, 0);
-	if (type == Type::I64) return constant_i64(F, 0);
-	if (type == Type::F32) return constant_f32(F, 0.0);
 	if (type == Type::F64) return constant_f64(F, 0.0);
 	if (type.raw_type == &RawType::FUNCTION) return constant_ptr(F, nullptr);
 	if (type.raw_type == &RawType::TUPLE) return jit_tuple::create_def(F, type);

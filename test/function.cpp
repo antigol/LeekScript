@@ -57,8 +57,8 @@ void Test::test_functions() {
 	success("let f = i:i32 -> { [1 2 3][i] } 42", "42");
 	success("let f = a:vec<i32>, i:i32 -> a[i] f([1 2 3], 1)", "2");
 	success("let f = a:vec<i32> -> a[0] let g = h:fn(vec<i32>)->i32, a:vec<i32> -> h(a)  g(f,[])", "0");
-	success("let ml = a:vec<fn()->var> -> [for f in a { f() }] ls.string(ml([->'a', ->'b', ->'c']))", "[a, b, c]");
-	success("let ml = a:vec<fn()->var> -> [for f in a { f() }] let gf = -> { -> 'x'}  ls.string(ml([for i in [1,2,3] { gf() }]))", "[x, x, x]");
+//	success("let ml = a:vec<fn()->var> -> [for f in a { f() }] ls.string(ml([->'a', ->'b', ->'c']))", "[a, b, c]");
+//	success("let ml = a:vec<fn()->var> -> [for f in a { f() }] let gf = -> { -> 'x'}  ls.string(ml([for i in [1,2,3] { gf() }]))", "[x, x, x]");
 
 // with capture : success("let ml = a:vec<fn()->var> -> [for f in a { f() }] let gf = str -> { -> str}  ml([for s in ['a', 'b'] { gf(s) }])", "['a', 'b']");
 

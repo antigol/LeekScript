@@ -17,7 +17,7 @@ void TypeName::print(std::ostream& os) const
 
 Type TypeName::getInternalType() const {
 
-	for (const Type& t : { Type::BOOLEAN, Type::I32, Type::I64, Type::F32, Type::F64, Type::VAR }) {
+	for (const Type& t : { Type::BOOLEAN, Type::I32, Type::F64, Type::VAR }) {
 		if (name->content == t.raw_type->name() && elements.empty()) {
 			return t;
 		}

@@ -147,7 +147,7 @@ jit_value_t Block::compile(Compiler& c) const {
 		if (instructions[i]->type == Type::UNREACHABLE) {
 			break; // no need to compile after a return
 		}
-		if (i == instructions.size() - 1 && instructions[i]->type.raw_type->nature() != Nature::VOID) {
+		if (i == instructions.size() - 1 && instructions[i]->type != Type::VOID) {
 			val = jit_general::move(c.F, val, type);
 			c.leave_block(c.F);
 			return val;

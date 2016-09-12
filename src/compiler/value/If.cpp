@@ -123,7 +123,7 @@ void If::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 jit_value_t If::compile(Compiler& c) const {
 
 	jit_value_t res = nullptr;
-	if (type.raw_type->nature() != Nature::VOID) {
+	if (type != Type::VOID && type != Type::UNREACHABLE) {
 		res = jit_value_create(c.F, type.jit_type());
 	}
 

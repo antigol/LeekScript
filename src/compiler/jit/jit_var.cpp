@@ -24,8 +24,6 @@ LSValue* jit_var_convert_f64(double n) {
 jit_value_t jit_var::convert(jit_function_t F, jit_value_t v, const Type& type)
 {
 	if (type == Type::I32)     return jit_general::call_native(F, LS_POINTER, { LS_I32 }, (void*) jit_var_convert_i32, { v });
-	if (type == Type::I64)     return jit_general::call_native(F, LS_POINTER, { LS_I64 }, (void*) jit_var_convert_i64, { v });
-	if (type == Type::F32)     return jit_general::call_native(F, LS_POINTER, { LS_F32 }, (void*) jit_var_convert_f32, { v });
 	if (type == Type::F64)     return jit_general::call_native(F, LS_POINTER, { LS_F64 }, (void*) jit_var_convert_f64, { v });
 	if (type == Type::BOOLEAN) return jit_general::call_native(F, LS_POINTER, { LS_BOOLEAN }, (void*) jit_var_convert_bool, { v });
 	assert(0);

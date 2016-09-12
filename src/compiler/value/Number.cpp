@@ -76,17 +76,11 @@ jit_value_t Number::compile(Compiler& c) const
 	if (type == Type::VAR) {
 		return jit_var::create_real(c.F, v);
 	}
-	if (type == Type::F32) {
-		return jit_general::constant_f32(c.F, v);
-	}
 	if (type == Type::F64) {
 		return jit_general::constant_f64(c.F, v);
 	}
 	if (type == Type::I32) {
 		return jit_general::constant_i32(c.F, v);
-	}
-	if (type == Type::I64) {
-		return jit_general::constant_i64(c.F, v);
 	}
 	assert(0);
 	return nullptr;

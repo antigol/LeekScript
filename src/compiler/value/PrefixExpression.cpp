@@ -150,20 +150,20 @@ jit_value_t PrefixExpression::compile(Compiler& c) const
 
 		switch (operatorr->type) {
 			case TokenType::PLUS_PLUS: {
-				if (left->left_type.raw_type->nature() == Nature::VALUE) {
+				if (left->left_type == Type::VAR) {
+					res = jit_general::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_preinc, { val });
+				} else {
 					res = jit_insn_add(c.F, val, jit_general::constant_i32(c.F, 1));
 					jit_insn_store_relative(c.F, ptr, 0, res);
-				} else {
-					res = jit_general::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_preinc, { val });
 				}
 				break;
 			}
 			case TokenType::MINUS_MINUS: {
-				if (left->type.raw_type->nature() == Nature::VALUE) {
+				if (left->type == Type::VAR) {
+					res = jit_general::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_predec, { val });
+				} else {
 					res = jit_insn_sub(c.F, val, jit_general::constant_i32(c.F, 1));
 					jit_insn_store_relative(c.F, ptr, 0, res);
-				} else {
-					res = jit_general::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_predec, { val });
 				}
 				break;
 			}
@@ -179,18 +179,18 @@ jit_value_t PrefixExpression::compile(Compiler& c) const
 
 		switch (operatorr->type) {
 			case TokenType::MINUS: {
-				if (expression->type.raw_type->nature() == Nature::VALUE) {
-					res = jit_insn_neg(c.F, val);
-				} else {
+				if (expression->type == Type::VAR) {
 					res = jit_general::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_minus, { val });
+				} else {
+					res = jit_insn_neg(c.F, val);
 				}
 				break;
 			}
 			case TokenType::TILDE: {
-				if (expression->type.raw_type->nature() == Nature::VALUE) {
-					res = jit_insn_not(c.F, val);
-				} else {
+				if (expression->type == Type::VAR) {
 					res = jit_general::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) LSVar::ls_tilde, { val });
+				} else {
+					res = jit_insn_not(c.F, val);
 				}
 				break;
 			}
@@ -202,10 +202,10 @@ jit_value_t PrefixExpression::compile(Compiler& c) const
 		jit_value_t val = expression->compile(c);
 		jit_value_t res = nullptr;
 
-		if (expression->type.raw_type->nature() == Nature::VALUE) {
-			res = jit_insn_to_not_bool(c.F, val);
-		} else {
+		if (expression->type == Type::VAR) {
 			res = jit_general::call_native(c.F, LS_POINTER, { LS_POINTER }, (void*) PE_not, { val });
+		} else {
+			res = jit_insn_to_not_bool(c.F, val);
 		}
 		return jit_general::convert(c.F, res, Type::BOOLEAN, type);
 	}

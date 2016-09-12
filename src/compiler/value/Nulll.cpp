@@ -25,7 +25,7 @@ unsigned Nulll::line() const {
 void Nulll::analyse_help(SemanticAnalyser*)
 {
 	constant = true;
-	type = Type::LSVALUE;
+	type = Type::VAR;
 }
 
 void Nulll::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)

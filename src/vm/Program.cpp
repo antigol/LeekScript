@@ -141,11 +141,6 @@ string Program::execute() {
 
 	Type output_type = main->type.return_type();
 
-	if (output_type == Type::VOID) {
-		auto fun = (void (*)()) closure;
-		fun();
-		return "<void>";
-	}
 	if (output_type == Type::BOOLEAN) {
 		auto fun = (bool (*)()) closure;
 		return fun() ? "true" : "false";
@@ -156,35 +151,13 @@ string Program::execute() {
 		oss << fun();
 		return oss.str();
 	}
-	if (output_type == Type::I64) {
-		auto fun = (int64_t (*)()) closure;
-		stringstream oss;
-		oss << fun();
-		return oss.str();
-	}
-	if (output_type == Type::F32) {
-		auto fun = (float (*)()) closure;
-		stringstream oss;
-		oss << fun();
-		return oss.str();
-	}
 	if (output_type == Type::F64) {
 		auto fun = (double (*)()) closure;
 		stringstream oss;
 		oss << fun();
 		return oss.str();
 	}
-	if (output_type.raw_type == &RawType::FUNCTION) {
-		auto fun = (void* (*)()) closure;
-		fun();
-		return "<function>";
-	}
-	if (output_type.raw_type == &RawType::TUPLE) {
-		auto fun = (void* (*)()) closure;
-		fun();
-		return "<tuple>";
-	}
-	if (output_type.raw_type->nature() == Nature::LSVALUE) {
+	if (output_type == Type::VAR) {
 		auto fun = (LSValue* (*)()) closure;
 		LSValue* value = fun();
 		stringstream oss;
@@ -195,7 +168,7 @@ string Program::execute() {
 	auto fun = (void* (*)()) closure;
 	fun();
 	stringstream oss;
-	oss << "<no output for " << output_type << ">";
+	oss << "<" << output_type << ">";
 	return oss.str();
 }
 
