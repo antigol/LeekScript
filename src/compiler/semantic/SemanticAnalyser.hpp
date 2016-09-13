@@ -33,12 +33,9 @@ public:
 	Type type;
 	int index;
 	Value* scope; // In which the variable has been declared
-	VariableDeclaration* vd;
-	Function* function; // In which the variable has been declared
 
-	SemanticVar(std::string name, VarScope scope_type, Type type, int index, Value* scope,
-		VariableDeclaration* vd, Function* function) :
-		name(name), scope_type(scope_type), type(type), index(index), scope(scope), vd(vd), function(function) {}
+	SemanticVar(std::string name, VarScope scope_type, Type type, int index, Value* scope) :
+		name(name), scope_type(scope_type), type(type), index(index), scope(scope) {}
 };
 
 class SemanticAnalyser {
@@ -73,7 +70,6 @@ public:
 	void leave_function();
 	void enter_block(Value* block);
 	void leave_block();
-	void add_function(Function*);
 	Function* current_function() const;
 	Value* current_block() const;
 
@@ -81,7 +77,7 @@ public:
 	void leave_loop();
 	bool in_loop(int deepness) const;
 
-	SemanticVar* add_var(Token*, Type, Value* scope, VariableDeclaration*);
+	SemanticVar* add_var(const std::string& name, const Type& type, Value* scope);
 	SemanticVar* add_parameter(Token*, Type, Value* scope);
 
 	SemanticVar* get_var(Token* name);

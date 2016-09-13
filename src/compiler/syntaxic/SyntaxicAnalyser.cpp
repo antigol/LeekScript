@@ -115,11 +115,11 @@ bool SyntaxicAnalyser::isObject() {
 }
 
 Value* SyntaxicAnalyser::eatBlockOrObject() {
-//	if (isObject()) {
-//		return eatObject();
-//	} else {
-		return eatBlock();
-//	}
+	//	if (isObject()) {
+	//		return eatObject();
+	//	} else {
+	return eatBlock();
+	//	}
 }
 
 Block* SyntaxicAnalyser::eatBlock() {
@@ -232,8 +232,8 @@ Value* SyntaxicAnalyser::eatInstruction() {
 		case TokenType::CONTINUE:
 			return eatContinue();
 
-//		case TokenType::CLASS:
-//			return eatClassDeclaration();
+			//		case TokenType::CLASS:
+			//			return eatClassDeclaration();
 
 		case TokenType::FOR:
 			return eatFor();
@@ -289,30 +289,32 @@ Function* SyntaxicAnalyser::eatFunction() {
 		TypeName* typeName = nullptr;
 		Value* defaultValue = nullptr;
 
-eatFunction_eatArgument:
-		reference = false;
-		if (t->type == TokenType::AROBASE) {
-			eat();
-			reference = true;
-		}
-		ident = eatIdent();
+		while (true) {
+			reference = false;
+			if (t->type == TokenType::AROBASE) {
+				eat();
+				reference = true;
+			}
+			ident = eatIdent();
 
-		typeName = nullptr;
-		if (t->type == TokenType::COLON) {
-			eat();
-			typeName = eatTypeName();
-		}
+			typeName = nullptr;
+			if (t->type == TokenType::COLON) {
+				eat();
+				typeName = eatTypeName();
+			}
 
-		defaultValue = nullptr;
-		if (t->type == TokenType::EQUAL) {
-			eat();
-			defaultValue = eatExpression();
-		}
-		f->addArgument(ident, reference, typeName, defaultValue);
+			defaultValue = nullptr;
+			if (t->type == TokenType::EQUAL) {
+				eat();
+				defaultValue = eatExpression();
+			}
+			f->addArgument(ident, reference, typeName, defaultValue);
 
-		if (t->type == TokenType::COMMA) {
-			eat();
-			goto eatFunction_eatArgument;
+			if (t->type == TokenType::COMMA) {
+				eat();
+			} else {
+				break;
+			}
 		}
 	}
 	eat(TokenType::CLOSING_PARENTHESIS);
@@ -387,10 +389,10 @@ VariableDeclaration* SyntaxicAnalyser::eatFunctionDeclaration() {
 bool SyntaxicAnalyser::beginingOfExpression(TokenType type) {
 
 	return type == TokenType::NUMBER or type == TokenType::IDENT
-		or type == TokenType::AROBASE or type == TokenType::OPEN_BRACKET
-		or type == TokenType::OPEN_BRACE or type == TokenType::OPEN_PARENTHESIS
-		or type == TokenType::STRING or type == TokenType::PI or type == TokenType::TRUE
-		or type == TokenType::FALSE or type == TokenType::NULLL;
+			or type == TokenType::AROBASE or type == TokenType::OPEN_BRACKET
+			or type == TokenType::OPEN_BRACE or type == TokenType::OPEN_PARENTHESIS
+			or type == TokenType::STRING or type == TokenType::PI or type == TokenType::TRUE
+			or type == TokenType::FALSE or type == TokenType::NULLL;
 }
 
 Value* SyntaxicAnalyser::eatSimpleExpression(bool pipe_opened, bool set_opened) {
@@ -441,9 +443,9 @@ Value* SyntaxicAnalyser::eatSimpleExpression(bool pipe_opened, bool set_opened) 
 
 		// Opérateurs unaires préfixe
 		if (t->type == TokenType::NEW || t->type == TokenType::MINUS ||
-			t->type == TokenType::PLUS || t->type == TokenType::NOT ||
-			t->type == TokenType::MINUS_MINUS || t->type == TokenType::PLUS_PLUS
-			|| t->type == TokenType::TILDE) {
+				t->type == TokenType::PLUS || t->type == TokenType::NOT ||
+				t->type == TokenType::MINUS_MINUS || t->type == TokenType::PLUS_PLUS
+				|| t->type == TokenType::TILDE) {
 
 			if (t->type == TokenType::MINUS && nt != nullptr && t->line == nt->line) {
 
@@ -550,10 +552,6 @@ Value* SyntaxicAnalyser::eatSimpleExpression(bool pipe_opened, bool set_opened) 
 				if (t->type == TokenType::NEW || t->type == TokenType::CLASS) {
 					oa->field = t;
 					eat();
-//				} else if (t->type == TokenType::NUMBER) {
-//					oa->field = t;
-//					oa->isNumber = true;
-//					eat();
 				} else {
 					oa->field = eatIdent();
 				}

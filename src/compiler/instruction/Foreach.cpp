@@ -58,9 +58,9 @@ void Foreach::analyse_help(SemanticAnalyser* analyser)
 	container->analyse(analyser);
 
 	if (key != nullptr) {
-		key_var = analyser->add_var(key, Type::UNKNOWN, this, nullptr);
+		key_var = analyser->add_var(key->content, Type::UNKNOWN, this);
 	}
-	value_var = analyser->add_var(value, Type::UNKNOWN, this, nullptr);
+	value_var = analyser->add_var(value->content, Type::UNKNOWN, this);
 
 	analyser->enter_loop();
 

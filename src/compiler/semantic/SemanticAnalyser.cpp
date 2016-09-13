@@ -135,13 +135,13 @@ bool SemanticAnalyser::in_loop(int deepness) const {
 	return loops.top() >= deepness;
 }
 
-SemanticVar* SemanticAnalyser::add_var(Token* v, Type type, Value* scope, VariableDeclaration* vd) {
+SemanticVar* SemanticAnalyser::add_var(const string& name, const Type& type, Value* scope) {
 	assert(in_phase == 1);
 
 	// Internal variable, before execution
 	if (!in_program) {
-		SemanticVar* var = new SemanticVar(v->content, VarScope::INTERNAL, type, 0, scope, vd, current_function());
-		internal_vars.insert(pair<string, SemanticVar*>(v->content, var));
+		SemanticVar* var = new SemanticVar(name, VarScope::INTERNAL, type, 0, scope);
+		internal_vars.insert(pair<string, SemanticVar*>(name, var));
 		return var;
 	}
 
@@ -149,16 +149,16 @@ SemanticVar* SemanticAnalyser::add_var(Token* v, Type type, Value* scope, Variab
 //		add_error({ SemanticException::VARIABLE_ALREADY_DEFINED, v->line, v->content });
 //	}
 
-	SemanticVar* var = new SemanticVar(v->content, VarScope::LOCAL, type, 0, scope, vd, current_function());
+	SemanticVar* var = new SemanticVar(name, VarScope::LOCAL, type, 0, scope);
 
-	variables.back().back()[v->content] = var;
+	variables.back().back()[name] = var;
 	return var;
 }
 
 SemanticVar* SemanticAnalyser::add_parameter(Token* v, Type type, Value* scope) {
 	assert(in_phase == 1);
 
-	SemanticVar* arg = new SemanticVar(v->content, VarScope::PARAMETER, type, parameters.back().size(), scope, nullptr, current_function());
+	SemanticVar* arg = new SemanticVar(v->content, VarScope::PARAMETER, type, parameters.back().size(), scope);
 	parameters.back().insert(pair<string, SemanticVar*>(v->content, arg));
 	return arg;
 }

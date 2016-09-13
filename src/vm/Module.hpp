@@ -13,6 +13,8 @@ namespace ls {
 
 class Method {
 public:
+	virtual ~Method() {}
+
 	Type generic_type;
 
 	virtual jit_value_t compile(Compiler& c, const Type& type, const std::vector<jit_value_t>& args) = 0;

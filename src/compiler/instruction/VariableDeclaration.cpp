@@ -2,6 +2,7 @@
 #include "../../vm/LSValue.hpp"
 #include "../value/Reference.hpp"
 #include "../jit/jit_general.hpp"
+#include "../value/Function.hpp"
 
 using namespace std;
 
@@ -51,13 +52,17 @@ void VariableDeclaration::analyse_help(SemanticAnalyser* analyser)
 		if (var_type == Type::UNKNOWN) add_error(analyser, SemanticException::UNKNOWN_TYPE);
 	}
 	if (expression) {
+		Function* f = dynamic_cast<Function*>(expression);
+		if (f != nullptr) {
+			f->self_name = variable->content;
+		}
 		expression->analyse(analyser);
 		if (!Type::intersection(var_type, expression->type, &var_type)) {
 			add_error(analyser, SemanticException::TYPE_MISMATCH);
 		}
 	}
 
-	var = analyser->add_var(variable, var_type, analyser->current_block(), this);
+	var = analyser->add_var(variable->content, var_type, analyser->current_block());
 	type = Type::VOID;
 
 	if (var->type == Type::UNREACHABLE) {

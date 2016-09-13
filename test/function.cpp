@@ -74,7 +74,7 @@ void Test::test_functions() {
 	//	success("let g = x -> x ^ 2 let f = x, y -> g(x + y) f(6, 2)", "64");
 
 	header("Recursive");
-	//	success("let fact = x -> if x == 1 { 1 } else { fact(x - 1) * x } fact(10)", "3628800");
+	success("let fact = x -> if x == 1 { 1 } else { fact(x - 1) * x } fact(10)", "3628800");
 
 	/*
 	 * Function operators

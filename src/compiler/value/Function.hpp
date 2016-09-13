@@ -24,6 +24,8 @@ public:
 	std::vector<SemanticVar*> captures;
 	Block* body;
 
+	std::string self_name;
+	SemanticVar* self_var;
 	std::vector<SemanticVar*> arguments_vars;
 //	int pos;
 //	std::map<std::string, SemanticVar*> vars;

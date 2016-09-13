@@ -361,22 +361,16 @@ jit_value_t FunctionCall::compile(Compiler& c) const
 		}
 	} else {
 
-		jit_label_t label_end = jit_label_undefined;
 
 		jit_value_t fun = function->compile(c);
 		jit_value_t res = nullptr;
 
-		if (function->type.return_type() == Type::VOID) {
-			jit_insn_branch_if_not(c.F, fun, &label_end);
-		} else {
+		if (function->type.return_type() != Type::VOID) {
 			res = jit_value_create(c.F, function->type.return_type().jit_type());
-
-			jit_label_t label_ok= jit_label_undefined;
-			jit_insn_branch_if(c.F, fun, &label_ok);
-			jit_insn_store(c.F, res, jit_general::constant_default(c.F, function->type.return_type()));
-			jit_insn_branch(c.F, &label_end);
-			jit_insn_label(c.F, &label_ok);
 		}
+
+		jit_label_t problem = jit_label_undefined;
+		if (fun) jit_insn_branch_if_not(c.F, fun, &problem);
 
 		vector<jit_value_t> args;
 		vector<jit_type_t> args_types;
@@ -386,16 +380,29 @@ jit_value_t FunctionCall::compile(Compiler& c) const
 			args_types.push_back(function->type.argument_type(i).jit_type());
 		}
 
-		jit_type_t jit_return_type = function->type.return_type().jit_type();
 
-		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_return_type, args_types.data(), arguments.size(), 0);
-		jit_value_t val = jit_insn_call_indirect(c.F, fun, sig, args.data(), arguments.size(), 0);
+		jit_value_t val = nullptr;
+		if (fun) {
+			jit_type_t jit_return_type = function->type.return_type().jit_type();
+			jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_return_type, args_types.data(), arguments.size(), 0);
+
+			val = jit_insn_call_indirect(c.F, fun, sig, args.data(), arguments.size(), 0);
+		} else {
+			// recursive function
+			val = jit_insn_call(c.F, "", c.F, nullptr, args.data(), arguments.size(), 0);
+		}
 
 		if (function->type.return_type() != Type::VOID) {
 			jit_insn_store(c.F, res, val);
 		}
 
-		jit_insn_label(c.F, &label_end);
+		jit_label_t exit = jit_label_undefined;
+		jit_insn_branch(c.F, &exit);
+		jit_insn_label(c.F, &problem);
+		if (function->type.return_type() != Type::VOID) {
+			jit_insn_store(c.F, res, jit_general::constant_default(c.F, function->type.return_type()));
+		}
+		jit_insn_label(c.F, &exit);
 
 		// Custom function call : 1 op
 		VM::inc_ops(c.F, 1);

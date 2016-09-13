@@ -11,6 +11,7 @@ Function::Function() {
 //	pos = 0;
 	constant = true;
 	returnType = nullptr;
+	self_var = nullptr;
 //	function_added = false;
 }
 
@@ -103,6 +104,10 @@ void Function::analyse_help(SemanticAnalyser* analyser)
 	}
 
 	analyser->enter_function(this);
+	if (!self_name.empty()) {
+		self_var = analyser->add_var(self_name, type, this);
+	}
+
 	arguments_vars.clear();
 	for (size_t i = 0; i < arguments.size(); ++i) {
 		arguments_vars.push_back(analyser->add_parameter(arguments[i], type.argument_type(i), this));
@@ -121,6 +126,9 @@ void Function::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
+	if (self_var && !Type::intersection(type, self_var->type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
 	for (size_t i = 0; i < arguments.size(); ++i) {
 		Type arg_type = type.argument_type(i);
 		if (!Type::intersection(arg_type, arguments_vars[i]->type, &arg_type)) {
@@ -129,6 +137,7 @@ void Function::reanalyse_help(SemanticAnalyser* analyser, const Type& req_type)
 		arguments_vars[i]->type = arg_type;
 		type.set_argument_type(i, arg_type);
 	}
+	if (self_var) self_var->type = type;
 
 	DBOUT(cout << type << endl);
 
@@ -141,6 +150,9 @@ void Function::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 	if (!Type::intersection(type, req_type, &type)) {
 		add_error(analyser, SemanticException::TYPE_MISMATCH);
 	}
+	if (self_var && !Type::intersection(type, self_var->type, &type)) {
+		add_error(analyser, SemanticException::TYPE_MISMATCH);
+	}
 	// make the arguments pure
 	for (size_t i = 0; i < arguments.size(); ++i) {
 		Type arg_type = type.argument_type(i);
@@ -151,6 +163,7 @@ void Function::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 		arguments_vars[i]->type = arg_type;
 		type.set_argument_type(i, arg_type);
 	}
+	if (self_var) self_var->type = type;
 
 	// body makes the return_type pure
 	body->finalize(analyser, Type::UNKNOWN);
@@ -169,8 +182,8 @@ void Function::capture(SemanticVar* )
 //	}
 }
 
-jit_value_t Function::compile(Compiler& c) const {
-
+jit_value_t Function::compile(Compiler& c) const
+{
 	jit_context_t context = jit_context_create();
 	jit_context_build_start(context);
 
@@ -182,9 +195,9 @@ jit_value_t Function::compile(Compiler& c) const {
 	jit_type_t return_type = type.return_type().jit_type();
 
 	jit_type_t signature = jit_type_create_signature(jit_abi_cdecl, return_type, params.data(), arguments.size(), 0);
-	jit_function_t function = jit_function_create(context, signature);
+	jit_function_t G = jit_function_create(context, signature);
 
-	c.enter_function(function);
+	c.enter_function(G);
 
 	// Own the arguments
 	for (size_t i = 0; i < arguments.size(); ++i) {
@@ -192,6 +205,8 @@ jit_value_t Function::compile(Compiler& c) const {
 		jit_value_t q = jit_general::move_inc(c.F, p, type.argument_type(i));
 		jit_insn_store(c.F, p, q); // hope if p=q its optimized
 	}
+
+	c.add_var(self_name, nullptr, type, true);
 
 	// Execute function
 	jit_value_t res = body->compile(c);
@@ -202,14 +217,14 @@ jit_value_t Function::compile(Compiler& c) const {
 	}
 
 	// Return
-	jit_insn_return(function, res);
+	jit_insn_return(G, res);
 
-	jit_insn_rethrow_unhandled(function);
+	jit_insn_rethrow_unhandled(G);
 
-	jit_function_compile(function);
+	jit_function_compile(G);
 	jit_context_build_end(context);
 
-	void* f = jit_function_to_closure(function);
+	void* f = jit_function_to_closure(G);
 
 	c.leave_function();
 
