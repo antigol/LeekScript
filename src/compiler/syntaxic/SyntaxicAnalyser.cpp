@@ -620,8 +620,23 @@ Value* SyntaxicAnalyser::eatExpression(bool pipe_opened, bool set_opened) {
 		if (t->type == TokenType::MINUS && t->line != lt->line && nt != nullptr && t->line == nt->line)
 			break;
 
+		save_current_state();
+
 		Operator* op = new Operator(t);
 		eat();
+
+		Value* v2 = eatSimpleExpression();
+
+		if (op->type == TokenType::LOWER && (t->type == TokenType::GREATER || t->type == TokenType::COMMA)) {
+			// par exemple 1 + 4 <3,1,2>
+			// 3 <3>
+
+			delete op;
+			delete v2;
+			restore_saved_state();
+			break;
+		}
+		forgot_saved_state();
 
 		if (ex == nullptr) {
 			if (Expression* exx = dynamic_cast<Expression*>(e)) {
@@ -631,7 +646,7 @@ Value* SyntaxicAnalyser::eatExpression(bool pipe_opened, bool set_opened) {
 				ex->v1 = e;
 			}
 		}
-		ex->append(op, eatSimpleExpression());
+		ex->append(op, v2);
 	}
 
 	if (ex != nullptr) {
