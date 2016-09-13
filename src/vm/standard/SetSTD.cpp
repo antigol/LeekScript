@@ -4,6 +4,8 @@
 using namespace std;
 using namespace ls;
 
+namespace _set {
+
 class Size : public Method {
 public:
 	Size() {
@@ -38,8 +40,10 @@ public:
 	}
 };
 
+}
+
 SetSTD::SetSTD() : Module(RawType::SET.clazz())
 {
-	methods["size"] = new Size();
-	methods["insert"] = new Insert();
+	methods["size"] = new _set::Size();
+	methods["insert"] = new _set::Insert();
 }

@@ -4,6 +4,8 @@
 using namespace std;
 using namespace ls;
 
+namespace vec {
+
 class Size : public Method {
 public:
 	Size() {
@@ -36,8 +38,11 @@ public:
 	}
 };
 
+}
+
 VecSTD::VecSTD() : Module(RawType::VEC.clazz())
 {
-	methods["size"] = new Size();
-	methods["push"] = new Push();
+	methods["size"] = new vec::Size();
+	methods["push"] = new vec::Push();
 }
+
