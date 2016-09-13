@@ -166,6 +166,10 @@ void jit_general::delete_ref(jit_function_t F, jit_value_t v, const Type& type)
 		jit_vec::delete_ref(F, type.elements_types[0], v);
 		return;
 	}
+	if (type.raw_type == &RawType::SET) {
+		jit_set::delete_ref(F, type.elements_types[0], v);
+		return;
+	}
 	assert(0);
 }
 
@@ -184,6 +188,10 @@ void jit_general::delete_temporary(jit_function_t F, jit_value_t v, const Type& 
 		jit_vec::delete_temporary(F, type.elements_types[0], v);
 		return;
 	}
+	if (type.raw_type == &RawType::SET) {
+		jit_set::delete_temporary(F, type.elements_types[0], v);
+		return;
+	}
 	assert(0);
 }
 
@@ -195,6 +203,7 @@ jit_value_t jit_general::move_inc(jit_function_t F, jit_value_t v, const Type& t
 	}
 	if (type.raw_type == &RawType::TUPLE) return jit_tuple::move_inc(F, v, type);
 	if (type.raw_type == &RawType::VEC) return jit_vec::move_inc(F, type.elements_types[0], v);
+	if (type.raw_type == &RawType::SET) return jit_set::move_inc(F, type.elements_types[0], v);
 	assert(0);
 }
 
@@ -206,6 +215,7 @@ jit_value_t jit_general::move(jit_function_t F, jit_value_t v, const Type& type)
 	}
 	if (type.raw_type == &RawType::TUPLE) return jit_tuple::move(F, v, type);
 	if (type.raw_type == &RawType::VEC) return jit_vec::move(F, type.elements_types[0], v);
+	if (type.raw_type == &RawType::SET) return jit_set::move(F, type.elements_types[0], v);
 	assert(0);
 }
 
@@ -222,6 +232,10 @@ void jit_general::inc_refs(jit_function_t F, jit_value_t v, const Type& type)
 	}
 	if (type.raw_type == &RawType::VEC) {
 		jit_vec::inc_refs(F, v);
+		return;
+	}
+	if (type.raw_type == &RawType::SET) {
+		jit_set::inc_refs(F, v);
 		return;
 	}
 	assert(0);
@@ -325,4 +339,25 @@ jit_value_t jit_general::string(jit_function_t F, jit_value_t v, const Type& typ
 	}
 	assert(0);
 	return nullptr;
+}
+
+void*jit_general::closure_lt(const Type& type)
+{
+	jit_type_t params[] = { jit_type_void_ptr, jit_type_void_ptr };
+	jit_type_t signature = jit_type_create_signature(jit_abi_cdecl, LS_BOOLEAN, params, 2, 0);
+	jit_type_t  jtype = type.jit_type();
+
+	jit_context_t context = jit_context_create();
+	jit_context_build_start(context);
+	jit_function_t G = jit_function_create(context, signature);
+	jit_value_t x = jit_insn_load_relative(G, jit_value_get_param(G, 0), 0, jtype);
+	jit_value_t y = jit_insn_load_relative(G, jit_value_get_param(G, 1), 0, jtype);
+	jit_insn_return(G, jit_general::lt(G, x, type, y, type));
+	jit_insn_rethrow_unhandled(G);
+	jit_function_compile(G);
+	jit_context_build_end(context);
+
+	jit_type_free(signature);
+	jit_type_free(jtype);
+	return jit_function_to_closure(G);
 }

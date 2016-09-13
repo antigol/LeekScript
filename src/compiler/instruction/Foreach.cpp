@@ -1,8 +1,5 @@
 #include "../../compiler/instruction/Foreach.hpp"
-#include "../../vm/value/LSVec.hpp"
-#include "../../vm/value/LSMap.hpp"
-#include "../../vm/value/LSSet.hpp"
-#include "../jit/jit_vec.hpp"
+#include "../jit/jit_general.hpp"
 
 using namespace std;
 
@@ -215,6 +212,45 @@ jit_value_t Foreach::compile(Compiler& c) const
 		}
 
 		jit_insn_store(c.F, begin, jit_insn_add_relative(c.F, begin, jit_type_get_size(jit_value_type)));
+
+		// jump to cond
+		jit_insn_branch(c.F, &label_cond);
+	} else if (container->type.raw_type == &RawType::SET) {
+		// iterators
+		pair<jit_value_t, jit_value_t> begin_end = jit_set::begin_end(c.F, container_v);
+		jit_value_t begin = begin_end.first;
+		jit_value_t end = begin_end.second;
+
+		if (key != nullptr) {
+			jit_insn_store(c.F, key_v, jit_general::constant_i32(c.F, 0));
+		}
+
+		// cond label:
+		jit_label_t label_cond = jit_label_undefined;
+		jit_insn_label(c.F, &label_cond);
+
+		// Condition to continue
+		jit_insn_branch_if(c.F, jit_insn_eq(c.F, begin, end), &label_end);
+
+		// Get Value
+		jit_insn_store(c.F, value_v, jit_set::load_iterator(c.F, container->type.elements_types[0], begin));
+
+		// Body
+		jit_value_t body_v = body->compile(c);
+		if (output_v && body_v) {
+			jit_vec::push_move_inc(c.F, type.elements_types[0], output_v, body_v);
+		}
+
+
+		// it++
+		jit_insn_label(c.F, &label_it);
+
+		// incrment key
+		if (key != nullptr) {
+			jit_insn_store(c.F, key_v, jit_insn_add(c.F, key_v, jit_general::constant_i32(c.F, 1)));
+		}
+
+		jit_insn_store(c.F, begin, jit_set::inc_iterator(c.F, begin));
 
 		// jump to cond
 		jit_insn_branch(c.F, &label_cond);

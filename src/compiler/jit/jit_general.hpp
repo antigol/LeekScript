@@ -5,6 +5,11 @@
 #include <jit/jit.h>
 #include "../../vm/Type.hpp"
 
+#include "jit_tuple.hpp"
+#include "jit_vec.hpp"
+#include "jit_set.hpp"
+#include "jit_var.hpp"
+
 #define LS_I32 jit_type_int       // 32-bit int
 #define LS_I64 jit_type_long      // 64-bit int
 #define LS_F32 jit_type_float32
@@ -46,6 +51,8 @@ public:
 
 	static void print(jit_function_t F, jit_value_t v, const Type& type);
 	static jit_value_t string(jit_function_t F, jit_value_t v, const Type& type);
+
+	static void* closure_lt(const Type& type);
 };
 }
 

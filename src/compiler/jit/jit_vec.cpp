@@ -4,27 +4,27 @@
 using namespace std;
 using namespace ls;
 
-vector<char>* jit_vec_create() {
+static vector<char>* jit_vec_create() {
 	return new vector<char>();
 }
 
-void jit_vec_enlarge(vector<char>* vec, uint32_t size) {
+static void jit_vec_enlarge(vector<char>* vec, uint32_t size) {
 	vec->resize(vec->size() + size);
 }
 
-char* jit_vec_begin(vector<char>* vec) {
+static char* jit_vec_begin(vector<char>* vec) {
 	return vec->data();
 }
 
-char* jit_vec_end(vector<char>* vec) {
+static char* jit_vec_end(vector<char>* vec) {
 	return vec->data() + vec->size();
 }
 
-uint32_t jit_vec_size(vector<char>* vec) {
+static uint32_t jit_vec_size(vector<char>* vec) {
 	return vec->size();
 }
 
-void jit_vec_delete(vector<char>* vec) {
+static void jit_vec_delete(vector<char>* vec) {
 	delete vec;
 }
 

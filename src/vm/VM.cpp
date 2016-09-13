@@ -16,6 +16,7 @@
 #include "../compiler/jit/jit_general.hpp"
 
 #include "standard/VecSTD.hpp"
+#include "standard/SetSTD.hpp"
 #include "standard/SystemSTD.hpp"
 
 using namespace std;
@@ -25,6 +26,7 @@ namespace ls {
 VM::VM() {
 	add_module(new VecSTD());
 	add_module(new SystemSTD());
+	add_module(new SetSTD());
 }
 
 VM::~VM() {
@@ -182,9 +184,9 @@ string VM::execute(const std::string code, std::string ctx, ExecMode mode) {
 	return result;
 }
 
-static void VM_operation_exception() {
-	throw vm_operation_exception();
-}
+//static void VM_operation_exception() {
+//	throw vm_operation_exception();
+//}
 
 void VM::inc_ops(jit_function_t F, int add) {
 

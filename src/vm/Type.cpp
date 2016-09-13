@@ -2,8 +2,7 @@
 #include <cassert>
 #include <algorithm>
 #include <set>
-#include "../compiler/jit/jit_tuple.hpp"
-#include "../compiler/jit/jit_vec.hpp"
+#include "../compiler/jit/jit_general.hpp"
 
 using namespace std;
 using namespace ls;
@@ -82,6 +81,7 @@ bool Type::must_manage_memory() const {
 	}
 
 	if (raw_type == &RawType::VEC) return true;
+	if (raw_type == &RawType::SET) return true;
 
 	return false;
 }
@@ -104,6 +104,7 @@ jit_type_t Type::jit_type() const
 	if (raw_type->jit_type() != nullptr) return raw_type->jit_type();
 	if (raw_type == &RawType::TUPLE) return jit_tuple::jit_type(*this);
 	if (raw_type == &RawType::VEC) return jit_vec::jit_type();
+	if (raw_type == &RawType::SET) return jit_set::jit_type();
 	assert(0);
 	return nullptr;
 }

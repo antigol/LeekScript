@@ -1,8 +1,7 @@
 #include "Array.hpp"
 #include "../../vm/VM.hpp"
-#include "../../vm/value/LSVec.hpp"
 #include "../semantic/SemanticAnalyser.hpp"
-#include <math.h>
+#include <cmath>
 #include "../jit/jit_vec.hpp"
 
 using namespace std;
@@ -81,8 +80,8 @@ void Array::finalize_help(SemanticAnalyser* analyser, const Type& req_type)
 	assert(type.is_pure() || !analyser->errors.empty());
 }
 
-jit_value_t Array::compile(Compiler& c) const {
-
+jit_value_t Array::compile(Compiler& c) const
+{
 	jit_value_t array = jit_vec::create(c.F);
 
 	for (Value* val : expressions) {
