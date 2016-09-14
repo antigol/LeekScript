@@ -165,7 +165,7 @@ string Program::execute() {
 		LSValue::delete_temporary(value);
 		return oss.str();
 	}
-	auto fun = (void* (*)()) closure;
+	auto fun = (void (*)()) closure;
 	fun();
 	stringstream oss;
 	oss << "<" << output_type << ">";

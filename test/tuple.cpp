@@ -7,7 +7,7 @@ void Test::test_tuple() {
 	success("()", "<tuple>");
 	success("(1,)", "<tuple<i32>>");
 	success("(1, 1.5)", "<tuple<i32,f64>>");
-//	success("(1, 1.5, 'test')", "<tuple>"); TODO
+	success("(1, 1.5, 'test')", "<tuple<i32,f64,var>>");
 
 	success("(1,).0", "1");
 	success("(1, 1.5).1", "1.5");

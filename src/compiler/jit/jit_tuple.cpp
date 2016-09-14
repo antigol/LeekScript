@@ -8,8 +8,8 @@ using namespace ls;
 jit_type_t jit_tuple::jit_type(const Type& type)
 {
 	vector<jit_type_t> fields;
-	for (const Type& type : type.elements_types) {
-		fields.push_back(type.jit_type());
+	for (const Type& x : type.elements_types) {
+		fields.push_back(x.jit_type());
 	}
 	return jit_type_create_struct(fields.data(), fields.size(), 0);
 }

@@ -201,9 +201,11 @@ jit_value_t Function::compile(Compiler& c) const
 
 	// Own the arguments
 	for (size_t i = 0; i < arguments.size(); ++i) {
-		jit_value_t p = jit_value_get_param(c.F, i);
-		jit_value_t q = jit_general::move_inc(c.F, p, type.argument_type(i));
-		jit_insn_store(c.F, p, q); // hope if p=q its optimized
+		if (type.arguments_types[i].must_manage_memory()) {
+			jit_value_t p = jit_value_get_param(c.F, i);
+			jit_value_t q = jit_general::move_inc(c.F, p, type.argument_type(i));
+			jit_insn_store(c.F, p, q);
+		}
 	}
 
 	c.add_var(self_name, nullptr, type, true);
