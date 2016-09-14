@@ -386,10 +386,16 @@ jit_value_t Expression::compile(Compiler& c) const
 		jit_value_t l = l1->compile_l(c);
 		jit_value_t v = v2->compile(c);
 		if (l1->left_type == Type::VAR) {
-			jit_general::call_native(c.F, LS_VOID, { LS_POINTER, LS_POINTER }, (void*) EX_store_lsptr, { l, v }); // TODO update for tuples
+			jit_general::call_native(c.F, LS_VOID, { LS_POINTER, LS_POINTER }, (void*) EX_store_lsptr, { l, v });
 		} else {
+			jit_type_t jit_type = l1->left_type.jit_type();
+			jit_value_t x = jit_insn_load_relative(c.F, l, 0, jit_type);
+			jit_general::delete_ref(c.F, x, l1->left_type);
+
 			v = jit_general::move_inc(c.F, v, v2->type);
 			jit_insn_store_relative(c.F, l, 0, v);
+
+			jit_type_free(jit_type);
 		}
 		return l1->compile(c);
 

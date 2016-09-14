@@ -16,3 +16,9 @@ ls.print(y[0])
 let z = []
 ls.print(z.push('a'))
 ls.print(z)
+
+let x = [for let i = 0; i < 100; ++i { 'x = '+i }]
+
+x = [1,2,4]
+
+ls.string(x)
