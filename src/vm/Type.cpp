@@ -307,7 +307,7 @@ Type Type::image_conversion() const
 	if (*this == Type::I32) return Type({ Type::I32, Type::F64, Type::VAR });
 	if (*this == Type::F64) return Type({ Type::F64, Type::VAR });
 
-	// TODO add other possibilities here and in jit_general::compile_convert
+	// TODO add other possibilities here and in jit_general::convert
 
 	return *this;
 }
@@ -334,7 +334,7 @@ Type Type::fiber_conversion() const
 	if (*this == Type::F64) return Type({ Type::BOOLEAN, Type::I32, Type::F64 });
 	if (*this == Type::I32) return Type({ Type::BOOLEAN, Type::I32 });
 
-	// TODO add other possibilities here and in jit_general::compile_convert
+	// TODO add other possibilities here and in jit_general::convert
 
 	return *this;
 }
@@ -733,13 +733,10 @@ Type Type::union_of(const Type& t1, const Type& t2)
 
 
 	// Example : map<i32,f64> union map<f64,i32>  !=  map<{i32|f64},{i32|f64}>
-	// Example : map<i32,f64> union map<i32,i32>  ==  map<i32,{i32|f64}>     TODO
+	// Example : map<i32,f64> union map<i32,i32>  ==  map<i32,{i32|f64}>
 
-	// si on NE peut PAS merger les sous parties
-	int in1 = t1.elements_types.size() + t1.return_types.size() + t1.arguments_types.size();
-	int in2 = t2.elements_types.size() + t2.return_types.size() + t1.arguments_types.size();
+	// CANNOT MERGE if t1 and t2 are different
 	if (t1.raw_type != t2.raw_type
-			|| in1 > 1 || in2 > 1
 			|| t1.elements_types.size() != t2.elements_types.size()
 			|| t1.return_types.size() != t2.return_types.size()
 			|| t1.arguments_types.size() != t2.arguments_types.size()) {
@@ -748,8 +745,26 @@ Type Type::union_of(const Type& t1, const Type& t2)
 		result.alternative_types.insert(t2);
 		return result;
 	}
+	int diff = 0;
+	for (size_t i = 0; i < t1.elements_types.size(); ++i) {
+		diff += t1.elements_types[i] != t2.elements_types[i];
+	}
+	for (size_t i = 0; i < t1.return_types.size(); ++i) {
+		diff += t1.return_types[i] != t2.return_types[i];
+	}
+	for (size_t i = 0; i < t1.arguments_types.size(); ++i) {
+		diff += t1.arguments_types[i] != t2.arguments_types[i];
+	}
 
-	// si on peut merger les sous parties
+	// CANNOT MERGE if more than 1 subpart of t1 and t2 differ
+	if (diff > 1) {
+		Type result = Type::UNKNOWN;
+		result.alternative_types.insert(t1);
+		result.alternative_types.insert(t2);
+		return result;
+	}
+
+	// WE CAN MERGE
 	Type result(t1.raw_type);
 	result.elements_types.reserve(t1.elements_types.size());
 	result.return_types.reserve(t1.return_types.size());
