@@ -1,7 +1,7 @@
 #include "Test.hpp"
 
 #include <chrono>
-#include "../src/compiler/semantic/SemanticException.hpp"
+#include "../src/compiler/semantic/SemanticError.hpp"
 
 long get_sec_time();
 long get_milli_time();
@@ -12,24 +12,32 @@ void Test::test_system() {
 
 	header("System");
 
-	success("System.version", "1");
+	code("System.version").equals("1");
 
-	success("System.operations", "0");
-	success("2 + 2 System.operations", "1");
+	code("System.operations").equals("0");
+	code("2 + 2 System.operations").equals("1");
 
 	long sec_time = get_sec_time();
-	success_almost("System.time", sec_time, 1L);
+	code("System.time").almost(sec_time, 1L);
 
 	long milli_time = get_milli_time();
-	success_almost("System.milliTime", milli_time, 100L);
+	code("System.milliTime").almost(milli_time, 100L);
 
 	long micro_time = get_micro_time();
-	success_almost("System.microTime", micro_time, 100000L);
+	code("System.microTime").almost(micro_time, 100000L);
 
 	long nano_time = get_nano_time();
-	success_almost("System.nanoTime", nano_time, 100000000L);
+	code("System.nanoTime").almost(nano_time, 100000000L);
 
-	sem_err("let a = System.print(12)", ls::SemanticException::Type::CANT_ASSIGN_VOID, "a");
+	code("let a = System.print(12)").semantic_error(ls::SemanticError::Type::CANT_ASSIGN_VOID, "a");
+
+	section("print()");
+	code("System.print(true)").equals("null");
+	code("System.print(12)").equals("null");
+	code("System.print(123.456)").equals("null");
+	code("System.print(1234567123456)").equals("null");
+	code("System.print(12345671234561234567123456)").equals("null");
+	code("System.print('salut')").equals("null");
 }
 
 long get_sec_time() {

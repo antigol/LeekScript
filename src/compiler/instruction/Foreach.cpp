@@ -50,12 +50,16 @@ void Foreach::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	container->analyse(analyser, Type::UNKNOWN);
 
-	if (container->type.element_types.size() == 1) {
+	if (container->type.element_type.size() == 1) {
+
 		key_type = Type::INTEGER; // If no key type in array key = 0, 1, 2...
-		value_type = container->type.element_types[0];
-	} else if (container->type.element_types.size() == 2) {
-		key_type = container->type.element_types[0];
-		value_type = container->type.element_types[1];
+		value_type = container->type.getElementType();
+
+	} else if (container->type.raw_type == RawType::MAP) {
+
+		key_type = container->type.getKeyType();
+		value_type = container->type.getElementType();
+
 	} else if (container->type.raw_type == RawType::ARRAY ||
 			   container->type.raw_type == RawType::SET) {
 		key_type = Type::INTEGER;
@@ -279,16 +283,16 @@ typename LSSet<T>::iterator fun_inc_set(typename LSSet<T>::iterator it) {
 enum SelectorType {
 	PTR_ARRAY = 0,
 	INT_ARRAY,
-	FLOAT_ARRAY,
+	REAL_ARRAY,
 	PTR_PTR_MAP,
 	PTR_INT_MAP,
-	PTR_FLOAT_MAP,
+	PTR_REAL_MAP,
 	INT_PTR_MAP,
 	INT_INT_MAP,
-	INT_FLOAT_MAP,
+	INT_REAL_MAP,
 	PTR_SET,
 	INT_SET,
-	FLOAT_SET,
+	REAL_SET,
 	OTHER_NOT_SUPPORTED
 };
 int fun_selector(LSValue* containter) {
@@ -299,7 +303,7 @@ int fun_selector(LSValue* containter) {
 		return SelectorType::INT_ARRAY;
 	}
 	if (dynamic_cast<LSArray<double>*>(containter)) {
-		return SelectorType::FLOAT_ARRAY;
+		return SelectorType::REAL_ARRAY;
 	}
 	if (dynamic_cast<LSMap<LSValue*,LSValue*>*>(containter)) {
 		return SelectorType::PTR_PTR_MAP;
@@ -308,7 +312,7 @@ int fun_selector(LSValue* containter) {
 		return SelectorType::PTR_INT_MAP;
 	}
 	if (dynamic_cast<LSMap<LSValue*,double>*>(containter)) {
-		return SelectorType::PTR_FLOAT_MAP;
+		return SelectorType::PTR_REAL_MAP;
 	}
 	if (dynamic_cast<LSMap<int,LSValue*>*>(containter)) {
 		return SelectorType::INT_PTR_MAP;
@@ -317,7 +321,7 @@ int fun_selector(LSValue* containter) {
 		return SelectorType::INT_INT_MAP;
 	}
 	if (dynamic_cast<LSMap<int,double>*>(containter)) {
-		return SelectorType::INT_FLOAT_MAP;
+		return SelectorType::INT_REAL_MAP;
 	}
 	if (dynamic_cast<LSSet<LSValue*>*>(containter)) {
 		return SelectorType::PTR_SET;
@@ -326,7 +330,7 @@ int fun_selector(LSValue* containter) {
 		return SelectorType::INT_SET;
 	}
 	if (dynamic_cast<LSSet<double>*>(containter)) {
-		return SelectorType::FLOAT_SET;
+		return SelectorType::REAL_SET;
 	}
 
 	return SelectorType::OTHER_NOT_SUPPORTED;
@@ -372,7 +376,7 @@ jit_value_t Foreach::compile(Compiler& c) const {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_array_all, (void*) fun_condition_array_all, (void*) fun_value_array_int, (void*) fun_key_array_int, (void*) fun_inc_array_int,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (equal_type(container->type, Type::FLOAT_ARRAY)) {
+	} else if (equal_type(container->type, Type::REAL_ARRAY)) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_array_all, (void*) fun_condition_array_all, (void*) fun_value_array_float, (void*) fun_key_array_float, (void*) fun_inc_array_float,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
@@ -388,7 +392,7 @@ jit_value_t Foreach::compile(Compiler& c) const {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_ptr_int, (void*) fun_key_map_ptr_int, (void*) fun_inc_map_ptr_int,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (equal_type(container->type, Type::PTR_FLOAT_MAP)) {
+	} else if (equal_type(container->type, Type::PTR_REAL_MAP)) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_ptr_float, (void*) fun_key_map_ptr_float, (void*) fun_inc_map_ptr_float,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
@@ -400,7 +404,7 @@ jit_value_t Foreach::compile(Compiler& c) const {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_int_int, (void*) fun_key_map_int_int, (void*) fun_inc_map_int_int,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (equal_type(container->type, Type::INT_FLOAT_MAP)) {
+	} else if (equal_type(container->type, Type::INT_REAL_MAP)) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_map_all, (void*) fun_condition_map_all, (void*) fun_value_map_int_float, (void*) fun_key_map_int_float, (void*) fun_inc_map_int_float,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
@@ -408,7 +412,7 @@ jit_value_t Foreach::compile(Compiler& c) const {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_set_all, (void*) fun_condition_set_all, (void*) fun_value_set<int>, (void*) fun_key_set<int>, (void*) fun_inc_set<int>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
-	} else if (equal_type(container->type, Type::FLOAT_SET)) {
+	} else if (equal_type(container->type, Type::REAL_SET)) {
 		compile_foreach(c, container_v, output_v,
 						(void*) fun_begin_set_all, (void*) fun_condition_set_all, (void*) fun_value_set<double>, (void*) fun_key_set<double>, (void*) fun_inc_set<double>,
 						&label_it, &label_end, jit_value_type, value_v, jit_key_type, key_v);
@@ -600,9 +604,9 @@ void Foreach::compile_foreach(Compiler&c, jit_value_t container_v, jit_value_t o
 }
 
 void Foreach::compile_foreach_noblock(Compiler& c, jit_value_t container,
-									  void* fun_begin, void* fun_condition, void* fun_value, void* fun_key, void* fun_inc,
-									  jit_label_t* label_begin, jit_label_t* label_it, jit_label_t* label_block, jit_label_t* label_end,
-									  jit_type_t jit_value_type, jit_value_t v, jit_type_t jit_key_type, jit_value_t k) const {
+	void* fun_begin, void* fun_condition, void* fun_value, void* fun_key, void* fun_inc,
+	jit_label_t* label_begin, jit_label_t* label_it, jit_label_t* label_block, jit_label_t* label_end,
+	jit_type_t jit_value_type, jit_value_t v, jit_type_t jit_key_type, jit_value_t k) const {
 
 	// begin label
 	jit_insn_label(c.F, label_begin);
@@ -656,11 +660,11 @@ bool Foreach::equal_type(const Type& generic, const Type& actual) {
 
 	if (generic.raw_type != actual.raw_type) return false;
 	if (generic.nature != actual.nature) return false;
-	if (generic.element_types.size() != actual.element_types.size()) return false;
+	if (generic.element_type.size() != actual.element_type.size()) return false;
 
-	for (size_t i = 0; i < generic.element_types.size(); ++i) {
-		const Type& a = generic.element_types[i];
-		const Type& b = actual.element_types[i];
+	for (size_t i = 0; i < generic.element_type.size(); ++i) {
+		const Type& a = generic.element_type[i];
+		const Type& b = actual.element_type[i];
 		if (a.nature != b.nature) return false;
 		if (a.nature == Nature::VALUE && a.raw_type != b.raw_type) return false;
 	}

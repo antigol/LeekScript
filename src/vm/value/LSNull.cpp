@@ -18,9 +18,7 @@ LSNull::LSNull() {
 	native = true;
 }
 
-LSNull::~LSNull() {
-	cout << "delete LSNull" << endl;
-}
+LSNull::~LSNull() {}
 
 LSValue* LSNull::clone() const {
 	return LSNull::get();

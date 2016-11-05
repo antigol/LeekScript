@@ -26,6 +26,9 @@ public:
 
 	LSString* charAt(int index) const;
 	int unicode_length() const;
+	bool is_permutation(LSString* other);
+	LSString* sort();
+	bool is_palindrome() const;
 
 	/*
 	 * LSValue methods

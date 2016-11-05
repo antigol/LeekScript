@@ -27,9 +27,12 @@ LSClass::LSClass(Json&) {
 
 LSClass::~LSClass() {
 	for (auto s : static_fields) {
-		if (s.second.value != nullptr && !s.second.value->native) {
+		if (s.second.value != nullptr) {
 			delete s.second.value;
 		}
+	}
+	for (auto m : default_methods) {
+		delete m.second;
 	}
 }
 
@@ -57,6 +60,10 @@ void LSClass::addStaticField(std::string name, Type type, LSValue* value) {
 	static_fields.insert({name, ModuleStaticField(name, type, value)});
 }
 
+void LSClass::addOperator(std::string name, std::vector<Operator> impl) {
+	operators.insert({name, impl});
+}
+
 Method* LSClass::getMethod(std::string& name, Type obj_type, vector<Type>& args) {
 
 	try {
@@ -64,6 +71,7 @@ Method* LSClass::getMethod(std::string& name, Type obj_type, vector<Type>& args)
 		Method* best = nullptr;
 
 		for (Method& m : impl) {
+
 			if (m.obj_type.compatible(obj_type) and Type::list_compatible(m.type.arguments_types, args)) {
 				if (best == nullptr or
 					Type::list_more_specific(best->type.arguments_types, m.type.arguments_types) or
@@ -99,12 +107,39 @@ StaticMethod* LSClass::getStaticMethod(std::string& name, vector<Type>& args) {
 
 LSFunction* LSClass::getDefaultMethod(string& name) {
 	try {
-		vector<Method>& impl = methods.at(name);
-		return new LSFunction(impl[0].addr);
-	} catch (exception& e) {
-		return nullptr;
+		return default_methods.at(name);
+	} catch (...) {
+		try {
+			vector<Method>& impl = methods.at(name);
+			LSFunction* fun = new LSFunction(impl[0].addr);
+			default_methods.insert({name, fun});
+			return fun;
+		} catch (...) {}
 	}
 	return nullptr;
+}
+
+LSClass::Operator* LSClass::getOperator(std::string& name, Type& obj_type, Type& operand_type) {
+
+	//std::cout << "getOperator(" << name << ", " << obj_type << ", " << operand_type << ")" << std::endl;
+
+	try {
+		vector<Operator>& impl = operators.at(name);
+		Operator* best = nullptr;
+
+		for (Operator& m : impl) {
+			if (m.object_type.compatible(obj_type) and m.operand_type.compatible(operand_type)) {
+				if (best == nullptr or
+					Type::more_specific(best->operand_type, m.operand_type) or
+					Type::more_specific(best->object_type, m.object_type)) {
+					best = &m;
+				}
+			}
+		}
+		return best;
+	} catch (exception&) {
+		return nullptr;
+	}
 }
 
 bool LSClass::isTrue() const {

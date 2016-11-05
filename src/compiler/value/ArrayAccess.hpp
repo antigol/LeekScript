@@ -13,6 +13,7 @@ public:
 	Value* key;
 	Value* key2;
 	Type array_element_type;
+	Type map_key_type;
 
 	ArrayAccess();
 	virtual ~ArrayAccess();

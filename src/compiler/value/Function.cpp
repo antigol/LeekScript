@@ -1,8 +1,8 @@
-#include "../../compiler/value/Function.hpp"
+#include "Function.hpp"
 
 #include "../semantic/SemanticAnalyser.hpp"
 #include "../../vm/value/LSFunction.hpp"
-
+#include <jit/jit-dump.h>
 using namespace std;
 
 namespace ls {
@@ -19,6 +19,9 @@ Function::~Function() {
 	delete body;
 	for (auto value : defaultValues) {
 		delete value;
+	}
+	if (ls_fun != nullptr) {
+		delete ls_fun;
 	}
 }
 
@@ -69,6 +72,8 @@ void Function::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 //	cout << "Function::analyse req_type " << req_type << endl;
 
+	captures.clear();
+
 	parent = analyser->current_function();
 
 	if (!function_added) {
@@ -90,6 +95,9 @@ void Function::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	if (req_type.nature != Nature::UNKNOWN) {
 		type.nature = req_type.nature;
+	}
+	if (ls_fun == nullptr && type.nature == Nature::POINTER) {
+		ls_fun = new LSFunction(nullptr);
 	}
 
 //	cout << "Function type: " << type << endl;
@@ -147,7 +155,7 @@ void Function::analyse_body(SemanticAnalyser* analyser, const Type& req_type) {
 //	cout << "function analyse body : " << type << endl;
 }
 
-void Function::capture(SemanticVar* var) {
+int Function::capture(SemanticVar* var) {
 
 	if (std::find(captures.begin(), captures.end(), var) == captures.end()) {
 
@@ -159,6 +167,8 @@ void Function::capture(SemanticVar* var) {
 			parent->capture(var);
 		}
 	}
+	type.nature = Nature::POINTER;
+	return std::distance(captures.begin(), std::find(captures.begin(), captures.end(), var));
 }
 
 jit_value_t Function::compile(Compiler& c) const {
@@ -168,9 +178,10 @@ jit_value_t Function::compile(Compiler& c) const {
 	jit_context_t context = jit_context_create();
 	jit_context_build_start(context);
 
-	unsigned arg_count = arguments.size();
-	vector<jit_type_t> params;
-	for (unsigned i = 0; i < arg_count; ++i) {
+	unsigned arg_count = arguments.size() + 1;
+	vector<jit_type_t> params = {LS_POINTER}; // first arg is the function pointer
+
+	for (unsigned i = 0; i < arg_count - 1; ++i) {
 		Type t = Type::INTEGER;
 		if (i < type.getArgumentTypes().size()) {
 			t = type.getArgumentType(i);
@@ -195,8 +206,12 @@ jit_value_t Function::compile(Compiler& c) const {
 
 	jit_insn_rethrow_unhandled(function);
 
+	//jit_dump_function(fopen("f_uncompiled", "w"), function, "f");
+
 	jit_function_compile(function);
 	jit_context_build_end(context);
+
+	//jit_dump_function(fopen("f_compiled", "w"), function, "f");
 
 	void* f = jit_function_to_closure(function);
 
@@ -208,10 +223,22 @@ jit_value_t Function::compile(Compiler& c) const {
 	VM::inc_ops(c.F, 1);
 
 	if (type.nature == Nature::POINTER) {
-//		cout << "create function pointer " << endl;
-		return LS_CREATE_POINTER(c.F, new LSFunction(f));
+		ls_fun->function = f;
+		jit_value_t jit_fun = LS_CREATE_POINTER(c.F, ls_fun);
+		for (const auto& cap : captures) {
+			jit_value_t jit_cap;
+			if (cap->scope == VarScope::LOCAL) {
+				jit_cap = c.get_var(cap->name).value;
+			} else {
+				jit_cap = jit_value_get_param(c.F, 1 + cap->index);
+			}
+			if (cap->type.nature != Nature::POINTER) {
+				jit_cap = VM::value_to_pointer(c.F, jit_cap, cap->type);
+			}
+			VM::function_add_capture(c.F, jit_fun, jit_cap);
+		}
+		return jit_fun;
 	} else {
-//		cout << "create function value " << endl;
 		return LS_CREATE_POINTER(c.F, f);
 	}
 }

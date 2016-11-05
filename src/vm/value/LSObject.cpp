@@ -121,9 +121,13 @@ LSValue** LSObject::atL (const LSValue*) {
 bool LSObject::in(LSValue* value) const {
 	for (auto i = values.begin(); i != values.end(); i++) {
 		if (*i->second == *value) {
+			LSValue::delete_temporary(value);
+			LSValue::delete_temporary(this);
 			return true;
 		}
 	}
+	LSValue::delete_temporary(value);
+	LSValue::delete_temporary(this);
 	return false;
 }
 

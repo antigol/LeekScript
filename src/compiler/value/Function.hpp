@@ -25,12 +25,13 @@ public:
 	std::map<std::string, SemanticVar*> vars;
 	bool function_added;
 	Function* parent;
+	LSFunction* ls_fun = nullptr;
 
 	Function();
 	virtual ~Function();
 
 	void addArgument(Token* token, bool reference, Value* defaultValue);
-	void capture(SemanticVar* var);
+	int capture(SemanticVar* var);
 
 	virtual void print(std::ostream&, int indent, bool debug) const override;
 	virtual unsigned line() const override;

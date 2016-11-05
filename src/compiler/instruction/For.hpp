@@ -19,7 +19,7 @@ public:
 	std::vector<Instruction*> inits;
 	Value* condition;
 	std::vector<Instruction*> increments;
-	Block* body;
+	Block* body = nullptr;
 
 	For();
 	virtual ~For();

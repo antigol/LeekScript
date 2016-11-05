@@ -8,12 +8,6 @@ using namespace std;
 
 namespace ls {
 
-Reference::Reference() {
-	type = Type::VALUE;
-	variable = nullptr;
-	var = nullptr;
-}
-
 Reference::Reference(Token *variable)
 	: Value(), variable(variable), var(nullptr)
 {

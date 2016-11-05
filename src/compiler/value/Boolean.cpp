@@ -1,4 +1,4 @@
-#include "../../compiler/value/Boolean.hpp"
+#include "Boolean.hpp"
 
 #include "../../vm/VM.hpp"
 #include "../../vm/value/LSBoolean.hpp"
@@ -28,7 +28,7 @@ unsigned Boolean::line() const {
 
 void Boolean::analyse(SemanticAnalyser*, const Type& req_type) {
 	if (req_type.nature == Nature::POINTER) {
-		type = Type::BOOLEAN_P;
+		type.nature = Nature::POINTER;
 	}
 }
 

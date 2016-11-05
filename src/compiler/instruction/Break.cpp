@@ -1,6 +1,6 @@
 #include "../../compiler/instruction/Break.hpp"
 #include "../semantic/SemanticAnalyser.hpp"
-#include "../semantic/SemanticException.hpp"
+#include "../semantic/SemanticError.hpp"
 
 using namespace std;
 
@@ -23,7 +23,7 @@ void Break::analyse(SemanticAnalyser* analyser, const Type&) {
 
 	// break must be in a loop
 	if (!analyser->in_loop(deepness)) {
-		analyser->add_error({SemanticException::Type::BREAK_MUST_BE_IN_LOOP, 0});
+		analyser->add_error({SemanticError::Type::BREAK_MUST_BE_IN_LOOP, 0});
 	}
 }
 

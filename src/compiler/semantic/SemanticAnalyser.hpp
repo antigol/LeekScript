@@ -6,7 +6,7 @@
 #include <map>
 
 #include "../../vm/Type.hpp"
-#include "SemanticException.hpp"
+#include "SemanticError.hpp"
 
 namespace ls {
 
@@ -21,7 +21,7 @@ class Token;
 class VariableDeclaration;
 
 enum class VarScope {
-	INTERNAL, LOCAL, PARAMETER
+	INTERNAL, LOCAL, PARAMETER, CAPTURE
 };
 
 class SemanticVar {
@@ -58,7 +58,7 @@ public:
 	std::stack<Function*> functions_stack;
 	std::stack<int> loops;
 
-	std::vector<SemanticException> errors;
+	std::vector<SemanticError> errors;
 
 	SemanticAnalyser();
 	virtual ~SemanticAnalyser();
@@ -83,7 +83,7 @@ public:
 	SemanticVar* get_var_direct(std::string name);
 	std::map<std::string, SemanticVar*>& get_local_vars();
 
-	void add_error(SemanticException ex);
+	void add_error(SemanticError ex);
 
 };
 

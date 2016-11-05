@@ -70,7 +70,8 @@ static vector<vector<string>> type_literals = {
 	{ "^<" }, { "^<=" },
 	{ "^>" }, { "^>=" },
 
-	{ "??" }
+	{ "??" },
+	{ "\\" }
 };
 
 LexicalAnalyser::LexicalAnalyser() {}
@@ -228,6 +229,16 @@ vector<Token> LexicalAnalyser::parseTokens(string code) {
 						} else if (hex && (c <= 'F' || (c >= 'a' && c <= 'f'))) {
 							u8_toutf8(buff, 5, &c, 1);
 							word += buff;
+						} else if (c == 'l' or c == 'L') {
+							word += "l";
+							tokens.push_back(Token(TokenType::NUMBER, line, character, word));
+							number = bin = hex = false;
+							word = "";
+						} else if (c == 'm' or c == 'M') {
+							word += "m";
+							tokens.push_back(Token(TokenType::NUMBER, line, character, word));
+							number = bin = hex = false;
+							word = "";
 						} else {
 							errors.push_back({LexicalError::Type::NUMBER_INVALID_REPRESENTATION, line, character});
 							tokens.push_back(Token(TokenType::NUMBER, line, character, word));

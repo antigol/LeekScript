@@ -1,0 +1,10 @@
+{
+	"compare": {
+		"desc": "Compare deux valeurs booléennes",
+		"args": {
+			"a": "Premier booléen",
+			"b": "Second booléen"
+		},
+		"return": "Resultat : -1, 0 ou 1"
+	}
+}

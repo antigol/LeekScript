@@ -3,9 +3,10 @@
 #include "../../compiler/value/Array.hpp"
 #include "../../vm/value/LSNull.hpp"
 #include "../../vm/value/LSArray.hpp"
+#include "../../vm/value/LSMap.hpp"
 #include "../../vm/value/LSInterval.hpp"
 #include "../semantic/SemanticAnalyser.hpp"
-#include "../semantic/SemanticException.hpp"
+#include "../semantic/SemanticError.hpp"
 
 using namespace std;
 
@@ -50,9 +51,14 @@ void ArrayAccess::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	key->analyse(analyser, Type::UNKNOWN);
 	constant = array->constant && key->constant;
 
-	if (array->type.raw_type == RawType::ARRAY || array->type.raw_type == RawType::INTERVAL) {
+	array_element_type = Type::UNKNOWN;
+	if (array->type.raw_type == RawType::ARRAY || array->type.raw_type == RawType::INTERVAL
+		|| array->type.raw_type == RawType::MAP) {
 		array_element_type = array->type.getElementType();
 		type = array_element_type;
+	}
+	if (array->type.raw_type == RawType::MAP) {
+		map_key_type = array->type.getKeyType();
 	}
 
 	if (array->type == Type::INTERVAL) {
@@ -67,20 +73,21 @@ void ArrayAccess::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 		if (key->type != Type::UNKNOWN and not key->type.isNumber()) {
 			std::string k = "<key 1>";
-			analyser->add_error({SemanticException::Type::ARRAY_ACCESS_RANGE_KEY_MUST_BE_NUMBER, 0, k});
+			analyser->add_error({SemanticError::Type::ARRAY_ACCESS_RANGE_KEY_MUST_BE_NUMBER, 0, k});
 		}
 		if (key2->type != Type::UNKNOWN and not key2->type.isNumber()) {
 			std::string k = "<key 2>";
-			analyser->add_error({SemanticException::Type::ARRAY_ACCESS_RANGE_KEY_MUST_BE_NUMBER, 0, k});
+			analyser->add_error({SemanticError::Type::ARRAY_ACCESS_RANGE_KEY_MUST_BE_NUMBER, 0, k});
 		}
 
 		type = array->type;
 
-	} else {
+	} else if (array->type.raw_type == RawType::ARRAY or array->type.raw_type == RawType::STRING
+		or array->type.raw_type == RawType::INTERVAL) {
 
 		if (key->type != Type::UNKNOWN and not key->type.isNumber()) {
 			std::string k = "<key 1>";
-			analyser->add_error({SemanticException::Type::ARRAY_ACCESS_KEY_MUST_BE_NUMBER, 0, k});
+			analyser->add_error({SemanticError::Type::ARRAY_ACCESS_KEY_MUST_BE_NUMBER, 0, k});
 		}
 
 		if (array_element_type == Type::INTEGER) {
@@ -88,13 +95,22 @@ void ArrayAccess::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		} else {
 			key->analyse(analyser, Type::POINTER);
 		}
+	} else if (array->type.raw_type == RawType::MAP) {
+
+		if (map_key_type == Type::INTEGER) {
+			key->analyse(analyser, Type::INTEGER);
+		} else if (map_key_type == Type::REAL) {
+			key->analyse(analyser, Type::REAL);
+		} else {
+			key->analyse(analyser, Type::POINTER);
+		}
+	} else {
+		key->analyse(analyser, Type::POINTER);
 	}
 
 	if (req_type.nature != Nature::UNKNOWN) {
 		type.nature = req_type.nature;
 	}
-
-//	cout << "array access " << type << endl;
 }
 
 bool ArrayAccess::will_take(SemanticAnalyser* analyser, const std::vector<Type>& arg_types) {
@@ -135,20 +151,27 @@ void ArrayAccess::change_type(SemanticAnalyser*, const Type&) {
 	// TODO
 }
 
-LSValue* access_temp(LSArray<LSValue*>* array, LSValue* key) {
+/*
+ * Array
+ */
+LSValue* access_temp(LSValue* array, LSValue* key) {
 	return array->at(key);
 }
-
 int access_temp_value(LSArray<int>* array, int key) {
 	return array->atv(key);
 }
-
-LSValue** access_l(LSArray<LSValue*>* array, LSValue* key) {
+LSValue** access_l(LSValue* array, LSValue* key) {
 	return array->atL(key);
 }
-
 int* access_l_value(LSArray<int>* array, int key) {
 	return array->atLv(key);
+}
+int* access_l_map(LSMap<LSValue*, int>* map, LSValue* key) {
+//	std::cout << "access_l_map" << std::endl;
+	int* res = map->atLv(key);
+//	std::cout << *res << std::endl;
+	LSValue::delete_temporary(key);
+	return res;
 }
 
 LSValue* range(LSValue* array, int start, int end) {
@@ -162,8 +185,6 @@ int interval_access(const LSInterval* interval, int pos) {
 }
 
 jit_value_t ArrayAccess::compile(Compiler& c) const {
-
-//	cout << "aa " << type << endl;
 
 	jit_value_t a = array->compile(c);
 
@@ -185,6 +206,55 @@ jit_value_t ArrayAccess::compile(Compiler& c) const {
 			VM::inc_ops(c.F, 2);
 
 			if (type.nature == Nature::POINTER) {
+				return VM::value_to_pointer(c.F, res, type);
+			}
+			return res;
+
+		} else if (array->type.raw_type == RawType::MAP) {
+
+			jit_type_t args_types[2] = {LS_POINTER, VM::get_jit_type(map_key_type)};
+			jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, VM::get_jit_type(array_element_type), args_types, 2, 0);
+
+			jit_value_t k = key->compile(c);
+
+			void* func = nullptr;
+			if (map_key_type == Type::INTEGER) {
+				if (array_element_type == Type::INTEGER) {
+					func = (void*) &LSMap<int, int>::at;
+				} else if (array_element_type == Type::REAL) {
+					func = (void*) &LSMap<int, double>::at;
+				} else {
+					func = (void*) &LSMap<int, LSValue*>::at;
+				}
+			} else if (map_key_type == Type::REAL) {
+				if (array_element_type == Type::INTEGER) {
+					func = (void*) &LSMap<double, int>::at;
+				} else if (array_element_type == Type::REAL) {
+					func = (void*) &LSMap<double, double>::at;
+				} else {
+					func = (void*) &LSMap<double, LSValue*>::at;
+				}
+			} else {
+				if (array_element_type == Type::INTEGER) {
+					func = (void*) &LSMap<LSValue*, int>::at;
+				} else if (array_element_type == Type::REAL) {
+					func = (void*) &LSMap<LSValue*, double>::at;
+				} else {
+					func = (void*) &LSMap<LSValue*, LSValue*>::at;
+				}
+			}
+
+			jit_value_t args[] = {a, k};
+			jit_value_t res = jit_insn_call_native(c.F, "access", func, sig, args, 2, JIT_CALL_NOTHROW);
+
+			if (key->type.must_manage_memory()) {
+				VM::delete_temporary(c.F, k);
+			}
+			VM::delete_temporary(c.F, a);
+
+			VM::inc_ops(c.F, 2);
+
+			if (array_element_type == Type::INTEGER and type.nature == Nature::POINTER) {
 				return VM::value_to_pointer(c.F, res, type);
 			}
 			return res;
@@ -232,6 +302,8 @@ jit_value_t ArrayAccess::compile(Compiler& c) const {
 
 jit_value_t ArrayAccess::compile_l(Compiler& c) const {
 
+	//std::cout << "compile access l " << std::endl;
+
 	jit_value_t a = array->compile(c);
 
 	jit_type_t args_types[2] = {LS_POINTER, LS_POINTER};
@@ -240,7 +312,15 @@ jit_value_t ArrayAccess::compile_l(Compiler& c) const {
 	jit_value_t k = key->compile(c);
 
 	jit_value_t args[] = {a, k};
-	return jit_insn_call_native(c.F, "access_l", (void*) access_l_value, sig, args, 2, JIT_CALL_NOTHROW);
-}
 
+	void* func = nullptr;
+	if (array->type.raw_type == RawType::MAP) {
+		//std::cout << "access_l_map" << std::endl;
+		func = (void*) access_l_map;
+	} else {
+		func = (void*) access_l_value;
+	}
+
+	return jit_insn_call_native(c.F, "access_l", func, sig, args, 2, JIT_CALL_NOTHROW);
+}
 }

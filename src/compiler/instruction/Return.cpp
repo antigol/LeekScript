@@ -6,8 +6,6 @@ using namespace std;
 
 namespace ls {
 
-Return::Return() : Return(nullptr) {}
-
 Return::Return(Value* v) {
 	expression = v;
 	function = nullptr;

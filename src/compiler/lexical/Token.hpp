@@ -17,12 +17,9 @@ public:
 	unsigned line;
 	unsigned size;
 
-	Token();
 	Token(std::string content);
 	Token(TokenType type, unsigned int line, unsigned int character, std::string content);
 	virtual ~Token();
-
-	std::string toString();
 };
 
 std::ostream& operator << (std::ostream& os, Token& var);

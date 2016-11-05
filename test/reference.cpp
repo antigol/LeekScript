@@ -4,23 +4,23 @@ void Test::test_references() {
 
 	header("References");
 
-	success("let a = 2 let b = a a = 4 b", "2");
-	success("let a = 2 let b = @a a = 5 b", "5");
-	success("let a = 2 let b = @a b = 6 a", "6");
-	success("let a = 2 let b = @a let c = @b a = 7 c", "7");
-	success("let a = 2 let b = @a let c = @b c = 8 a", "8");
+	code("let a = 2 let b = a a = 4 b").equals("2");
+	code("let a = 2 let b = @a a = 5 b").equals("5");
+	code("let a = 2 let b = @a b = 6 a").equals("6");
+	code("let a = 2 let b = @a let c = @b a = 7 c").equals("7");
+	code("let a = 2 let b = @a let c = @b c = 8 a").equals("8");
 /*
-	success("let a = 'hello' let b = @a a = 'world' b", "'world'");
-	success("let a = true let b = @a b = false b", "false");
-	success("let a = true let b = @a b = false a", "false");
+	code("let a = 'hello' let b = @a a = 'world' b").equals("'world'");
+	code("let a = true let b = @a b = false b").equals("false");
+	code("let a = true let b = @a b = false a").equals("false");
 
 	// Type change from int to string
-	//success("let a = 12 let b = @a b = 'salut' a", "'salut'");
-	success("let a = [1, 2, 3] let b = @a b = 'salut' a", "'salut'");
+	//code("let a = 12 let b = @a b = 'salut' a").equals("'salut'");
+	code("let a = [1, 2, 3] let b = @a b = 'salut' a").equals("'salut'");
 
 
-	success("let v = 10 let a = [v] a[0]++ v", "10");
-//	success("let v = 10 let a = [@v] a[0]++ v", "11");
+	code("let v = 10 let a = [v] a[0]++ v").equals("10");
+//	code("let v = 10 let a = [@v] a[0]++ v").equals("11");
 
  * */
 }

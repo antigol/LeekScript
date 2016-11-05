@@ -4,194 +4,302 @@ void Test::test_numbers() {
 
 	header("Numbers");
 
-	// basic numbers
-	success("0", "0");
-	success("-1", "-1");
-	success("-(-1)", "1");
-	success("π", "3.141592653589793116");
+	section("Basic numbers");
+	code("0").equals("0");
+	code("-1").equals("-1");
+	code("-(-1)").equals("1");
+	code("π").equals("3.141592653589793116");
 
-	// basic operations
-	success("0 + 5", "5");
-	success("5 + 5", "10");
-	success("10 - 3", "7");
-	success("-2 + 3", "1");
-	success("5 * 5", "25");
-	success("15 / 3", "5");
-	success("15 / 2", "7.5");
-	success("12 ** 2", "144");
-	success("2 ** 5", "32");
-	success("2 < 5", "true");
-	success("12 < 5", "false");
-	success("5 == 12", "false");
-	success("12 == 12", "true");
-	success_almost("0.2 + 0.1", 0.3);
-	success("|-12|", "12");
-	success("-12 * 2", "-24");
-	success("(-12) * 2", "-24");
-	success("-12 ** 2", "-144");
-	success("-12 ** 2", "-144");
-	success("(-12) ** 2", "144");
-	success("-12 + 2", "-10");
-	success("let a = [2, 'a'] [-a[0], +a[0], ~a[0]] == [-2, 2, ~2]", "true");
+	section("Basic operations");
+	code("0 + 5").equals("5");
+	code("5 + 5").equals("10");
+	code("10 - 3").equals("7");
+	code("-2 + 3").equals("1");
+	code("5 * 5").equals("25");
+	code("15 / 3").equals("5");
+	code("15 / 2").equals("7.5");
+	code("12 ** 2").equals("144");
+	code("2 ** 5").equals("32");
+	code("2 < 5").equals("true");
+	code("12 < 5").equals("false");
+	code("5 == 12").equals("false");
+	code("12 == 12").equals("true");
+	code("0.2 + 0.1").almost(0.3);
+	code("|-12|").equals("12");
+	code("-12 * 2").equals("-24");
+	code("(-12) * 2").equals("-24");
+	code("-12 ** 2").equals("-144");
+	code("-12 ** 2").equals("-144");
+	code("(-12) ** 2").equals("144");
+	code("-12 + 2").equals("-10");
+	code("let a = [2, 'a'] [-a[0], +a[0], ~a[0]] == [-2, 2, ~2]").equals("true");
 
-	// Hexadecimal representation
-	success("0x0", "0");
-	success("0x00000000", "0");
-	success("0x1", "1");
-	success("0x00000001", "1");
-	success("0xf", "15");
-	success("0x0000000f", "15");
-	success("-0xf", "-15");
-	success("0xff", "255");
-	success("0x10", "16");
-	success("-0xffff", "-65535");
-	success("0xffffffff", "4294967295");
+	section("Hexadecimal representation");
+	code("0x0").equals("0");
+	code("0x00000000").equals("0");
+	code("0x1").equals("1");
+	code("0x00000001").equals("1");
+	code("0xf").equals("15");
+	code("0x0000000f").equals("15");
+	code("-0xf").equals("-15");
+	code("0xff").equals("255");
+	code("0x10").equals("16");
+	code("-0xffff").equals("-65535");
+	code("0xffffffff").equals("4294967295");
 
-	// null must not be considered as 0
-	success("null + 5", "null");
-	success("null * 5", "null");
+	section("Binary representation");
+	code("0b0").equals("0");
+	code("0b00001").equals("1");
+	code("0b1001010110").equals("598");
+	code("-0b0101101001111").equals("-2895");
 
-	// with variables
-	success("let a = 2 a++", "2");
-	success("let a = 2; ++a", "3");
-	success("let a = 2 a--", "2");
-	success("let a = 2; --a", "1");
-	success("let a = 2 a += 5", "7");
-	success("let a = 2 a -= 5", "-3");
-	success("let a = 2 a *= 5", "10");
-	success("let a = 100 a /= 5", "20");
-	success("let a = 56 a %= 17", "5");
-	success("let a = 15 a **= 2", "225");
-	success("let a = 1.5 a * 0.5", "0.75");
+	section("null must not be considered as 0");
+	code("null == 0").equals("false");
+	code("null < 0").equals("true");
+	code("null + 5").equals("null");
+	code("5 + null").equals("null");
+	code("5 / null").equals("null");
+	code("null / 12").equals("null");
+	code("null * 5").equals("null");
+	code("5 * null").equals("null");
 
-	// multiple operations
-	success("(33 - 2) / 2", "15.5");
-	success("12 < (45 / 4)", "false");
-	success("12 == (24 / 2)", "true");
-	success_almost("2.5 + 4.7", 7.2);
-	success("2.5 × 4.7", "11.75");
-	success("5 * 2 + 3 * 4", "22");
+	section("Numbers with variables");
+	code("let a = 2 a++").equals("2");
+	code("let a = 2; ++a").equals("3");
+	code("let a = 2 a--").equals("2");
+	code("let a = 2; --a").equals("1");
+	code("let a = 2 a += 5").equals("7");
+	code("let a = 2 a -= 5").equals("-3");
+	code("let a = 2 a *= 5").equals("10");
+	code("let a = 100 a /= 5").equals("20");
+	code("let a = 56 a %= 17").equals("5");
+	code("let a = 15 a **= 2").equals("225");
+	code("let a = 1.5 a * 0.5").equals("0.75");
 
-	// binary
-	success("0 & 0", "0");
-	success("1 & 0", "0");
-	success("1 & 1", "1");
-	success("5 & 12", "4");
-	success("87619 & 18431", "17987");
-	success("let a = 87619 a &= 18431", "17987");
-	success("let a = 87619 a &= 18431 a", "17987");
-	success("0 | 0", "0");
-	success("1 | 0", "1");
-	success("1 | 1", "1");
-	success("5 | 12", "13");
-	success("87619 | 18431", "88063");
-	success("let a = 87619 a |= 18431", "88063");
-	success("let a = 87619 a |= 18431 a", "88063");
-	success("0 ^ 0", "0");
-	success("1 ^ 0", "1");
-	success("1 ^ 1", "0");
-	success("5 ^ 12", "9");
-	success("87619 ^ 18431", "70076");
-	success("let a = 87619 a ^= 18431", "70076");
-	success("let a = 87619 a ^= 18431 a", "70076");
-	success("0 << 0", "0");
-	success("1 << 0", "1");
-	success("123456 << 0", "123456");
-	success("0 << 1", "0");
-	success("0 << 12", "0");
-	success("1 << 8", "256");
-	success("123 << 12", "503808");
-	success("let a = 123 a <<= 11", "251904");
-	success("let a = 123 a <<= 13 a", "1007616");
-	success("0 >> 0", "0");
-	success("1 >> 0", "1");
-	success("123456 >> 0", "123456");
-	success("0 >> 1", "0");
-	success("0 >> 12", "0");
-	success("155 >> 3", "19");
-	success("-155 >> 3", "-20");
-	success("12345 >> 8", "48");
-	success("123123123 >> 5", "3847597");
-	success("let a = 123123123 a >>= 6", "1923798");
-	success("let a = 123123123 a >>= 7 a", "961899");
-	success("155 >>> 3", "19");
-	success("-155 >>> 3", "536870892");
-	success("let a = -155 a >>>= 4", "268435446");
-	success("let a = -155 a >>>= 5 a", "134217723");
+	section("multiple operations");
+	code("(33 - 2) / 2").equals("15.5");
+	code("12 < (45 / 4)").equals("false");
+	code("12 == (24 / 2)").equals("true");
+	code("2.5 + 4.7").almost(7.2);
+	code("2.5 × 4.7").equals("11.75");
+	code("5 * 2 + 3 * 4").equals("22");
 
-	// string conversions
-	success("65.char()", "'A'");
-	success("Number.char(65)", "'A'");
-	success("126.char()", "'~'");
-	success("Number.char(128040)", "'🐨'");
+	section("Binary operators");
+	code("0 & 0").equals("0");
+	code("1 & 0").equals("0");
+	code("1 & 1").equals("1");
+	code("5 & 12").equals("4");
+	code("87619 & 18431").equals("17987");
+	code("let a = 87619 a &= 18431").equals("17987");
+	code("let a = 87619 a &= 18431 a").equals("17987");
+	code("0 | 0").equals("0");
+	code("1 | 0").equals("1");
+	code("1 | 1").equals("1");
+	code("5 | 12").equals("13");
+	code("87619 | 18431").equals("88063");
+	code("let a = 87619 a |= 18431").equals("88063");
+	code("let a = 87619 a |= 18431 a").equals("88063");
+	code("0 ^ 0").equals("0");
+	code("1 ^ 0").equals("1");
+	code("1 ^ 1").equals("0");
+	code("5 ^ 12").equals("9");
+	code("87619 ^ 18431").equals("70076");
+	code("let a = 87619 a ^= 18431").equals("70076");
+	code("let a = 87619 a ^= 18431 a").equals("70076");
 
-	// large numbers
-	// success("12344532132423", "12344532132423");
+	section("Binary shift operators");
+	code("0 << 0").equals("0");
+	code("1 << 0").equals("1");
+	code("123456 << 0").equals("123456");
+	code("0 << 1").equals("0");
+	code("0 << 12").equals("0");
+	code("1 << 8").equals("256");
+	code("123 << 12").equals("503808");
+	code("let a = 123 a <<= 11").equals("251904");
+	code("let a = 123 a <<= 13 a").equals("1007616");
+	code("0 >> 0").equals("0");
+	code("1 >> 0").equals("1");
+	code("123456 >> 0").equals("123456");
+	code("0 >> 1").equals("0");
+	code("0 >> 12").equals("0");
+	code("155 >> 3").equals("19");
+	code("-155 >> 3").equals("-20");
+	code("12345 >> 8").equals("48");
+	code("123123123 >> 5").equals("3847597");
+	code("let a = 123123123 a >>= 6").equals("1923798");
+	code("let a = 123123123 a >>= 7 a").equals("961899");
+	code("155 >>> 3").equals("19");
+	code("-155 >>> 3").equals("536870892");
+	code("let a = -155 a >>>= 4").equals("268435446");
+	code("let a = -155 a >>>= 5 a").equals("134217723");
 
+	section("String conversions");
+	code("65.char()").equals("'A'");
+	code("Number.char(65)").equals("'A'");
+	code("126.char()").equals("'~'");
+	code("Number.char(128040)").equals("'🐨'");
+
+	section("Multiple precision numbers");
+	code("12344532132423").equals("12344532132423");
+	code("12344532132423m * 987657897613412m").equals("12192174652930109838844857276");
+	code("0m").equals("0");
+	code("2 ** 50").equals("-2147483648");
+	code("2m ** 50").equals("1125899906842624");
+	code("0xf45eab5c9d13aab44376beff").equals("75628790656539575381594128127");
+
+	section("Overflow");
+	code("123m ** 1900").exception(ls::VM::Exception::NUMBER_OVERFLOW);
+
+	section("Integer division by zero");
+	code("1 \\ 0").exception(ls::VM::Exception::DIVISION_BY_ZERO);
+	code("1 % 0").exception(ls::VM::Exception::DIVISION_BY_ZERO);
+	
 	/*
 	 * Number standard library
 	 */
 	header("Number standard library");
-	success("Number", "<class Number>");
-	success("Number()", "0");
-	success("new Number", "0");
-	success("new Number()", "0");
-	success("new Number(12)", "12");
+	section("Constructor");
+	code("Number").equals("<class Number>");
+	code("Number()").equals("0");
+	code("[Number(), 'str']").equals("[0, 'str']");
+	code("new Number").equals("0");
+	code("new Number()").equals("0");
+	code("new Number(12)").equals("12");
 
-	// constants
-	success("Number.pi", "3.141592653589793116");
-	success("2 × Number.pi", "6.283185307179586232");
-	success("Number.e", "2.718281828459045091");
-	success("Number.phi", "1.618033988749894903");
-	success("Number.epsilon", "0.000000000000000222");
+	section("Constants");
+	code("Number.pi").equals("3.141592653589793116");
+	code("2 × Number.pi").equals("6.283185307179586232");
+	code("Number.e").equals("2.718281828459045091");
+	code("Number.phi").equals("1.618033988749894903");
+	code("Number.epsilon").equals("0.000000000000000222");
 
-//	success("Number.abs", "<function>");
-	success("Number.abs(-12)", "12");
-	success("Number.floor(5.9)", "5");
-	success("var a = 5 Number.floor(a)", "5");
-	success("var a = 5.4 Number.floor(a)", "5");
-	success("Number.round(5.7)", "6");
-	success("Number.round(5.4)", "5");
-	success("Number.ceil(5.1)", "6");
-	success("Number.max(5, 12)", "12");
+	section("abs()");
+//	code("Number.abs").equals("<function>");
+	code("Number.abs(-12)").equals("12");
+	code("Number.abs(-12.67)").almost(12.67);
+	code("Number.abs(['a', -15][1])").equals("15");
 
-	success("Number.cos(0)", "1");
-	success("Number.cos(π)", "-1");
-	success_almost("Number.cos(π / 2)", 0.0);
+	section("floor()");
+	code("Number.floor(5.9)").equals("5");
+	code("var a = 5 Number.floor(a)").equals("5");
+	code("var a = 5.4 Number.floor(a)").equals("5");
+	code("Number.floor(['a', -14.7][1])").equals("-15");
 
-	success("Number.sin(0)", "0");
-	success_almost("Number.sin(π)", 0.0);
-	success("Number.sin(π / 2)", "1");
-	success("Number.sin(- π / 2)", "-1");
+	section("round()");
+	code("Number.round(5.7)").equals("6");
+	code("Number.round(5.4)").equals("5");
+	code("Number.round(['a', -15.89][1])").equals("-16");
 
-	success("Number.isInteger(12)", "true");
-	success("Number.isInteger(0)", "true");
-	success("Number.isInteger(-5)", "true");
-	success("Number.isInteger(12.9)", "false");
-	success("Number.isInteger(-5.2)", "false");
-	success("Number.isInteger(π)", "false");
+	section("ceil()");
+	code("Number.ceil(5.1)").equals("6");
 
-	// Object-like calls
-	success("(-12).abs()", "12");
-	success("π.cos()", "-1");
-	success("(π / 2).sin()", "1");
-	success("12.sqrt()", "3.464101615137754386");
-	success("12.8.floor()", "12");
-	success("-12.8.floor()", "-12");
-	success("(-12.8).floor()", "-13");
-	success("12.2.ceil()", "13");
-	success("12.8.round()", "13");
-	success("-12.8.round()", "-13");
-	success("2.pow(10)", "1024");
-	success("0.isInteger()", "true");
-	success("56.7.isInteger()", "false");
-	success("(-56.7).isInteger()", "false");
-	success("3.max(5)", "5");
-	success("5.max(3)", "5");
+	section("max()");
+	code("Number.max(5, 12)").equals("12");
+	code("Number.max(75.7, 12)").almost(75.7);
+	code("Number.max(5, 12.451)").almost(12.451);
+	code("Number.max([5, 'a'][0], 4)").equals("5");
+	code("Number.max([5, 'a'][0], 76)").equals("76");
+	code("Number.max(4, [5, 'a'][0])").equals("5");
+	code("Number.max(77, [5, 'a'][0])").equals("77");
+	code("Number.max([55, 'a'][0], [5, 'a'][0])").equals("55");
 
-	// Combinated
-	success("3.max(5).min(2)", "2");
-	success("3.max(5).max(10).max(12)", "12");
-	success("10.max(5).max(8.7).max(-3.91)", "10");
-	success("10.sqrt().cos()", "-0.99978607287932586");
+	section("cos()");
+	code("Number.cos(0)").equals("1");
+	code("Number.cos(π)").equals("-1");
+	code("Number.cos(π / 2)").almost(0.0);
+	code("π.cos()").equals("-1");
+//	code("['', π][1].cos()").equals("-1");
+	code("Number.cos(['', π][1])").equals("-1");
+
+	section("acos()");
+	code("Number.acos(1)").equals("0");
+	code("Number.acos(-1)").almost(M_PI);
+	code("Number.acos(0)").almost(M_PI / 2);
+	code("(-0.33).acos()").equals("1.907099901948877019");
+	code("Number.acos(['y', 0][1])").almost(M_PI / 2);
+
+	section("sin()");
+	code("Number.sin(0)").equals("0");
+	code("Number.sin(π)").almost(0.0);
+	code("Number.sin(π / 2)").equals("1");
+	code("Number.sin(- π / 2)").equals("-1");
+	code("Number.sin(['', π / 2][1])").equals("1");
+
+	section("tan()");
+	code("Number.tan(0)").equals("0");
+	code("Number.tan(π)").almost(0.0);
+	code("Number.tan(π / 4)").almost(1.0);
+	code("Number.tan(- π / 4)").almost(-1.0);
+	code("Number.tan(['', π / 4][1])").almost(1.0);
+
+	section("asin()");
+	code("Number.asin(0)").equals("0");
+	code("Number.asin(-1)").almost(-M_PI / 2);
+	code("Number.asin(1)").almost(M_PI / 2);
+	code("0.33.asin()").equals("0.33630357515398035");
+	code("Number.asin(['y', -1][1])").almost(-M_PI / 2);
+
+	section("atan()");
+	code("Number.atan(1)").almost(M_PI / 4);
+	code("Number.atan(-1)").almost(-M_PI / 4);
+	code("Number.atan(0.5)").almost(0.463647609000806094);
+	code("0.atan()").equals("0");
+	code("Number.atan(['y', 0.5][1])").almost(0.463647609000806094);
+
+	section("atan2()");
+	code("Number.atan2(1, 1)").almost(M_PI / 4);
+	code("Number.atan2(150.78, 150.78)").almost(M_PI / 4);
+	code("Number.atan2(1, 0)").almost(M_PI / 2);
+	code("Number.atan2(-1, 0)").almost(-M_PI / 2);
+	code("Number.atan2(0, 1)").equals("0");
+	code("Number.atan2(0, -1)").almost(M_PI);
+	code("Number.atan2(12.12, 42.42)").almost(0.278299659005111333);
+	code("1.atan2(1)").almost(M_PI / 4);
+	//code("['', -1][1].atan2(1)").almost(-M_PI / 4);
+	code("1.atan2(['', -1][1])").almost(3 * M_PI / 4);
+	//code("['', -1][1].atan2(['', -1][1])").almost(-3 * M_PI / 4);
+	code("Number.atan2(1, 1)").almost(M_PI / 4);
+	code("Number.atan2(['', -1][1], 1)").almost(-M_PI / 4);
+	code("Number.atan2(1, ['', -1][1])").almost(3 * M_PI / 4);
+	code("Number.atan2(['', -1][1], ['', -1][1])").almost(-3 * M_PI / 4);
+
+	section("cbrt()");
+	code("Number.cbrt(1728)").almost(12.0, 1e-14);
+	code("1728.cbrt()").almost(12.0, 0.00000000000001);
+	code("Number.cbrt(['', 1728][1])").almost(12.0, 0.00000000000001);
+//	code("['', 1728][1].cbrt()").almost(12.0, 0.00000000000001);
+
+	section("isInteger()");
+	code("Number.isInteger(12)").equals("true");
+	code("Number.isInteger(0)").equals("true");
+	code("Number.isInteger(-5)").equals("true");
+	code("Number.isInteger(12.9)").equals("false");
+	code("Number.isInteger(-5.2)").equals("false");
+	code("Number.isInteger(π)").equals("false");
+
+	section("Object-like calls");
+	code("(-12).abs()").equals("12");
+	code("π.cos()").equals("-1");
+	code("(π / 2).sin()").equals("1");
+	code("12.sqrt()").equals("3.464101615137754386");
+	code("12.8.floor()").equals("12");
+	code("-12.8.floor()").equals("-12");
+	code("(-12.8).floor()").equals("-13");
+	code("12.2.ceil()").equals("13");
+	code("12.8.round()").equals("13");
+	code("-12.8.round()").equals("-13");
+	/*
+	code("2.pow(10)").equals("1024");
+	code("0.isInteger()").equals("true");
+	code("56.7.isInteger()").equals("false");
+	code("(-56.7).isInteger()").equals("false");
+	code("3.max(5)").equals("5");
+	code("5.max(3)").equals("5");
+	*/
+
+	section("Combinated");
+	code("3.max(5).min(2)").equals("2");
+	code("3.max(5).max(10).max(12)").equals("12");
+	code("10.max(5).max(8.7).max(-3.91)").equals("10");
+	code("10.sqrt().cos()").equals("-0.99978607287932586");
 }

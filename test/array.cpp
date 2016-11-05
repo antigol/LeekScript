@@ -4,250 +4,281 @@ void Test::test_arrays() {
 
 	header("Arrays");
 
-	success("[]", "[]");
-	success("[1]", "[1]");
-	success("[1, 2, 3]", "[1, 2, 3]");
-	success("[1.21, -5, 4.55, 12, -6.7]", "[1.21, -5, 4.55, 12, -6.7]");
-	success("[true, false, true]", "[true, false, true]");
-	success("[23, true, '', {}, 123]", "[23, true, '', {}, 123]");
-	success("[1, 2, 3] + [4, 5, 6]", "[1, 2, 3, 4, 5, 6]");
-	success("[] + 1", "[1]");
-	success("[] + 1 + 2 + 3", "[1, 2, 3]");
-	success("[1] + 2", "[1, 2]");
-	success("[1] + 0.5", "[1, 0.5]");
-	success("[1] + 0.5 + 'a' + null", "[1, 0.5, 'a', null]");
-	success("[1] + null", "[1, null]");
-	success("[1] + true", "[1, true]");
-	success("[1] + [2] + [3]", "[1, 2, 3]");
-	success("[1] + [2.5] + ['a']", "[1, 2.5, 'a']");
-	success("['a'] + [2.5] + [1]", "['a', 2.5, 1]");
-	success("[1] + ['a']", "[1, 'a']");
-	success("['a'] + [1]", "['a', 1]");
-	success("let a = ['a'] a += 'b' a", "['a', 'b']");
-	success("let a = [1] a += 'a' a", "[1, 'a']");
-	success("let a = [1.5] a += ['a', 'b'] a", "[1.5, 'a', 'b']");
-	success("let a = [1.5] a += false a", "[1.5, false]");
-	success("let a = [1] a += <'z', 'a'> a", "[1, 'a', 'z']");
-	success("[1, 2, 3][1]", "2");
-	success("let a = [1, 2, 3] a[0]", "1");
-	success("let a = [1, 2, 3] a[0] = 5 a[0]", "5");
-	success("let a = [1, 2, 3] a[0] += 5 a[0]", "6");
-	success("let v = 12 let a = [v, 2, 3] a[0] += 5 a[0]", "17");
-	success("let a = [23, 23, true, '', [], 123]; |a|", "6");
-	success("let a = [1, 2, 3]; ~a", "[3, 2, 1]");
-	success("let a = [] !a", "true");
-	success("let a = [1, 2, 3] a[1] = 12 a", "[1, 12, 3]");
-	success("[1.2, 321.42, 23.15]", "[1.2, 321.42, 23.15]");
-	success("[1, 2, 3, 4, 5][1:3]", "[2, 3]");
-	success("2 in [1, 2, 3]", "true");
-	success("4 in [1, 2, 3]", "false");
-	success("'yo' in ['ya', 'yu', 'yo']", "true");
-	success("let a = 2 if (a in [1, 2, 3]) { 'ok' } else { 'no' }", "'ok'");
-	success("[1 2 3]", "[1, 2, 3]");
-	success("['yo' 'ya' 'yu']", "['yo', 'ya', 'yu']");
-	success("[true false true true]", "[true, false, true, true]");
-	success("[1,2,3,4] < [1,2,3,5]", "true");
-	success("[1,2,4,4] < [1,2,3,5]", "false");
-	success("[1,2,3,4.1] < [1,2,3,5.1]", "true");
-	success("[1,2,4,4.1] < [1,2,3,5.1]", "false");
-	success("['1','2','3','4'] < ['1','2','3','5']", "true");
-	success("['1','2','4','4'] < ['1','2','3','5']", "false");
-	success("[1,2,3,4] < [1,2,3,5.1]", "true");
-	success("[1,2,4,4.1] < [1,2,3,5]", "false");
-	success("[1,2,'3'] < [1,2,3]", "false");
-	success("[1,1,'3'] < [1,2,3]", "true");
+	code("[]").equals("[]");
+	code("[1]").equals("[1]");
+	code("[1, 2, 3]").equals("[1, 2, 3]");
+	code("[1.21, -5, 4.55, 12, -6.7]").equals("[1.21, -5, 4.55, 12, -6.7]");
+	code("[true, false, true]").equals("[true, false, true]");
+	code("[23, true, '', {}, 123]").equals("[23, true, '', {}, 123]");
+	code("[1, 2, 3] + [4, 5, 6]").equals("[1, 2, 3, 4, 5, 6]");
+	code("[] + 1").equals("[1]");
+	code("[] + 1 + 2 + 3").equals("[1, 2, 3]");
+	code("[1] + 2").equals("[1, 2]");
+	code("[1] + 0.5").equals("[1, 0.5]");
+	code("[1] + 0.5 + 'a' + null").equals("[1, 0.5, 'a', null]");
+	code("[1] + null").equals("[1, null]");
+	code("[1] + true").equals("[1, true]");
+	code("[1] + [2] + [3]").equals("[1, 2, 3]");
+	code("[1] + [2.5] + ['a']").equals("[1, 2.5, 'a']");
+	code("['a'] + [2.5] + [1]").equals("['a', 2.5, 1]");
+	code("[1] + ['a']").equals("[1, 'a']");
+	code("['a'] + [1]").equals("['a', 1]");
+	code("let a = ['a'] a += 'b' a").equals("['a', 'b']");
+	code("[1, 2, 3][1]").equals("2");
+	code("let a = [1, 2, 3] a[0]").equals("1");
+	code("let a = [1, 2, 3] a[0] = 5 a[0]").equals("5");
+	code("let a = [1, 2, 3] a[0] += 5 a[0]").equals("6");
+	code("let v = 12 let a = [v, 2, 3] a[0] += 5 a[0]").equals("17");
+	code("let a = [23, 23, true, '', [], 123]; |a|").equals("6");
+	code("let a = [1, 2, 3]; ~a").equals("[3, 2, 1]");
+	code("let a = [] !a").equals("true");
+	code("let a = [1, 2, 3] a[1] = 12 a").equals("[1, 12, 3]");
+	code("[1.2, 321.42, 23.15]").equals("[1.2, 321.42, 23.15]");
+	code("[1, 2, 3, 4, 5][1:3]").equals("[2, 3]");
+	code("2 in [1, 2, 3]").equals("true");
+	code("4 in [1, 2, 3]").equals("false");
+	code("'yo' in ['ya', 'yu', 'yo']").equals("true");
+	code("let a = 2 if (a in [1, 2, 3]) { 'ok' } else { 'no' }").equals("'ok'");
+	code("let a = [5, 'yolo', 12] a[1]").equals("'yolo'");
 
+	// No commas
+	code("[1 2 3]").equals("[1, 2, 3]");
+	code("['yo' 'ya' 'yu']").equals("['yo', 'ya', 'yu']");
+	code("[true false true true]").equals("[true, false, true, true]");
+
+	// Type changes
+	code("let a = [1, 2, 3] a += 'hello' a").equals("[1, 2, 3, 'hello']");
+	code("let a = [1.5] a += ['a', 'b'] a").equals("[1.5, 'a', 'b']");
+	code("let a = [1.5] a += false a").equals("[1.5, false]");
+	code("let a = [1] a += <'z', 'a'> a").equals("[1, 'a', 'z']");
+	code("let a = [1] a += 'a' a").equals("[1, 'a']");
+
+	// Comparison
+	code("[1, 2, 3, 4] < [1, 2, 3, 5]").equals("true");
+	code("[1, 2, 4, 4] < [1, 2, 3, 5]").equals("false");
+	code("[1, 2, 3, 4.1] < [1, 2, 3, 5.1]").equals("true");
+	code("[1, 2, 4, 4.1] < [1, 2, 3, 5.1]").equals("false");
+	code("['1','2','3','4'] < ['1','2','3','5']").equals("true");
+	code("['1','2','4','4'] < ['1','2','3','5']").equals("false");
+	code("[1,2,3,4] < [1,2,3,5.1]").equals("true");
+	code("[1,2,4,4.1] < [1,2,3,5]").equals("false");
+	code("[1,2,'3'] < [1,2,3]").equals("false");
+	code("[1,1,'3'] < [1,2,3]").equals("true");
 
 	/*
 	 * Array operations
 	 */
 	header("Array operations");
-	success("[1, 2, 3, 4, 5] ~~ x -> x ** 2", "[1, 4, 9, 16, 25]");
-	success("[1.5, 2.5, 3.5] ~~ x -> x.floor()", "[1, 2, 3]");
-	success("[1, 2, 3, 4, 5] ~~ (x -> x ** 2)", "[1, 4, 9, 16, 25]");
-	success("['yo', 'toto', 'salut'] ~~ x -> x + ' !'", "['yo !', 'toto !', 'salut !']");
-	success("[1, 2, 3] ~~ x -> [x]", "[[1], [2], [3]]");
-	success("[1, 2, 3] ~~ x -> 'yo'", "['yo', 'yo', 'yo']");
-	success("let f = x -> x * 10 [1, 2, 3] ~~ f", "[10, 20, 30]");
-	success("[1.2, 321.42] ~~ x -> x * 1.7", "[2.04, 546.414]");
-	success("[1, 2, 3, 4, 5] ~~ x -> x.max(3)", "[3, 3, 3, 4, 5]");
-	success("[1, 2, 3, 4, 5, 6, 7, 8, 9, 10] ~~ x -> x.max(3).min(8)", "[3, 3, 3, 4, 5, 6, 7, 8, 8, 8]");
-	success("[1] < [1, 2]", "true");
-	success("[1, 1] < [1, 2]", "true");
-	success("[1, 1] == [1, 2]", "false");
-	success("[1, 2] == [1, 2]", "true");
-	success("[1, '1'] == [1, '2']", "false");
-	success("[1, '2'] == [1, '2']", "true");
-	success("[1, 1] == [1, 2.5]", "false");
-	success("[1, 2.5] == [1, 2.5]", "true");
+	code("[1, 2, 3, 4, 5] ~~ x -> x ** 2").equals("[1, 4, 9, 16, 25]");
+	code("[1.5, 2.5, 3.5] ~~ x -> x.floor()").equals("[1, 2, 3]");
+	code("[1, 2, 3, 4, 5] ~~ (x -> x ** 2)").equals("[1, 4, 9, 16, 25]");
+	code("['yo', 'toto', 'salut'] ~~ x -> x + ' !'").equals("['yo !', 'toto !', 'salut !']");
+	code("[1, 2, 3] ~~ x -> [x]").equals("[[1], [2], [3]]");
+	code("[1, 2, 3] ~~ x -> 'yo'").equals("['yo', 'yo', 'yo']");
+	code("let f = x -> x * 10 [1, 2, 3] ~~ f").equals("[10, 20, 30]");
+	code("[1.2, 321.42] ~~ x -> x * 1.7").equals("[2.04, 546.414]");
+	code("[1, 2, 3, 4, 5] ~~ x -> x.max(3)").equals("[3, 3, 3, 4, 5]");
+	code("[1, 2, 3, 4, 5, 6, 7, 8, 9, 10] ~~ x -> x.max(3).min(8)").equals("[3, 3, 3, 4, 5, 6, 7, 8, 8, 8]");
+	code("[1] < [1, 2]").equals("true");
+	code("[1, 1] < [1, 2]").equals("true");
+	code("[1, 1] == [1, 2]").equals("false");
+	code("[1, 2] == [1, 2]").equals("true");
+	code("[1, '1'] == [1, '2']").equals("false");
+	code("[1, '2'] == [1, '2']").equals("true");
+	code("[1, 1] == [1, 2.5]").equals("false");
+	code("[1, 2.5] == [1, 2.5]").equals("true");
 
 //	let f=x->x[0]; [f([1]), f([0..3])]
-
-	/*
-	 * Intervals
-	 */
-	header("Intervals");
-	success("[1..10]", "[1..10]");
-	success("145 in [1..1000]", "true");
-	success("1 in [1..1000]", "true");
-	success("1000 in [1..1000]", "true");
-	success("0 in [1..1000]", "false");
-	success("1001 in [1..1000]", "false");
-	success("[0..1000][500]", "500");
-	success("[1..1000][500]", "501");
-	success("[1000..2000][12]", "1012");
-	sem_err("[1..10]['hello']", ls::SemanticException::Type::ARRAY_ACCESS_KEY_MUST_BE_NUMBER, "<key 1>");
-	// success("[1..10][-10]", ""); must throw exception
 
 	/*
 	 * Array standard library
 	 */
 	header("Array standard library");
-	success("Array", "<class Array>");
-	success("Array()", "[]");
-	success("new Array", "[]");
-	success("new Array()", "[]");
 
-	success("Array.size([1, 'yo', true])", "3");
-	success("Array.size([6, 4, 3, 2, -11])", "5");
-	success("[1, 'yo', true].size()", "3");
-	success("[1, -2, 3, -12, -6].size()", "5");
+	section("Constructor");
+	code("Array").equals("<class Array>");
+	code("Array()").equals("[]");
+	code("new Array").equals("[]");
+	code("new Array()").equals("[]");
 
-	success("Array.average([1, 2, 3, 4, 5, 6])", "3.5");
-	success("Array.average([])", "0");
-	success("[1, 2, 3, 4, 5, 6].average()", "3.5");
-	success("[].average()", "0");
-	success("['salut', true, []].average()", "0");
-	success_almost("[10, -5.7, 30.89, 66].average()", 25.2975);
+	section("Array.size()");
+	code("Array.size([1, 'yo', true])").equals("3");
+	code("Array.size([6, 4, 3, 2, -11])").equals("5");
+	code("[1, 'yo', true].size()").equals("3");
+	code("[1, -2, 3, -12, -6].size()").equals("5");
 
-	success("Array.sum([10, -5, 30, 66])", "101");
-	success("[10, -5, 30, 66].sum()", "101");
-	success("Array.sum(['ab', 'cd', 'ef'])", "'abcdef'");
-	success("['ab', 'cd', 'ef'].sum()", "'abcdef'");
-	success("['abc', true, 12, [1, 2]].sum()", "'abctrue12<array>'");
-	success_almost("[10, -5.7, 30.89, 66].sum()", 101.19);
+	section("Array.average()");
+	code("Array.average([1, 2, 3, 4, 5, 6])").equals("3.5");
+	code("Array.average([])").equals("0");
+	code("[1, 2, 3, 4, 5, 6].average()").equals("3.5");
+	code("[].average()").equals("0");
+	code("['salut', true, []].average()").equals("0");
+	code("[10, -5.7, 30.89, 66].average()").almost(25.2975);
 
-	success("Array.map([1, 2, 3], x -> x ** 2)", "[1, 4, 9]");
-	success("[3, 4, 5].map(x -> x ** 2)", "[9, 16, 25]");
-	success("[321, 213, 121].map(x -> x ** 2).size()", "3");
-	success("['a' 'b' 'c'].map(x -> x)", "['a', 'b', 'c']");
-	success("[65 66 67].map(x -> x.char()).join('')", "'ABC'");
+	section("Array.sum()");
+	code("Array.sum([10, -5, 30, 66])").equals("101");
+	code("[10, -5, 30, 66].sum()").equals("101");
+	code("Array.sum(['ab', 'cd', 'ef'])").equals("'abcdef'");
+	code("['ab', 'cd', 'ef'].sum()").equals("'abcdef'");
+	code("['abc', true, 12, [1, 2]].sum()").equals("'abctrue12<array>'");
+	code("[10, -5.7, 30.89, 66].sum()").almost(101.19);
 
-	success("Array.map2([1, 'yo ', []], [12, 55, 9], (x, y -> x + y))", "[13, 'yo 55', [9]]");
+	section("Array.map()");
+	code("Array.map([1, 2, 3], x -> x ** 2)").equals("[1, 4, 9]");
+	code("[3, 4, 5].map(x -> x ** 2)").equals("[9, 16, 25]");
+	code("[321, 213, 121].map(x -> x ** 2).size()").equals("3");
+	code("['a' 'b' 'c'].map(x -> x)").equals("['a', 'b', 'c']");
+	code("[65 66 67].map(x -> x.char()).join('')").equals("'ABC'");
 
-	success("let x = [1, 2, 3, 4] x.chunk(2)", "[[1, 2], [3, 4]]");
-	success("let x = [1, 2, 3, 4] x.chunk(3)", "[[1, 2, 3], [4]]");
-	success("let x = [1, 2, 3, 4] x.chunk()", "[[1], [2], [3], [4]]");
+	section("Array.map2()");
+	code("Array.map2([1, 'yo ', []], [12, 55, 9], (x, y -> x + y))").equals("[13, 'yo 55', [9]]");
 
-	success("let x = [1, 1, 2, 2, 1] x.unique() x", "[1, 2, 1]");
-	success("let x = [1, 1, 2, 2, 1] x.sort() x.unique() x", "[1, 2]");
-	success("let x = ['a', 'a', 'b'] x.unique() x", "['a', 'b']");
-	success("let x = ['a', 'b', 'c'] x.unique() x", "['a', 'b', 'c']");
-	success("let x = ['a', 'a', 'b', 'a', 'a'] x.unique() x", "['a', 'b', 'a']");
+	section("Array.chunk()");
+	code("let x = [1, 2, 3, 4] x.chunk(2)").equals("[[1, 2], [3, 4]]");
+	code("let x = [1, 2, 3, 4] x.chunk(3)").equals("[[1, 2, 3], [4]]");
+	code("let x = [1, 2, 3, 4] x.chunk()").equals("[[1], [2], [3], [4]]");
+	code("let x = [1.6, 2.5, 3.1, 4.67] x.chunk()").equals("[[1.6], [2.5], [3.1], [4.67]]");
+	code("let x = ['hello', x -> x, true, Number] x.chunk()").equals("[['hello'], [<function>], [true], [<class Number>]]");
 
-	success("let x = [3, 1, 2] x.sort() x", "[1, 2, 3]");
-	success("let x = ['foo', 'yop', 'abc'] x.sort() x", "['abc', 'foo', 'yop']");
-	success("let x = [[[]], [[], [], []], [[], []]]; x.sort() x", "[[[]], [[], []], [[], [], []]]");
-	success("let x = [[1, 2, 3], [3, 1, 2], [2, 3, 1]]; x.sort() x", "[[1, 2, 3], [2, 3, 1], [3, 1, 2]]");
+	section("Array.unique()");
+	code("let x = [1, 1, 2, 2, 1] x.unique() x").equals("[1, 2, 1]");
+	code("let x = [1, 1, 2, 2, 1] x.sort() x.unique() x").equals("[1, 2]");
+	code("let x = ['a', 'a', 'b'] x.unique() x").equals("['a', 'b']");
+	code("let x = ['a', 'b', 'c'] x.unique() x").equals("['a', 'b', 'c']");
+	code("let x = ['a', 'a', 'b', 'a', 'a'] x.unique() x").equals("['a', 'b', 'a']");
 
-	success("Array.filter([1, 2, 3, 10, true, 'yo'], x -> x > 2)", "['yo', 10, 3]");
-	success("[3, 4, 5].filter(x -> x > 6)", "[]");
+	section("Array.sort()");
+	code("let x = [3, 1, 2] x.sort() x").equals("[1, 2, 3]");
+	code("let x = ['foo', 'yop', 'abc'] x.sort() x").equals("['abc', 'foo', 'yop']");
+	code("let x = [[[]], [[], [], []], [[], []]]; x.sort() x").equals("[[[]], [[], []], [[], [], []]]");
+	code("let x = [[1, 2, 3], [3, 1, 2], [2, 3, 1]]; x.sort() x").equals("[[1, 2, 3], [2, 3, 1], [3, 1, 2]]");
 
-	success("Array.contains([1, 2, 3, 10, 1], 1)", "true");
-	success("[3, 4, 5].contains(6)", "false");
+	section("Array.filter()");
+	code("Array.filter([1, 2, 3, 10, true, 'yo'], x -> x > 2)").equals("['yo', 10, 3]");
+	code("[3, 4, 5].filter(x -> x > 6)").equals("[]");
+	code("[1, 2, 3, 4, 5, 6, 7].filter(x -> x % 2 == 0)").equals("[2, 4, 6]");
 
-	success("Array.isEmpty([])", "true");
-	success("[3, 4, 5].isEmpty()", "false");
-	//success("let a = 0 Array.iter([1,2,3], x -> a += x) a", "6");
-	//success("let a = 2 [1,2,3].iter(x -> a *= x) a", "12");
+	section("Array.contains()");
+	code("Array.contains([1, 2, 3, 10, 1], 1)").equals("true");
+	code("[3, 4, 5].contains(6)").equals("false");
 
-	success("Array.partition([1, 2, 3, 4, 5], (x -> x < 3))", "[[1, 2], [3, 4, 5]]");
-	success("Array.partition([1, 2, 3, 10, true, 'yo'], x -> x > 2)", "[[3, 10, 'yo'], [1, 2, true]]");
-	success("[1, 2, 3, 4, 5].partition(x -> x > 3)", "[[4, 5], [1, 2, 3]]");
-	success("[1, 2, 3, 4, 5].partition(x -> x == 3)", "[[3], [1, 2, 4, 5]]");
-	success("[1, 2, 3, 4, 5, 6].filter(x -> x > 2).partition(x -> x > 4)", "[[6, 5], [3, 4]]");
-	// success("[1, 2, 3, 4, 5].partition(x -> 'yolo')", "**error**");
+	section("Array.isEmpty()");
+	code("Array.isEmpty([])").equals("true");
+	code("[3, 4, 5].isEmpty()").equals("false");
+	//code("let a = 0 Array.iter([1,2,3], x -> a += x) a").equals("6");
+	//code("let a = 2 [1,2,3].iter(x -> a *= x) a").equals("12");
 
-	success("Array.first([1, 2, 3, 10, true, 'yo', null])", "1");
-	success("['yo', 3, 4, 5].first()", "'yo'");
-	success("Array.last([1, 2, 3, 10, true, 'yo', null])", "null");
-	// success("['yo', 3, 4, 5].last()", "5");
+	section("Array.partition()");
+	code("Array.partition([1, 2, 3, 4, 5], (x -> x < 3))").equals("[[1, 2], [3, 4, 5]]");
+	code("Array.partition([1, 2, 3, 10, true, 'yo'], x -> x > 2)").equals("[[3, 10, 'yo'], [1, 2, true]]");
+	code("[1, 2, 3, 4, 5].partition(x -> x > 3)").equals("[[4, 5], [1, 2, 3]]");
+	code("[1, 2, 3, 4, 5].partition(x -> x == 3)").equals("[[3], [1, 2, 4, 5]]");
+	code("[1, 2, 3, 4, 5, 6].filter(x -> x > 2).partition(x -> x > 4)").equals("[[5, 6], [3, 4]]");
+	// code("[1, 2, 3, 4, 5].partition(x -> 'yolo')").equals("**error**");
+
+	section("Array.first()");
+	code("Array.first([1, 2, 3, 10, true, 'yo', null])").equals("1");
+	code("['yo', 3, 4, 5].first()").equals("'yo'");
+	code("Array.last([1, 2, 3, 10, true, 'yo', null])").equals("null");
+	// code("['yo', 3, 4, 5].last()").equals("5");
 
 	// TODO : the return type of first() must be the element type of the array if it's homogeneous
-//	success("[[321, 21], [23, 212], [654, 9876]].first().last()", "21");
+//	code("[[321, 21], [23, 212], [654, 9876]].first().last()").equals("21");
 
-	success("Array.foldLeft([1, 2, 3, 10, true, 'yo', null], (x, y -> x + y), 'concat:')", "'concat:12310trueyonull'");
-	success("Array.foldRight([1, 2, 3, 10, true, 'yo', null], (x, y -> y + x), 'concat:')", "16");
-	success("Array.shuffle([1, 2, 3, 10, true, 'yo', null]).size()", "7");
+	section("Array.foldLeft()");
+	code("Array.foldLeft([1, 2, 3, 10, true, 'yo', null], (x, y -> x + y), 'concat:')").equals("'concat:12310trueyonull'");
+	// TODO more tests
+	//code("Array.foldRight([1, 2, 3, 10, true, 'yo', null], (x, y -> x + y), 'concat:')").equals("16");
 
-	success("Array.reverse([1, 2, 3, 10, true, 'yo', null])", "[null, 'yo', true, 10, 3, 2, 1]");
-	success("[null].reverse()", "[null]");
-	success("[].reverse()", "[]");
-	success("[1, 2, 3].reverse()", "[3, 2, 1]");
-	success("Array.search([1, 2, 3, 10, true, 'yo', null], 10, 0)", "3");
+	section("Array.shuffle()");
+	code("Array.shuffle([1, 2, 3, 10, true, 'yo', null]).size()").equals("7");
 
-	success("Array.search([1, 2, 3, 4, 5], 5, 0)", "4");
-	success("Array.search([1, 2, 3, 10, true, 'yo', null], 3, 3)", "-1");
-	success("[1, 2, 3, 10, true, 'yo', null].search('yo', 0)", "5");
-	success("Array.search([1, 2, 3, 10, true, 'yo', null], false, 0)", "-1");
-	success("[null].search(null, 0)", "0");
+	section("Array.reverse()");
+	code("Array.reverse([1, 2, 3, 10, true, 'yo', null])").equals("[null, 'yo', true, 10, 3, 2, 1]");
+	code("[null].reverse()").equals("[null]");
+	code("[].reverse()").equals("[]");
+	code("[1, 2, 3].reverse()").equals("[3, 2, 1]");
 
-	success("Array.subArray([1, 2, 3, 10, true, 'yo', null], 3, 5)", "[10, true]");
-	success("Array.subArray([1, 2, 3, 10, true, 'yo', null], 3, 1)", "[]");
-	success("Array.subArray([1, 2, 3, 10, true, 'yo', null], 0, 100)", "[1, 2, 3, 10, true, 'yo', null]");
-	success("Array.subArray([1, 2, 3, 10, true, 'yo', null], 1, 1)", "[]");
+	section("Array.search()");
+	code("Array.search([1, 2, 3, 10, true, 'yo', null], 10, 0)").equals("3");
+	code("Array.search([1, 2, 3, 4, 5], 5, 0)").equals("4");
+	code("Array.search([1, 2, 3, 10, true, 'yo', null], 3, 3)").equals("-1");
+	code("[1, 2, 3, 10, true, 'yo', null].search('yo', 0)").equals("5");
+	code("Array.search([1, 2, 3, 10, true, 'yo', null], false, 0)").equals("-1");
+	code("[null].search(null, 0)").equals("0");
 
-	success("[].pop()", "null");
-	success("Array.pop(['1', '2'])", "'2'");
-	success("['1', '2'].pop()", "'2'");
-	success("let a = ['1', '2', '3'] a.pop() a", "['1', '2']");
+	section("Array.subArray()");
+	code("Array.subArray([1, 2, 3, 10, true, 'yo', null], 3, 5)").equals("[10, true]");
+	code("Array.subArray([1, 2, 3, 10, true, 'yo', null], 3, 1)").equals("[]");
+	code("Array.subArray([1, 2, 3, 10, true, 'yo', null], 0, 100)").equals("[1, 2, 3, 10, true, 'yo', null]");
+	code("Array.subArray([1, 2, 3, 10, true, 'yo', null], 1, 1)").equals("[]");
 
-	success("let a = [1, 2, 3] Array.push(a, 4)", "[1, 2, 3, 4]");
-	success("[].push([])", "[[]]");
-	success("[0].pushAll([1, 2, 3])", "[0, 1, 2, 3]");
-	success("[0].pushAll([3.5])", "[0, 3]");
-	success("[0.5].pushAll(['a'])", "[0.5]");
-	success("let a = [1, 2] a.push(3) a", "[1, 2, 3]");
-//	success("let a = [1, 2] a.push(3.5) a", "[1, 2, 3]");
-	success("let a = [1.5, -2.9] a.push(3.5) a", "[1.5, -2.9, 3.5]");
+	section("Array.pop()");
+	code("[].pop()").equals("null");
+	code("Array.pop(['1', '2'])").equals("'2'");
+	code("['1', '2'].pop()").equals("'2'");
+	code("let a = ['1', '2', '3'] a.pop() a").equals("['1', '2']");
 
-	success("Array.pushAll([], [true, 'yo'])", "[true, 'yo']");
+	section("Array.push()");
+	code("let a = [1, 2, 3] Array.push(a, 4)").equals("[1, 2, 3, 4]");
+	code("[].push([])").equals("[[]]");
+	code("[0].pushAll([1, 2, 3])").equals("[0, 1, 2, 3]");
+	code("[0].pushAll([3.5])").equals("[0, 3]");
+	code("[0.5].pushAll(['a'])").equals("[0.5]");
+	code("let a = [1, 2] a.push(3) a").equals("[1, 2, 3]");
+//	code("let a = [1, 2] a.push(3.5) a").equals("[1, 2, 3]");
+	code("let a = [1.5, -2.9] a.push(3.5) a").equals("[1.5, -2.9, 3.5]");
 
-	success("[].join('a')", "''");
-	success("['salut', 'ça', 'va'].join(' ')", "'salut ça va'");
-	success("[1, null, 'va'].join(' ')", "'1 null va'");
+	section("Array.pushAll()");
+	code("Array.pushAll([], [true, 'yo'])").equals("[true, 'yo']");
 
-	success("let a = [1, 2, 3] a.clear() a", "[]");
-	success("let a = [1, 2, 3] Array.clear(a)", "[]");
+	section("Array.join()");
+	code("[].join('a')").equals("''");
+	code("['salut', 'ça', 'va'].join(' ')").equals("'salut ça va'");
+	code("[1, null, 'va'].join(' ')").equals("'1 null va'");
 
-	success("let a = [1, 2, 3] a.fill(12, 4) a", "[12, 12, 12, 12]");
-	success("let a = [] Array.fill(a, 'test', 2)", "['test', 'test']");
+	section("Array.clear()");
+	code("let a = [1, 2, 3] a.clear() a").equals("[]");
+	code("let a = [1, 2, 3] Array.clear(a)").equals("[]");
 
-	success("let a = [1, 2, 3] Array.insert(a, 12, 1)", "[1, 12, 2, 3]");
-	success("let a = [1, 2, 3] Array.insert(a, 12, 6)", "[1, 2, 3, 0, 0, 0, 12]");
+	section("Array.fill()");
+	code("let a = [1, 2, 3] a.fill(12, 4) a").equals("[12, 12, 12, 12]");
+	code("let a = [] Array.fill(a, 'test', 2)").equals("['test', 'test']");
 
-	success("let a = [1, 2, 3] Array.remove(a, 1)", "2");
-	success("let a = [1, 2, 3] Array.remove(a, 1) a", "[1, 3]");
-//	success("let a = [1, 2, 3] Array.remove(a, 1) a", "[0: 1, 2: 3]");
-	success("let a = [1, 2, 3] Array.remove(a, 1)", "2");
+	section("Array.insert()");
+	code("let a = [1, 2, 3] Array.insert(a, 12, 1)").equals("[1, 12, 2, 3]");
+	code("let a = [1, 2, 3] Array.insert(a, 12, 6)").equals("[1, 2, 3, 0, 0, 0, 12]");
 
-//	success("let a = [] Array.removeKey(a, 'key')", "null");
-//	success("let a = [1, 2, 3] a.insert('test', 'key') a.removeKey('key')", "'test'");
-//	success("let a = [1, 2, 3] a.insert('test', 'key') a.removeKey('key') a", "[0: 1, 1: 2, 2: 3]");
+	section("Array.remove()");
+	code("let a = [1, 2, 3] Array.remove(a, 1)").equals("2");
+	code("let a = [1, 2, 3] Array.remove(a, 1) a").equals("[1, 3]");
+//	code("let a = [1, 2, 3] Array.remove(a, 1) a").equals("[0: 1, 2: 3]");
+	code("let a = [1, 2, 3] Array.remove(a, 1)").equals("2");
 
-	success("let a = [1, 2, 3] a.removeElement(1) a", "[3, 2]");
-	sem_err("let a = [1, 2, 3] a.removeElement('key') a", ls::SemanticException::METHOD_NOT_FOUND, "removeElement");
+//	code("let a = [] Array.removeKey(a, 'key')").equals("null");
+//	code("let a = [1, 2, 3] a.insert('test', 'key') a.removeKey('key')").equals("'test'");
+//	code("let a = [1, 2, 3] a.insert('test', 'key') a.removeKey('key') a").equals("[0: 1, 1: 2, 2: 3]");
+
+	section("Array.removeElement()");
+	code("let a = [1, 2, 3] a.removeElement(1) a").equals("[3, 2]");
+	code("let a = [1, 2, 3] a.removeElement('key') a").semantic_error( ls::SemanticError::METHOD_NOT_FOUND, ls::Type::INT_ARRAY.toString() + ".removeElement(" + ls::Type::STRING.toString() + ")");
+
+	section("Postfix expressions");
+	code("let a = [10, ''] a[0]++").equals("11");
+	code("let a = [10, ''] a[0]--").equals("9");
+	code("let v = 10 [v++, '']").equals("[10, '']");
+	code("let v = 90 [v--, '']").equals("[90, '']");
 
 	/*
-	success("3 ~ x -> x ^ x", "27");
-	success("[1, 2, 3] ~ x -> x + 4", "[1, 2, 3, 4]");
-	success("[1, 2, 3] ~~ print", "[null, null, null]");
-	success("[1, 2, 3] ~~ x -> [x, x]", "[[1, 1], [2, 2], [3, 3]]");
-	success("let s = 0 let a = [1, 2, 3, 4] let f = x -> s += x a ~~ f s", "10");
-	success("let s = 0 [1, 2, 3, 4, 5].each(x -> s += x)", "15");
-	success("[1, 2, 3, 4, 5].fold_left(+,0)", "15");
-	//success("let f = x -> x + 10 let g = x -> x ^ 2 [1, 2, 3] ~~ f ~~ g", "[121, 144, 169]");
-	//success("[1, 2, 3] ~~ (x -> x * 5) ~~ (x -> x - 1)", "[4, 9, 14]");
+	code("3 ~ x -> x ^ x").equals("27");
+	code("[1, 2, 3] ~ x -> x + 4").equals("[1, 2, 3, 4]");
+	code("[1, 2, 3] ~~ print").equals("[null, null, null]");
+	code("[1, 2, 3] ~~ x -> [x, x]").equals("[[1, 1], [2, 2], [3, 3]]");
+	code("let s = 0 let a = [1, 2, 3, 4] let f = x -> s += x a ~~ f s").equals("10");
+	code("let s = 0 [1, 2, 3, 4, 5].each(x -> s += x)").equals("15");
+	code("[1, 2, 3, 4, 5].fold_left(+,0)").equals("15");
+	//code("let f = x -> x + 10 let g = x -> x ^ 2 [1, 2, 3] ~~ f ~~ g").equals("[121, 144, 169]");
+	//code("[1, 2, 3] ~~ (x -> x * 5) ~~ (x -> x - 1)").equals("[4, 9, 14]");
 	*/
 
 	/*

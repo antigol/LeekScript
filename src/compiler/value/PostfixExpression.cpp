@@ -35,7 +35,7 @@ void PostfixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type
 	type = expression->type;
 	this->return_value = return_value;
 
-	if (req_type.nature != Nature::UNKNOWN) {
+	if (req_type.nature == Nature::POINTER) {
 		type.nature = req_type.nature;
 	}
 }
@@ -49,6 +49,8 @@ LSValue* jit_dec(LSValue* x) {
 
 jit_value_t PostfixExpression::compile(Compiler& c) const {
 
+	VM::inc_ops(c.F, 1);
+
 	jit_type_t args_types[1] = {LS_POINTER};
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_types, 1, 0);
 	vector<jit_value_t> args;
@@ -59,11 +61,22 @@ jit_value_t PostfixExpression::compile(Compiler& c) const {
 
 		case TokenType::PLUS_PLUS: {
 			if (expression->type.nature == Nature::VALUE) {
+				//std::cout << "++ value " << std::endl;
+
+//				jit_value_t x = expression->compile_l(c);
 				jit_value_t x = expression->compile(c);
+
+//				jit_value_t ox = jit_insn_load_relative(c.F, x, 0, jit_type_int);
 				jit_value_t ox = jit_insn_load(c.F, x);
+
 				jit_value_t y = LS_CREATE_INTEGER(c.F, 1);
+
+//				jit_value_t sum = jit_insn_add(c.F, ox, y);
+//				jit_insn_store_relative(c.F, x, 0, sum);
+
 				jit_value_t sum = jit_insn_add(c.F, x, y);
 				jit_insn_store(c.F, x, sum);
+
 				if (type.nature == Nature::POINTER) {
 					return VM::value_to_pointer(c.F, ox, type);
 				}

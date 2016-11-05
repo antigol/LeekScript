@@ -4,44 +4,44 @@ void Test::test_operators() {
 
 	header("Operator =");
 
-	//success("let a a = 2", "2");
-	//success("let a a = 2 a", "2");
-	sem_err("2 = 2", ls::SemanticException::Type::VALUE_MUST_BE_A_LVALUE, "<v>");
-	sem_err("'hello' = 2", ls::SemanticException::Type::VALUE_MUST_BE_A_LVALUE, "<v>");
-	sem_err("[] = 2", ls::SemanticException::Type::VALUE_MUST_BE_A_LVALUE, "<v>");
-	sem_err("true = []", ls::SemanticException::Type::VALUE_MUST_BE_A_LVALUE, "<v>");
-	sem_err("null = x -> x", ls::SemanticException::Type::VALUE_MUST_BE_A_LVALUE, "<v>");
-	sem_err("{} = 2.class", ls::SemanticException::Type::VALUE_MUST_BE_A_LVALUE, "<v>");
+	//code("let a a = 2").equals("2");
+	//code("let a a = 2 a").equals("2");
+	code("2 = 2").semantic_error(ls::SemanticError::Type::VALUE_MUST_BE_A_LVALUE, "<v>");
+	code("'hello' = 2").semantic_error(ls::SemanticError::Type::VALUE_MUST_BE_A_LVALUE, "<v>");
+	code("[] = 2").semantic_error(ls::SemanticError::Type::VALUE_MUST_BE_A_LVALUE, "<v>");
+	code("true = []").semantic_error(ls::SemanticError::Type::VALUE_MUST_BE_A_LVALUE, "<v>");
+	code("null = x -> x").semantic_error(ls::SemanticError::Type::VALUE_MUST_BE_A_LVALUE, "<v>");
+	code("{} = 2.class").semantic_error(ls::SemanticError::Type::VALUE_MUST_BE_A_LVALUE, "<v>");
 
 	header("Operator xor");
 
-	success("true xor true", "false");
-	success("true xor false", "true");
-	success("false xor true", "true");
-	success("false xor false", "false");
+	code("true xor true").equals("false");
+	code("true xor false").equals("true");
+	code("false xor true").equals("true");
+	code("false xor false").equals("false");
 
-	success("12 xor 5", "false");
-	success("12 xor 0", "true");
-	success("false xor 99", "true");
+	code("12 xor 5").equals("false");
+	code("12 xor 0").equals("true");
+	code("false xor 99").equals("true");
 
-	success("'salut' xor 5", "false");
-	success("'salut' xor 'yo'", "false");
-	success("'salut' xor false", "true");
-	success("'salut' xor 0", "true");
-	success("'salut' xor ''", "true");
+	code("'salut' xor 5").equals("false");
+	code("'salut' xor 'yo'").equals("false");
+	code("'salut' xor false").equals("true");
+	code("'salut' xor 0").equals("true");
+	code("'salut' xor ''").equals("true");
 
-	success("[] xor ''", "false");
-	success("[] xor 777", "true");
-	success("[1, 2, 3] xor [4, 5, 6]", "false");
-	success("[] xor [4, 5, 6]", "true");
+	code("[] xor ''").equals("false");
+	code("[] xor 777").equals("true");
+	code("[1, 2, 3] xor [4, 5, 6]").equals("false");
+	code("[] xor [4, 5, 6]").equals("true");
 
 	/*
 	 * Swap
 	 */
 	header("Swap");
-	success("let a = 2 let b = 5 a <=> b [a, b]", "[5, 2]");
-//	success("let a = [1, 2, 3, 4] a[0] <=> a[3] a", "[4, 2, 3, 1]");
-	success("let a = 12 let b = 5 let s = a <=> b s", "5");
+	code("let a = 2 let b = 5 a <=> b [a, b]").equals("[5, 2]");
+//	code("let a = [1, 2, 3, 4] a[0] <=> a[3] a").equals("[4, 2, 3, 1]");
+	code("let a = 12 let b = 5 let s = a <=> b s").equals("5");
 
 	/*
 	a ~~ b => (a ~~ b)
@@ -63,87 +63,99 @@ void Test::test_operators() {
 	 */
 
 	header("Comparison");
-	success("null < null", "false");
-	success("null < true", "true");
-	success("null < 1", "true");
-	success("null < 'a'", "true");
-	success("null < []", "true");
-	success("null < {}", "true");
+	code("null < null").equals("false");
+	code("null < true").equals("true");
+	code("null < 1").equals("true");
+	code("null < 'a'").equals("true");
+	code("null < []").equals("true");
+	code("null < {}").equals("true");
 
-	success("true < null", "false");
-	success("true < true", "false");
-	success("true < 1", "true");
-	success("true < 'a'", "true");
-	success("true < []", "true");
-	success("true < {}", "true");
+	code("true < null").equals("false");
+	code("true < true").equals("false");
+	code("true < 1").equals("true");
+	code("true < 'a'").equals("true");
+	code("true < []").equals("true");
+	code("true < {}").equals("true");
 
-	success("1 < null", "false");
-	success("1 < true", "false");
-	success("1 < 1", "false");
-	success("1 < 'a'", "true");
-	success("1 < []", "true");
-	success("1 < {}", "true");
+	code("1 < null").equals("false");
+	code("1 < true").equals("false");
+	code("1 < 1").equals("false");
+	code("1 < 'a'").equals("true");
+	code("1 < []").equals("true");
+	code("1 < {}").equals("true");
 
-	success("'a' < null", "false");
-	success("'a' < true", "false");
-	success("'a' < 1", "false");
-	success("'a' < 'a'", "false");
-	success("'a' < []", "true");
-	success("'a' < {}", "true");
+	code("'a' < null").equals("false");
+	code("'a' < true").equals("false");
+	code("'a' < 1").equals("false");
+	code("'a' < 'a'").equals("false");
+	code("'a' < []").equals("true");
+	code("'a' < {}").equals("true");
 
-	success("[] < null", "false");
-	success("[] < true", "false");
-	success("[] < 1", "false");
-	success("[] < 'a'", "false");
-	success("[] < []", "false");
-	success("[] < {}", "true");
+	code("[] < null").equals("false");
+	code("[] < true").equals("false");
+	code("[] < 1").equals("false");
+	code("[] < 'a'").equals("false");
+	code("[] < []").equals("false");
+	code("[] < {}").equals("true");
 
-	success("{} < null", "false");
-	success("{} < true", "false");
-	success("{} < 1", "false");
-	success("{} < 'a'", "false");
-	success("{} < []", "false");
-	success("{} < {}", "false");
+	code("{} < null").equals("false");
+	code("{} < true").equals("false");
+	code("{} < 1").equals("false");
+	code("{} < 'a'").equals("false");
+	code("{} < []").equals("false");
+	code("{} < {}").equals("false");
 
-	success("null >= null", "true");
-	success("null >= false", "false");
-	success("null >= 1", "false");
-	success("null >= 'a'", "false");
-	success("null >= []", "false");
-	success("null >= {}", "false");
+	code("null >= null").equals("true");
+	code("null >= false").equals("false");
+	code("null >= 1").equals("false");
+	code("null >= 'a'").equals("false");
+	code("null >= []").equals("false");
+	code("null >= {}").equals("false");
 
-	success("false >= null", "true");
-	success("false >= false", "true");
-	success("true >= 1", "false");
-	success("false >= 'a'", "false");
-	success("false >= []", "false");
-	success("false >= {}", "false");
+	code("false >= null").equals("true");
+	code("false >= false").equals("true");
+	code("true >= 1").equals("false");
+	code("false >= 'a'").equals("false");
+	code("false >= []").equals("false");
+	code("false >= {}").equals("false");
 
-	success("1 >= null", "true");
-	success("1 >= false", "true");
-	success("1 >= 1", "true");
-	success("1 >= 'a'", "false");
-	success("1 >= []", "false");
-	success("1 >= {}", "false");
+	code("1 >= null").equals("true");
+	code("1 >= false").equals("true");
+	code("1 >= 1").equals("true");
+	code("1 >= 'a'").equals("false");
+	code("1 >= []").equals("false");
+	code("1 >= {}").equals("false");
 
-	success("'a' >= null", "true");
-	success("'a' >= false", "true");
-	success("'a' >= 1", "true");
-	success("'a' >= 'a'", "true");
-	success("'a' >= []", "false");
-	success("'a' >= {}", "false");
+	code("'a' >= null").equals("true");
+	code("'a' >= false").equals("true");
+	code("'a' >= 1").equals("true");
+	code("'a' >= 'a'").equals("true");
+	code("'a' >= []").equals("false");
+	code("'a' >= {}").equals("false");
 
-	success("[] >= null", "true");
-	success("[] >= false", "true");
-	success("[] >= 1", "true");
-	success("[] >= 'a'", "true");
-	success("[] >= []", "true");
-	success("[] >= {}", "false");
+	code("[] >= null").equals("true");
+	code("[] >= false").equals("true");
+	code("[] >= 1").equals("true");
+	code("[] >= 'a'").equals("true");
+	code("[] >= []").equals("true");
+	code("[] >= {}").equals("false");
 
-	success("{} >= null", "true");
-	success("{} >= false", "true");
-	success("{} >= 1", "true");
-	success("{} >= 'a'", "true");
-	success("{} >= []", "true");
-	success("{} >= {}", "true");
+	code("{} >= null").equals("true");
+	code("{} >= false").equals("true");
+	code("{} >= 1").equals("true");
+	code("{} >= 'a'").equals("true");
+	code("{} >= []").equals("true");
+	code("{} >= {}").equals("true");
+
+	/*
+	 * Integral division
+	 */
+	 header("Integral division");
+	code("10 \\ 2").equals("5");
+	code("10 \\ 4").equals("2");
+	code("2432431 \\ 2313").equals("1051");
+	code("let a = [420987, 'a', 546] a[0] \\ a[2]").equals("771");
+	code("[420987, 'a', 546][0] \\ 12").equals("35082");
+
+
 }

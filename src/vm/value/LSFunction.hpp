@@ -19,14 +19,18 @@ public:
 	static LSClass* function_class;
 
 	void* function;
-	std::map<std::string, LSValue*> values;
+	std::vector<LSValue*> captures;
 
 	LSFunction(void* function);
-	LSFunction(void* function, int refs, bool native);
 	LSFunction(Json& data);
-
 	virtual ~LSFunction();
 
+	void add_capture(LSValue* value);
+	LSValue* get_capture(int index);
+
+	/*
+	 * LSValue methods
+	 */
 	bool isTrue() const override;
 
 	LSVALUE_OPERATORS

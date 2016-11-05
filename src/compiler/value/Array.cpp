@@ -19,14 +19,23 @@ Array::~Array() {
 }
 
 void Array::print(std::ostream& os, int indent, bool debug) const {
-	os << "[";
-	for (size_t i = 0; i < expressions.size(); ++i) {
-		expressions[i]->print(os, indent, debug);
-		if (i < expressions.size() - 1) {
-			os << ", ";
+
+	if (interval) {
+		os << "[";
+		expressions[0]->print(os, indent, debug);
+		os << "..";
+		expressions[1]->print(os, indent, debug);
+		os << "]";
+	} else {
+		os << "[";
+		for (size_t i = 0; i < expressions.size(); ++i) {
+			expressions[i]->print(os, indent, debug);
+			if (i < expressions.size() - 1) {
+				os << ", ";
+			}
 		}
+		os << "]";
 	}
-	os << "]";
 
 	if (debug) {
 		os << " " << type;
@@ -44,6 +53,8 @@ void Array::analyse(SemanticAnalyser* analyser, const Type&) {
 	if (interval) {
 
 		type = Type::INTERVAL;
+		expressions[0]->analyse(analyser, Type::INTEGER);
+		expressions[1]->analyse(analyser, Type::INTEGER);
 
 	} else {
 
@@ -64,7 +75,7 @@ void Array::analyse(SemanticAnalyser* analyser, const Type&) {
 			}
 
 			// Native elements types supported : integer, double
-			if (element_type == Type::INTEGER || element_type == Type::FLOAT) {
+			if (element_type == Type::INTEGER || element_type == Type::REAL) {
 				supported_type = element_type;
 			}
 			// For function, we store them as pointers
@@ -88,6 +99,7 @@ void Array::analyse(SemanticAnalyser* analyser, const Type&) {
 				Value* ex = expressions[i];
 				element_type = Type::get_compatible_type(element_type, ex->type);
 			}
+			element_type.temporary = false;
 			type.setElementType(element_type);
 		}
 	}
@@ -120,6 +132,24 @@ void Array::elements_will_take(SemanticAnalyser* analyser, const std::vector<Typ
 	this->type.setElementType(element_type);
 
 //	cout << "Array::elements_will_take type after " << this->type << endl;
+}
+
+bool Array::will_store(SemanticAnalyser* analyser, const Type& type) {
+	Type added_type = type;
+	if (added_type.raw_type == RawType::ARRAY) {
+		added_type = added_type.getElementType();
+	}
+	Type current_type = this->type.getElementType();
+	if (expressions.size() == 0) {
+		this->type.setElementType(added_type);
+	} else {
+		this->type.setElementType(Type::get_compatible_type(current_type, added_type));
+	}
+	// Re-analyze expressions with the new type
+	for (size_t i = 0; i < expressions.size(); ++i) {
+		expressions[i]->analyse(analyser, this->type.getElementType());
+	}
+	return false;
 }
 
 LSInterval* LSArray_create_interval(int a, int b) {

@@ -14,14 +14,12 @@ jit_value_t System_microtime(jit_function_t F);
 jit_value_t System_nanotime(jit_function_t F);
 void System_print(LSValue* v);
 void System_print_int(int v);
+void System_print_mpz(__mpz_struct v);
+void System_print_mpz_tmp(__mpz_struct v);
 void System_print_long(long v);
 void System_print_bool(bool v);
 void System_print_float(double v);
 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpmf-conversions"
-#endif
 SystemSTD::SystemSTD() : Module("System") {
 
 	static_field("version", Type::INTEGER, (void*) &System_version);
@@ -34,16 +32,15 @@ SystemSTD::SystemSTD() : Module("System") {
 	static_field("nanoTime", Type::LONG, (void*) &System_nanotime);
 
 	static_method("print", {
+		{Type::VOID, {Type::GMP_INT}, (void*) &System_print_mpz},
+		{Type::VOID, {Type::GMP_INT_TMP}, (void*) &System_print_mpz_tmp},
 		{Type::VOID, {Type::INTEGER}, (void*) &System_print_int},
 		{Type::VOID, {Type::LONG}, (void*) &System_print_long},
 		{Type::VOID, {Type::BOOLEAN}, (void*) &System_print_bool},
-		{Type::VOID, {Type::FLOAT}, (void*) &System_print_float},
+		{Type::VOID, {Type::REAL}, (void*) &System_print_float},
 		{Type::VOID, {Type::POINTER}, (void*) &System_print}
 	});
 }
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
 
 long get_sec_time() {
 	return std::chrono::duration_cast<std::chrono::seconds>(
@@ -108,6 +105,19 @@ void System_print_int(int v) {
 	std::cout << v << std::endl;
 }
 
+void System_print_mpz(__mpz_struct v) {
+	char buff[1000];
+	mpz_get_str(buff, 10, &v);
+	std::cout << buff << std::endl;
+}
+void System_print_mpz_tmp(__mpz_struct v) {
+	char buff[1000];
+	mpz_get_str(buff, 10, &v);
+	std::cout << buff << std::endl;
+	mpz_clear(&v);
+	VM::gmp_values_deleted++;
+}
+
 void System_print_long(long v) {
 	std::cout << v << std::endl;
 }
@@ -121,4 +131,3 @@ void System_print_float(double v) {
 }
 
 }
-

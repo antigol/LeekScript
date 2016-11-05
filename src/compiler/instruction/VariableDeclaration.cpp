@@ -3,7 +3,7 @@
 #include "../../vm/LSValue.hpp"
 #include "../../vm/value/LSNull.hpp"
 #include "../semantic/SemanticAnalyser.hpp"
-#include "../semantic/SemanticException.hpp"
+#include "../semantic/SemanticError.hpp"
 #include "../value/Reference.hpp"
 
 using namespace std;
@@ -60,7 +60,7 @@ void VariableDeclaration::analyse(SemanticAnalyser* analyser, const Type&) {
 		}
 
 		if (v->type == Type::VOID) {
-			analyser->add_error({SemanticException::Type::CANT_ASSIGN_VOID, var->line, var->content});
+			analyser->add_error({SemanticError::Type::CANT_ASSIGN_VOID, var->line, var->content});
 		}
 
 		vars.insert(pair<string, SemanticVar*>(var->content, v));
@@ -90,7 +90,15 @@ jit_value_t VariableDeclaration::compile(Compiler& c) const {
 				}
 
 				c.add_var(name, var, ex->type, false);
-				jit_insn_store(c.F, var, val);
+
+				if (v->type == Type::GMP_INT) {
+					jit_value_t var_addr = jit_insn_address_of(c.F, var);
+					jit_value_t val_addr = jit_insn_address_of(c.F, val);
+					VM::call(c.F, LS_VOID, {LS_POINTER, LS_POINTER}, {var_addr, val_addr}, &mpz_init_set);
+					VM::gmp_values_created++;
+				} else {
+					jit_insn_store(c.F, var, val);
+				}
 			}
 		} else {
 

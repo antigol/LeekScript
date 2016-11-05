@@ -12,7 +12,7 @@ namespace ls {
  * ------------------
  * 1| ^
  * ------------------
- * 2| * / %
+ * 2| * / % \
  * ------------------
  * 3| + -
  * ------------------
@@ -56,7 +56,8 @@ static int operator_priorities[] = {
 	0, 0, 0,
 	4, /* instanceof */
 	0, 0, 0, 0, 0, 3, 0, 3, 0, 3, 0, 3, 0, 3, 0,
-	8 /* ?? */
+	8, /* ?? */
+	2, /* \ */
 };
 
 Operator::Operator(Token* token) {
@@ -65,6 +66,7 @@ Operator::Operator(Token* token) {
 	this->character = token->content;
 	this->priority = operator_priorities[(int) token->type];
 
+	this->reversed = type == TokenType::IN;
 //	cout << "operator " << character << " (" << (int)token->type << ") : " << priority << endl;
 }
 

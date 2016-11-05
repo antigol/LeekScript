@@ -11,14 +11,8 @@ LSClass* LSFunction::function_class = new LSClass("Function");
 
 LSFunction::LSFunction(void* function) {
 	this->function = function;
-	this->refs = 0;
-	this->native = false;
-}
-
-LSFunction::LSFunction(void* function, int refs, bool native) {
-	this->function = function;
-	this->refs = refs;
-	this->native = native;
+	this->refs = 1;
+	this->native = true;
 }
 
 LSFunction::LSFunction(Json&) {
@@ -26,6 +20,18 @@ LSFunction::LSFunction(Json&) {
 }
 
 LSFunction::~LSFunction() {}
+
+void LSFunction::add_capture(LSValue* value) {
+	captures.push_back(value);
+}
+
+LSValue* LSFunction::get_capture(int index) {
+	return captures[index];
+}
+
+/*
+ * LSValue methods
+ */
 
 bool LSFunction::isTrue() const {
 	return true;

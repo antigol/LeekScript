@@ -13,13 +13,12 @@ Set::~Set() {
 }
 
 void Set::print(ostream& os, int indent, bool debug) const {
-	os << "<" << endl;
+	os << "<";
 	for (size_t i = 0; i < expressions.size(); ++i) {
-		os << tabs(indent + 1);
+		if (i > 0) os << ", ";
 		expressions[i]->print(os, indent + 1, debug);
-		os << "\n";
 	}
-	os << tabs(indent) << ">";
+	os << ">";
 	if (debug) os << " " << type;
 }
 
@@ -37,7 +36,7 @@ void Set::analyse(SemanticAnalyser* analyser, const Type&) {
 	}
 
 	if (element_type.nature == Nature::VALUE) {
-		if (element_type != Type::INTEGER && element_type != Type::FLOAT) {
+		if (element_type != Type::INTEGER && element_type != Type::REAL) {
 			element_type = Type::POINTER;
 		}
 	} else if (element_type.nature == Nature::UNKNOWN) {
@@ -73,10 +72,10 @@ void Set_insert_float(LSSet<int>* set, double value) {
 
 jit_value_t Set::compile(Compiler& c) const {
 	void* create = type.getElementType() == Type::INTEGER ? (void*) Set_create_int :
-				   type.getElementType() == Type::FLOAT   ? (void*) Set_create_float :
+				   type.getElementType() == Type::REAL   ? (void*) Set_create_float :
 															(void*) Set_create_ptr;
 	void* insert = type.getElementType() == Type::INTEGER ? (void*) Set_insert_int :
-				   type.getElementType() == Type::FLOAT   ? (void*) Set_insert_float :
+				   type.getElementType() == Type::REAL   ? (void*) Set_insert_float :
 															(void*) Set_insert_ptr;
 
 	unsigned ops = 1;

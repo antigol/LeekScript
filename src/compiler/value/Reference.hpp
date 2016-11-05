@@ -14,7 +14,6 @@ public:
 	Token* variable;
 	SemanticVar* var;
 
-	Reference();
 	Reference(Token* variable);
 	virtual ~Reference();
 

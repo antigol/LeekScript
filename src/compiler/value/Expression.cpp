@@ -9,6 +9,7 @@
 #include "../../vm/LSValue.hpp"
 #include "../../vm/value/LSBoolean.hpp"
 #include "../../vm/value/LSArray.hpp"
+#include "../../vm/Program.hpp"
 
 using namespace std;
 
@@ -113,14 +114,53 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		return;
 	}
 
+	v1->analyse(analyser, Type::UNKNOWN);
+	v2->analyse(analyser, Type::UNKNOWN);
+
+	Type obj_type = op->reversed ? v2->type : v1->type;
+
+	LSClass* object_class = (LSClass*) analyser->program->system_vars[obj_type.clazz];
+	if (object_class) {
+
+		Type v1_type = op->reversed ? v2->type : v1->type;
+		Type v2_type = op->reversed ? v1->type : v2->type;
+
+		LSClass::Operator* m = object_class->getOperator(op->character, v1_type, v2_type);
+
+		if (m != nullptr) {
+
+			//std::cout << "Operator " << v1->type << " " << op->character << " " << v2->type << " found!" << std::endl;
+
+			operator_fun = m->addr;
+			is_native_method = m->native;
+			v1_type = op->reversed ? m->operand_type : m->object_type;
+			v2_type = op->reversed ? m->object_type : m->operand_type;
+			return_type = m->return_type;
+			type = return_type;
+			v1->analyse(analyser, v1_type);
+			v2->analyse(analyser, v2_type);
+
+			if (req_type.nature == Nature::POINTER) {
+				type.nature = req_type.nature;
+			}
+			return;
+		} else {
+			//std::cout << "No such operator " << v1->type << " " << op->character << " " << v2->type << std::endl;
+		}
+	}
+
+	/*
+	 * OLD
+	 */
+
 	// Require float type for a division
 	Type v1_type = Type::UNKNOWN;
 	Type v2_type = Type::UNKNOWN;
 
 	if (op->type == TokenType::DIVIDE) {
-		type.raw_type = RawType::FLOAT;
-		v1_type = Type::FLOAT;
-		v2_type = Type::FLOAT;
+		type.raw_type = RawType::REAL;
+		v1_type = Type::REAL;
+		//v2_type = Type::REAL;
 	}
 
 	// First analyse of v1 and v2
@@ -134,6 +174,14 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	}
 	constant = v1->constant and v2->constant;
 
+	bool array_push = v1->type.raw_type == RawType::ARRAY and op->type == TokenType::PLUS_EQUAL;
+
+	// array += ?  ==>  will take the type of ?
+	if (array_push) {
+		v1->will_store(analyser, v2->type);
+		type = v2->type;
+	}
+
 	// A = B, A += B, A * B, etc. mix types
 	if (op->type == TokenType::EQUAL or op->type == TokenType::XOR
 		or op->type == TokenType::PLUS or op->type == TokenType::PLUS_EQUAL
@@ -144,17 +192,26 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		or op->type == TokenType::MODULO or op->type == TokenType::MODULO_EQUAL
 		or op->type == TokenType::LOWER or op->type == TokenType::LOWER_EQUALS
 		or op->type == TokenType::GREATER or op->type == TokenType::GREATER_EQUALS
-		or op->type == TokenType::SWAP) {
+		or op->type == TokenType::SWAP or op->type == TokenType::INT_DIV) {
 
 		// Set the correct type nature for the two members
-		if (v2->type.nature == Nature::POINTER and v1->type.nature != Nature::POINTER) {
-			v1->analyse(analyser, Type::POINTER);
+		if (array_push) {
+			if (v1->type.getElementType().nature == Nature::POINTER and v2->type.nature != Nature::POINTER) {
+				v2->analyse(analyser, Type::POINTER);
+			}
+		} else {
+			if (v2->type.nature == Nature::POINTER and v1->type.nature != Nature::POINTER) {
+				v1->analyse(analyser, Type::POINTER);
+			}
+			if (v1->type.nature == Nature::POINTER and v2->type.nature != Nature::POINTER) {
+				v2->analyse(analyser, Type::POINTER);
+			}
 		}
-		if (v1->type.nature == Nature::POINTER and v2->type.nature != Nature::POINTER) {
-			v2->analyse(analyser, Type::POINTER);
-		}
-
 		type = v1->type.mix(v2->type);
+
+		if (op->type == TokenType::DIVIDE and v1->type.isNumber() and v2->type.isNumber()) {
+			type.raw_type = RawType::REAL;
+		}
 
 		// String / String => Array<String>
 		if (op->type == TokenType::DIVIDE and v1->type == Type::STRING and v2->type == Type::STRING) {
@@ -169,6 +226,13 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		or op->type == TokenType::GREATER_EQUALS or op->type == TokenType::TRIPLE_EQUAL
 		or op->type == TokenType::DIFFERENT or op->type == TokenType::TRIPLE_DIFFERENT) {
 
+		// Set the correct type nature for the two members
+		if (v2->type.nature == Nature::POINTER and v1->type.nature != Nature::POINTER) {
+			v1->analyse(analyser, Type::POINTER);
+		}
+		if (v1->type.nature == Nature::POINTER and v2->type.nature != Nature::POINTER) {
+			v2->analyse(analyser, Type::POINTER);
+		}
 		type = Type::BOOLEAN;
 	}
 
@@ -192,20 +256,25 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 		// Check if A is a l-value
 		bool is_left_value = true;
-		if (dynamic_cast<LeftValue*>(v1) == nullptr) {
+		if (not v1->isLeftValue()) {
 			std::string c = "<v>";
-			analyser->add_error({SemanticException::Type::VALUE_MUST_BE_A_LVALUE, v1->line(), c});
+			analyser->add_error({SemanticError::Type::VALUE_MUST_BE_A_LVALUE, v1->line(), c});
 			is_left_value = false;
 		}
 
 		// A += B, A -= B
 		if (is_left_value and (op->type == TokenType::PLUS_EQUAL or op->type == TokenType::MINUS_EQUAL)) {
-			if (v1->type == Type::INTEGER and v2->type == Type::FLOAT) {
-				((LeftValue*) v1)->change_type(analyser, Type::FLOAT);
+			if (v1->type == Type::INTEGER and v2->type == Type::REAL) {
+				((LeftValue*) v1)->change_type(analyser, Type::REAL);
 			}
 		}
 
 		store_result_in_v1 = true;
+	}
+
+	// "hello" + ? => string
+	if (op->type == TokenType::PLUS and v1->type == Type::STRING) {
+		type = Type::STRING;
 	}
 
 	// [1, 2, 3] ~~ x -> x ^ 2
@@ -225,9 +294,10 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		v1->analyse(analyser, Type::POINTER);
 		type = Type::BOOLEAN;
 	}
-	if (op->type == TokenType::IN) {
-		v1->analyse(analyser, Type::POINTER);
-		type = Type::BOOLEAN;
+
+	// int div => result is int
+	if (op->type == TokenType::INT_DIV) {
+		type = Type::INTEGER;
 	}
 
 	// Merge operations count
@@ -244,11 +314,14 @@ void Expression::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	}
 
 	// At the end the require nature is taken into account
-	if (req_type.nature != Nature::UNKNOWN) {
+	if (req_type.nature == Nature::POINTER) {
 		type.nature = req_type.nature;
 	}
+	if (req_type.raw_type == RawType::REAL) {
+		conversion = type;
+		type.raw_type = RawType::REAL;
+	}
 }
-
 
 LSValue* jit_add(LSValue* x, LSValue* y) {
 	return x->ls_add(y);
@@ -261,6 +334,12 @@ LSValue* jit_mul(LSValue* x, LSValue* y) {
 }
 LSValue* jit_div(LSValue* x, LSValue* y) {
 	return x->ls_div(y);
+}
+int jit_int_div(LSValue* x, LSValue* y) {
+	LSValue* res = x->ls_int_div(y);
+	int v = ((LSNumber*) res)->value;
+	LSValue::delete_temporary(res);
+	return v;
 }
 LSValue* jit_pow(LSValue* x, LSValue* y) {
 	return x->ls_pow(y);
@@ -275,13 +354,13 @@ bool jit_and(LSValue* x, LSValue* y) {
 	return r;
 }
 bool jit_or(LSValue* x, LSValue* y) {
-	bool r = (x->isTrue() or y->isTrue());
+	bool r = x->isTrue() or y->isTrue();
 	LSValue::delete_temporary(x);
 	LSValue::delete_temporary(y);
 	return r;
 }
 bool jit_xor(LSValue* x, LSValue* y) {
-	bool r = (x->isTrue() xor y->isTrue());
+	bool r = x->isTrue() xor y->isTrue();
 	LSValue::delete_temporary(x);
 	LSValue::delete_temporary(y);
 	return r;
@@ -345,6 +424,10 @@ LSValue* jit_swap(LSValue** x, LSValue** y) {
 LSValue* jit_add_equal(LSValue* x, LSValue* y) {
 	return x->ls_add_eq(y);
 }
+int jit_array_push_int(LSArray<int>* x, int y) {
+	x->push_move(y);
+	return y;
+}
 int jit_add_equal_value(int* x, int y) {
 	return *x += y;
 }
@@ -362,13 +445,6 @@ LSValue* jit_mod_equal(LSValue* x, LSValue* y) {
 }
 LSValue* jit_pow_equal(LSValue* x, LSValue* y) {
 	return x->ls_pow_eq(y);
-}
-
-bool jit_in(LSValue* x, LSValue* y) {
-	bool r = y->in(x);
-	LSValue::delete_temporary(x);
-	LSValue::delete_temporary(y);
-	return r;
 }
 
 bool jit_instanceof(LSValue* x, LSValue* y) {
@@ -452,6 +528,31 @@ jit_value_t Expression::compile(Compiler& c) const {
 	// Increment operations
 	if (operations > 0) {
 		VM::inc_ops(c.F, operations);
+	}
+
+	if (operator_fun != nullptr) {
+
+		vector<jit_value_t> args = {
+			op->reversed ? v2->compile(c) : v1->compile(c),
+			op->reversed ? v1->compile(c) : v2->compile(c)
+		};
+		vector<jit_type_t> arg_types = {
+			op->reversed ? VM::get_jit_type(v2_type) : VM::get_jit_type(v1_type),
+			op->reversed ? VM::get_jit_type(v1_type) : VM::get_jit_type(v2_type)
+		};
+
+		jit_value_t res;
+		if (is_native_method) {
+			auto fun = (jit_value_t (*)(Compiler&, std::vector<jit_value_t>)) operator_fun;
+			res = fun(c, args);
+		} else {
+			auto fun = (void* (*)()) operator_fun;
+			res = VM::call(c.F, VM::get_jit_type(type), arg_types, args, fun);
+		}
+		if (return_type.nature == Nature::VALUE and type.nature == Nature::POINTER) {
+			return VM::value_to_pointer(c.F, res, type);
+		}
+		return res;
 	}
 
 //	cout << "v1 : " << v1->type << ", v2 : " << v2->type << endl;
@@ -550,6 +651,16 @@ jit_value_t Expression::compile(Compiler& c) const {
 			break;
 		}
 		case TokenType::PLUS_EQUAL: {
+
+			if (v1->type == Type::INT_ARRAY and v2->type == Type::INTEGER) {
+				args.push_back(v1->compile(c));
+				args.push_back(v2->compile(c));
+				jit_value_t res = VM::call(c.F, LS_INTEGER, {LS_POINTER, LS_INTEGER}, args, &jit_array_push_int);
+				if (type.nature == Nature::POINTER) {
+					return VM::value_to_pointer(c.F, res, type);
+				}
+				return res;
+			}
 
 			if (ArrayAccess* l1 = dynamic_cast<ArrayAccess*>(v1)) {
 
@@ -715,7 +826,21 @@ jit_value_t Expression::compile(Compiler& c) const {
 		case TokenType::DIVIDE: {
 			jit_func = &jit_insn_div;
 			ls_func = (void*) &jit_div;
-			jit_returned_type = Type::FLOAT;
+			jit_returned_type = Type::REAL;
+			break;
+		}
+		case TokenType::INT_DIV: {
+			if (v1->type.nature == Nature::VALUE and v2->type.nature == Nature::VALUE) {
+				jit_value_t x = v1->compile(c);
+				jit_value_t y = v2->compile(c);
+				jit_value_t r = jit_insn_floor(c.F, jit_insn_div(c.F, x, y));
+				if (v2->type.nature != Nature::POINTER and type.nature == Nature::POINTER) {
+					return VM::value_to_pointer(c.F, r, Type::INTEGER);
+				}
+				return r;
+			} else {
+				ls_func = (void*) &jit_int_div;
+			}
 			break;
 		}
 		case TokenType::MODULO: {
@@ -810,21 +935,17 @@ jit_value_t Expression::compile(Compiler& c) const {
 			ls_returned_type = Type::BOOLEAN;
 			break;
 		}
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpmf-conversions"
-#endif
 		case TokenType::TILDE_TILDE: {
 			if (v1->type.getElementType() == Type::INTEGER) {
 				if (type.getElementType() == Type::INTEGER) {
 					ls_func = (void*) &LSArray<int>::ls_map_int;
-				} else if (type.getElementType() == Type::FLOAT) {
+				} else if (type.getElementType() == Type::REAL) {
 					ls_func = (void*) &LSArray<int>::ls_map_real;
 				} else {
 					ls_func = (void*) &LSArray<int>::ls_map;
 				}
-			} else if (v1->type.getElementType() == Type::FLOAT) {
-				if (type.getElementType() == Type::FLOAT) {
+			} else if (v1->type.getElementType() == Type::REAL) {
+				if (type.getElementType() == Type::REAL) {
 					ls_func = (void*) &LSArray<double>::ls_map_real;
 				} else if (type.getElementType() == Type::INTEGER) {
 					ls_func = (void*) &LSArray<double>::ls_map_int;
@@ -834,15 +955,6 @@ jit_value_t Expression::compile(Compiler& c) const {
 			} else {
 				ls_func = (void*) &LSArray<LSValue*>::ls_map;
 			}
-			break;
-		}
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
-		case TokenType::IN: {
-			use_jit_func = false;
-			ls_func = (void*) &jit_in;
-			ls_returned_type = Type::BOOLEAN;
 			break;
 		}
 		case TokenType::INSTANCEOF: {
@@ -1018,6 +1130,9 @@ jit_value_t Expression::compile(Compiler& c) const {
 		if (type.nature == Nature::POINTER) {
 			return VM::value_to_pointer(c.F, r, jit_returned_type);
 		}
+		if (conversion == Type::INTEGER and type.raw_type == RawType::REAL) {
+			return VM::int_to_real(c.F, r);
+		}
 		return r;
 
 	} else {
@@ -1029,7 +1144,7 @@ jit_value_t Expression::compile(Compiler& c) const {
 			args.push_back(v1->compile(c));
 			args.push_back(v2->compile(c));
 		}
-		jit_value_t v = jit_insn_call_native(c.F, "", ls_func, sig, args.data(), 2, JIT_CALL_NOTHROW);
+		jit_value_t v = jit_insn_call_native(c.F, "", ls_func, sig, args.data(), 2, 0);
 
 		if (store_result_in_v1) {
 			jit_insn_store(c.F, args[0], v);
@@ -1044,4 +1159,3 @@ jit_value_t Expression::compile(Compiler& c) const {
 }
 
 }
-

@@ -48,20 +48,19 @@ void ObjectAccess::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	object->analyse(analyser, Type::UNKNOWN);
 
-	// General information about the object
+	// Get the object class : 12 => Number
 	object_class_name = object->type.clazz;
 	LSClass* object_class = nullptr;
 	if (analyser->program->system_vars.find(object_class_name) != analyser->program->system_vars.end()) {
 		object_class = (LSClass*) analyser->program->system_vars[object_class_name];
 	}
 
-	// Static attribute
+	// Static attribute? (Number.PI <= static attr)
 	VariableValue* vv = dynamic_cast<VariableValue*>(object);
 
 	if (object->type.raw_type == RawType::CLASS and vv != nullptr) {
 
 		class_name = vv->name;
-
 		LSClass* std_class = (LSClass*) analyser->program->system_vars[class_name];
 
 		ModuleStaticField& mod_field = std_class->static_fields[field->content];
@@ -73,7 +72,7 @@ void ObjectAccess::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		field_type = mod_field.type;
 	}
 
-	// Search class attributes
+	// Attribute? Fields and methods ([1, 2, 3].length, 12.abs)
 	if (object_class != nullptr) {
 
 		// Object attribute
@@ -81,28 +80,15 @@ void ObjectAccess::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		try {
 			type = object_class->fields.at(field->content);
 			is_field = true;
+			class_attr = true;
 		} catch (exception& e) {}
 
 		// Otherwise search in class methods
 		if (not is_field) {
 			try {
 				type = object_class->methods.at(field->content)[0].type;
+				class_attr = true;
 			} catch (exception& e) {}
-		}
-
-		auto types = analyser->internal_vars[object_class_name]->attr_types;
-
-		if (types.find(field->content) != types.end()) {
-
-//			cout << " oa " << field << endl;
-
-			//type = types[field];
-			//class_attr = true;
-
-			// TODO : the attr must be a function here, not working with other types
-			//attr_addr = ((LSFunction*) std_class->static_fields[field])->function;
-
-			//attr_addr = std_class->getDefaultMethod(field)->function;
 		}
 	}
 

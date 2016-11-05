@@ -7,7 +7,7 @@
 
 namespace ls {
 
-class SemanticException : public std::exception {
+class SemanticError {
 public:
 
 	enum Type {
@@ -34,9 +34,9 @@ public:
 	unsigned line;
 	std::string content;
 
-	SemanticException(Type type, unsigned line);
-	SemanticException(Type type, unsigned line, const std::string& content);
-	virtual ~SemanticException();
+	SemanticError(Type type, unsigned line);
+	SemanticError(Type type, unsigned line, const std::string& content);
+	virtual ~SemanticError();
 
 	std::string message() const;
 };

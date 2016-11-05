@@ -1,7 +1,7 @@
 {
 	"static/pi": {
 		"desc": "Le nombre pi. Peut s'écrire 'π' au lieu de Number.pi"
-	},	
+	},
 	"abs": {
 		"desc": "Renvoie la valeur absolue du nombre number.",
 		"args": {
@@ -27,7 +27,7 @@
 	"atan2": {
 		"desc": "Convertit les coordonnées cartésiennes (x, y) en coordonnées polaires (r, theta). Cette fonction retourne l'angle theta entre -PI et PI en utilisant les signes des arguments.",
 		"args": {
-			"y": "Coordonnée en y."
+			"y": "Coordonnée en y.",
 			"x": "Coordonnée en x."
 		},
 		"return": "L'angle theta en coordonnées polaires du point (x, y)."

@@ -14,8 +14,10 @@
 #include "../../vm/standard/SystemSTD.hpp"
 #include "../../vm/standard/FunctionSTD.hpp"
 #include "../../vm/standard/ClassSTD.hpp"
-#include "SemanticException.hpp"
+#include "../../vm/standard/IntervalSTD.hpp"
+#include "SemanticError.hpp"
 #include "../instruction/VariableDeclaration.hpp"
+#include "../../vm/value/LSNumber.hpp"
 
 using namespace std;
 
@@ -53,12 +55,30 @@ void SemanticVar::must_be_pointer(SemanticAnalyser* analyser) {
 	}
 }
 
-extern LSValue* jit_add(LSValue* x, LSValue* y);
-extern LSValue* jit_sub(LSValue* x, LSValue* y);
-extern LSValue* jit_mul(LSValue* x, LSValue* y);
-extern LSValue* jit_div(LSValue* x, LSValue* y);
-extern LSValue* jit_pow(LSValue* x, LSValue* y);
-extern LSValue* jit_mod(LSValue* x, LSValue* y);
+LSValue* op_add(void*, LSValue* x, LSValue* y) {
+	return x->ls_add(y);
+}
+LSValue* op_sub(void*, LSValue* x, LSValue* y) {
+	return x->ls_sub(y);
+}
+LSValue* op_mul(void*, LSValue* x, LSValue* y) {
+	return x->ls_mul(y);
+}
+LSValue* op_div(void*, LSValue* x, LSValue* y) {
+	return x->ls_div(y);
+}
+int op_int_div(void*, LSValue* x, LSValue* y) {
+	LSValue* res = x->ls_int_div(y);
+	int v = ((LSNumber*) res)->value;
+	LSValue::delete_temporary(res);
+	return v;
+}
+LSValue* op_pow(void*, LSValue* x, LSValue* y) {
+	return x->ls_pow(y);
+}
+LSValue* op_mod(void*, LSValue* x, LSValue* y) {
+	return x->ls_mod(y);
+}
 
 void SemanticAnalyser::analyse(Program* program, Context* context, std::vector<Module*>& modules) {
 
@@ -75,21 +95,21 @@ void SemanticAnalyser::analyse(Program* program, Context* context, std::vector<M
 	op_type.setArgumentType(0, Type::POINTER);
 	op_type.setArgumentType(1, Type::POINTER);
 	op_type.setReturnType(Type::POINTER);
-	program->system_vars.insert(pair<string, LSValue*>("+", new LSFunction((void*) &jit_add, 1, true)));
+	program->system_vars.insert(pair<string, LSValue*>("+", new LSFunction((void*) &op_add)));
 	add_var(new Token("+"), op_type, nullptr, nullptr);
-	program->system_vars.insert(pair<string, LSValue*>("-", new LSFunction((void*) &jit_sub, 1, true)));
+	program->system_vars.insert(pair<string, LSValue*>("-", new LSFunction((void*) &op_sub)));
 	add_var(new Token("-"), op_type, nullptr, nullptr);
-	program->system_vars.insert(pair<string, LSValue*>("*", new LSFunction((void*) &jit_mul, 1, true)));
+	program->system_vars.insert(pair<string, LSValue*>("*", new LSFunction((void*) &op_mul)));
 	add_var(new Token("*"), op_type, nullptr, nullptr);
-	program->system_vars.insert(pair<string, LSValue*>("×", new LSFunction((void*) &jit_mul, 1, true)));
+	program->system_vars.insert(pair<string, LSValue*>("×", new LSFunction((void*) &op_mul)));
 	add_var(new Token("×"), op_type, nullptr, nullptr);
-	program->system_vars.insert(pair<string, LSValue*>("/", new LSFunction((void*) &jit_div, 1, true)));
+	program->system_vars.insert(pair<string, LSValue*>("/", new LSFunction((void*) &op_div)));
 	add_var(new Token("/"), op_type, nullptr, nullptr);
-	program->system_vars.insert(pair<string, LSValue*>("÷", new LSFunction((void*) &jit_div, 1, true)));
+	program->system_vars.insert(pair<string, LSValue*>("÷", new LSFunction((void*) &op_div)));
 	add_var(new Token("÷"), op_type, nullptr, nullptr);
-	program->system_vars.insert(pair<string, LSValue*>("**", new LSFunction((void*) &jit_pow, 1, true)));
+	program->system_vars.insert(pair<string, LSValue*>("**", new LSFunction((void*) &op_pow)));
 	add_var(new Token("**"), op_type, nullptr, nullptr);
-	program->system_vars.insert(pair<string, LSValue*>("%", new LSFunction((void*) &jit_mod, 1, true)));
+	program->system_vars.insert(pair<string, LSValue*>("%", new LSFunction((void*) &op_mod)));
 	add_var(new Token("%"), op_type, nullptr, nullptr);
 
 	NullSTD().include(this, program);
@@ -103,6 +123,7 @@ void SemanticAnalyser::analyse(Program* program, Context* context, std::vector<M
 	FunctionSTD().include(this, program);
 	ClassSTD().include(this, program);
 	SystemSTD().include(this, program);
+	IntervalSTD().include(this, program);
 
 	for (Module* module : modules) {
 		module->include(this, program);
@@ -207,7 +228,7 @@ SemanticVar* SemanticAnalyser::get_var(Token* v) {
 		}
 		f--;
 	}
-	add_error({SemanticException::Type::UNDEFINED_VARIABLE, v->line, v->content});
+	add_error({SemanticError::Type::UNDEFINED_VARIABLE, v->line, v->content});
 	return nullptr;
 }
 
@@ -232,7 +253,7 @@ SemanticVar* SemanticAnalyser::add_var(Token* v, Type type, Value* value, Variab
 	}
 
 	if (variables.back().back().find(v->content) != variables.back().back().end()) {
-		add_error({SemanticException::Type::VARIABLE_ALREADY_DEFINED, v->line, v->content});
+		add_error({SemanticError::Type::VARIABLE_ALREADY_DEFINED, v->line, v->content});
 	}
 	variables.back().back().insert(pair<string, SemanticVar*>(
 		v->content,
@@ -249,7 +270,7 @@ map<string, SemanticVar*>& SemanticAnalyser::get_local_vars() {
 	return variables.back().back();
 }
 
-void SemanticAnalyser::add_error(SemanticException ex) {
+void SemanticAnalyser::add_error(SemanticError ex) {
 	errors.push_back(ex);
 }
 

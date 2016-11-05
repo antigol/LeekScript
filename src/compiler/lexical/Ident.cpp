@@ -12,8 +12,4 @@ Ident::~Ident() {
 	// Do not own the token
 }
 
-void Ident::print(std::ostream& os) {
-	os << token->content;
-}
-
 }

@@ -46,6 +46,10 @@ LSValue* LSBoolean::ls_add(LSNumber* n) {
 	return n;
 }
 
+LSValue* LSBoolean::ls_add(LSString* s) {
+	return new LSString((value ? "true" : "false") + *s);
+}
+
 LSValue* LSBoolean::ls_sub(LSNumber* n) {
 	if (this->value) {
 		if (n->refs == 0) {

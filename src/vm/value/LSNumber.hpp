@@ -4,6 +4,9 @@
 #define LSNUMBER_H_
 
 #include <iostream>
+#include <gmp.h>
+#include <gmpxx.h>
+
 #include "../LSValue.hpp"
 #include "LSString.hpp"
 #include "LSClass.hpp"
@@ -29,6 +32,7 @@ public:
 	static LSNumber* cache[CACHE_HIGH - CACHE_LOW + 1];
 	static void build_cache();
 	static LSNumber* get(NUMBER_TYPE);
+	static std::string print(double);
 
 	LSNumber();
 	LSNumber(NUMBER_TYPE value);
@@ -36,6 +40,11 @@ public:
 
 	virtual ~LSNumber();
 
+	int integer() const;
+
+	/*
+	 * LSValue
+	 */
 	bool isTrue() const override;
 
 	LSValue* ls_minus() override;
@@ -77,6 +86,8 @@ public:
 	LSValue* ls_div(LSNull*) override;
 	LSValue* ls_div(LSBoolean*) override;
 	LSValue* ls_div(LSNumber*) override;
+
+	LSValue* ls_int_div(LSNumber*) override;
 
 	LSValue* ls_div_eq(LSNull*) override;
 	LSValue* ls_div_eq(LSBoolean*) override;

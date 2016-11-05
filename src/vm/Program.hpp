@@ -12,6 +12,7 @@ class Program {
 private:
 
 	std::string code; // The program code
+	jit_function_t function;
 	void* closure;
 
 	void compile_main(Context&);
@@ -28,14 +29,14 @@ public:
 	virtual ~Program();
 
 	/*
-	 * Compile the program with a VM, a context (json) and an execution mode
+	 * Compile the program with a VM and a context (json)
 	 */
-	double compile(VM& vm, const std::string& context, const ExecMode);
+	VM::Result compile(VM& vm, const std::string& context);
 
 	/*
 	 * Execute the program and get a LSValue* result
 	 */
-	LSValue* execute();
+	std::string execute();
 
 	void print(std::ostream& os, bool debug = false) const;
 };

@@ -43,14 +43,16 @@ unsigned If::line() const {
 
 void If::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
-	condition->analyse(analyser, Type::BOOLEAN);
+	condition->analyse(analyser, Type::UNKNOWN);
 	then->analyse(analyser, req_type);
 
 	if (elze != nullptr) {
 
 		elze->analyse(analyser, req_type);
 
-		if (then->type == Type::VOID) { // then contains return instruction
+		if (req_type == Type::VOID) {
+			type = Type::VOID;
+		} else if (then->type == Type::VOID) { // then contains return instruction
 			type = elze->type;
 		} else if (elze->type == Type::VOID) { // elze contains return instruction
 			type = then->type;
@@ -64,9 +66,13 @@ void If::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 			elze->analyse(analyser, type);
 		}
 	} else {
-		type = Type::POINTER; // Pointer because the else will give null
 
-		then->analyse(analyser, Type::POINTER);
+		if (req_type == Type::VOID) {
+			type = Type::VOID;
+		} else {
+			type = Type::POINTER; // Pointer because the else will give null
+		}
+		then->analyse(analyser, type);
 	}
 
 	if (req_type.nature == Nature::POINTER) {
@@ -87,12 +93,10 @@ jit_value_t If::compile(Compiler& c) const {
 	jit_value_t cond = condition->compile(c);
 
 	if (condition->type.nature == Nature::POINTER) {
-
 		jit_value_t cond_bool = VM::is_true(c.F, cond);
 		if (condition->type.must_manage_memory()) {
 			VM::delete_temporary(c.F, cond);
 		}
-
 		jit_insn_branch_if_not(c.F, cond_bool, &label_else);
 	} else {
 		jit_insn_branch_if_not(c.F, cond, &label_else);

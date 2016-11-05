@@ -31,6 +31,26 @@ int LSString::unicode_length() const {
 	return u8_strlen(this->c_str());
 }
 
+bool LSString::is_permutation(LSString* other) {
+	bool result = this->size() == other->size() and std::is_permutation(this->begin(), this->end(), other->begin());
+	LSValue::delete_temporary(this);
+	LSValue::delete_temporary(other);
+	return result;
+}
+
+LSString* LSString::sort() {
+	std::string res = *this;
+	std::sort(res.begin(), res.end());
+	LSValue::delete_temporary(this); // TODO move if tmp
+	return new LSString(res);
+}
+
+bool LSString::is_palindrome() const {
+	bool r = std::equal(this->begin(), this->begin() + this->size() / 2, this->rbegin());
+	LSValue::delete_temporary(this);
+	return r;
+}
+
 /*
  * LSValue methods
  */

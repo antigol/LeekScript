@@ -1,10 +1,10 @@
 var digits = [1]
 
-for p = 1; p <= 100; p++ {
-	for j = 0; j < digits.size(); ++j {
+for var p = 1; p <= 100; p++ {
+	for var j = 0; j < digits.size(); j++ {
 		digits[j] *= p
 	}
-	for i = 0; i < digits.size(); ++i {
+	for var i = 0; i < digits.size(); i++ {
 		if (9 < digits[i]) {
 			let m = digits[i] % 10
 			var q = (digits[i] - m) / 10

@@ -35,6 +35,7 @@
 #include "../value/VariableValue.hpp"
 #include "../value/ArrayFor.hpp"
 #include "../../vm/Program.hpp"
+#include "../../vm/value/LSNumber.hpp"
 #include "SyntaxicalError.hpp"
 #include "../lexical/Token.hpp"
 
@@ -530,6 +531,7 @@ Value* SyntaxicAnalyser::eatExpression(bool pipe_opened, bool set_opened) {
 	// Opérateurs binaires
 	while (t->type == TokenType::PLUS || t->type == TokenType::MINUS ||
 		   t->type == TokenType::TIMES || t->type == TokenType::DIVIDE ||
+		   t->type == TokenType::INT_DIV ||
 		   t->type == TokenType::MODULO || t->type == TokenType::AND ||
 		   t->type == TokenType::OR || t->type == TokenType::XOR ||
 		   t->type == TokenType::EQUAL || t->type == TokenType::POWER ||
@@ -578,20 +580,6 @@ Value* SyntaxicAnalyser::eatExpression(bool pipe_opened, bool set_opened) {
 	return e;
 }
 
-double stod_(string str) {
-
-	if (str.size() > 2 && str[0] == '0' && str[1] == 'b') {
-		double x = 0.0;
-		for (size_t i = 2; i < str.size(); ++i) {
-			x *= 2.0;
-			if (str[i] == '1') x += 1.0;
-		}
-		return x;
-	} else {
-		return stod(str);
-	}
-}
-
 Value* SyntaxicAnalyser::eatValue() {
 
 	switch (t->type) {
@@ -611,15 +599,17 @@ Value* SyntaxicAnalyser::eatValue() {
 
 		case TokenType::NUMBER:
 		{
-			Number* n = new Number(stod_(t->content), t);
+			Number* n = new Number(t->content, t);
 			eat();
 			return n;
 		}
 
-		case TokenType::PI:
+		case TokenType::PI: {
 			eat();
-			return new Number(M_PI, t);
-
+			std::stringstream stream;
+			stream << std::fixed << std::setprecision(19) << M_PI;
+			return new Number(stream.str(), t);
+		}
 		case TokenType::STRING:
 		{
 			String* v = new String(t->content, t);
@@ -1000,8 +990,13 @@ Instruction* SyntaxicAnalyser::eatFor() {
 		eat(TokenType::SEMICOLON);
 
 		// condition
-		f->condition = eatExpression();
-		eat(TokenType::SEMICOLON);
+		if (t->type == TokenType::SEMICOLON) {
+			f->condition = nullptr;
+			eat();
+		} else {
+			f->condition = eatExpression();
+			eat(TokenType::SEMICOLON);
+		}
 
 		// increment
 		while (true) {
@@ -1023,9 +1018,10 @@ Instruction* SyntaxicAnalyser::eatFor() {
 			f->body = eatBlock();
 			eat(TokenType::END);
 		}
-
 		return f;
+
 	} else {
+
 		for (Instruction* ins : inits) delete ins;
 		restore_saved_state();
 
@@ -1098,13 +1094,13 @@ Instruction* SyntaxicAnalyser::eatWhile() {
 	return w;
 }
 
-Break*SyntaxicAnalyser::eatBreak() {
+Break* SyntaxicAnalyser::eatBreak() {
 	eat(TokenType::BREAK);
 	Break* b = new Break();
 
 	if (t->type == TokenType::NUMBER /*&& t->line == lt->line*/) {
-		double deepness = stod_(t->content);
-		if (deepness != int(deepness) || deepness <= 0) {
+		int deepness = std::stoi(t->content);
+		if (deepness <= 0) {
 			errors.push_back(new SyntaxicalError(t, "Break should only be followed by a positive integer"));
 		} else {
 			b->deepness = deepness;
@@ -1115,13 +1111,13 @@ Break*SyntaxicAnalyser::eatBreak() {
 	return b;
 }
 
-Continue*SyntaxicAnalyser::eatContinue() {
+Continue* SyntaxicAnalyser::eatContinue() {
 	eat(TokenType::CONTINUE);
 	Continue* c = new Continue();
 
 	if (t->type == TokenType::NUMBER /*&& t->line == lt->line*/) {
-		double deepness = stod_(t->content);
-		if (deepness != int(deepness) || deepness <= 0) {
+		int deepness = std::stoi(t->content);
+		if (deepness <= 0) {
 			errors.push_back(new SyntaxicalError(t, "Continue should only be followed by a positive integer"));
 		} else {
 			c->deepness = deepness;

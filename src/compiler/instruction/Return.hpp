@@ -13,7 +13,6 @@ public:
 	Function* function;
 	bool in_function;
 
-	Return();
 	Return(Value*);
 	virtual ~Return();
 

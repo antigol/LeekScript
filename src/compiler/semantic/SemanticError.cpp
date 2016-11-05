@@ -1,33 +1,33 @@
-#include "SemanticException.hpp"
+#include "SemanticError.hpp"
 #include "../../util/Util.hpp"
 
 using namespace std;
 
 namespace ls {
 
-bool SemanticException::translation_loaded = false;
-Json SemanticException::translation;
+bool SemanticError::translation_loaded = false;
+Json SemanticError::translation;
 
-SemanticException::SemanticException(Type type, unsigned line) {
+SemanticError::SemanticError(Type type, unsigned line) {
 	this->type = type;
 	this->line = line;
 	this->content = "";
 }
 
-SemanticException::SemanticException(Type type, unsigned line, const string& content) {
+SemanticError::SemanticError(Type type, unsigned line, const string& content) {
 	this->type = type;
 	this->line = line;
 	this->content = content;
 }
 
-SemanticException::~SemanticException() {}
+SemanticError::~SemanticError() {}
 
-std::string SemanticException::message() const {
+std::string SemanticError::message() const {
 
 	return build_message(type, content);
 }
 
-std::string SemanticException::build_message(Type type, std::string token) {
+std::string SemanticError::build_message(Type type, std::string token) {
 
 	if (!translation_loaded) {
 		try {
@@ -48,7 +48,7 @@ std::string SemanticException::build_message(Type type, std::string token) {
 	}
 }
 
-std::string SemanticException::type_to_string(Type type) {
+std::string SemanticError::type_to_string(Type type) {
 	switch (type) {
 		case Type::UNDEFINED_VARIABLE: return "UNDEFINED_VARIABLE";
 		case Type::VARIABLE_ALREADY_DEFINED: return "VARIABLE_ALREADY_DEFINED";
@@ -69,4 +69,3 @@ std::string SemanticException::type_to_string(Type type) {
 }
 
 }
-

@@ -18,6 +18,10 @@ bool Value::will_take_element(SemanticAnalyser*, const Type arg_type) {
 	return type.will_take_element(arg_type);
 }
 
+bool Value::will_store(SemanticAnalyser*, const Type&) {
+	return false;
+}
+
 bool Value::must_be_pointer(SemanticAnalyser*) {
 	if (type.nature == Nature::POINTER) {
 		return false;
@@ -36,6 +40,11 @@ bool Value::isLeftValue() const {
 
 std::string Value::tabs(int indent) {
 	return std::string(indent * 4, ' ');
+}
+
+std::ostream& operator << (std::ostream& os, const Value* v) {
+	v->print(os);
+	return os;
 }
 
 }

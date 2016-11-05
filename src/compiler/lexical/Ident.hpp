@@ -12,8 +12,6 @@ public:
 
 	Ident(Token* token);
 	virtual ~Ident();
-
-	void print(std::ostream& os);
 };
 
 }

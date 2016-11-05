@@ -37,6 +37,7 @@ public:
 	LSVALUE_OPERATORS
 
 	LSValue* ls_add(LSNumber*) override;
+	LSValue* ls_add(LSString* s) override;
 	LSValue* ls_sub(LSNumber*) override;
 
 	bool eq(const LSBoolean*) const override;

@@ -17,8 +17,8 @@ void ExpressionInstruction::print(ostream& os, int indent, bool debug) const {
 }
 
 void ExpressionInstruction::analyse(SemanticAnalyser* analyser, const Type& req_type) {
-	if (req_type.nature == Nature::VOID) {
-		value->analyse(analyser, Type::UNKNOWN);
+	if (req_type == Type::VOID) {
+		value->analyse(analyser, Type::VOID);
 		type = Type::VOID;
 	} else {
 		value->analyse(analyser, req_type);

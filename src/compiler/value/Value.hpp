@@ -31,6 +31,7 @@ public:
 
 	virtual bool will_take(SemanticAnalyser*, const std::vector<Type>& args_type);
 	virtual bool will_take_element(SemanticAnalyser*, const Type);
+	virtual bool will_store(SemanticAnalyser*, const Type&);
 	virtual bool must_be_pointer(SemanticAnalyser*);
 	virtual void must_return(SemanticAnalyser*, const Type&);
 	virtual void analyse(SemanticAnalyser*, const Type&) = 0;
@@ -39,6 +40,8 @@ public:
 
 	static std::string tabs(int indent);
 };
+
+std::ostream& operator << (std::ostream& os, const Value* v);
 
 }
 

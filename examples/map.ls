@@ -7,5 +7,5 @@ let obj = {foo: 5, bar: 12, lama: 'abc'}
 let set = <1, 2, 3>
 let set = <'cat', 'dog', 'banana'>
 
-let tuple = (1, 2, 3)
+//let tuple = (1, 2, 3)
 

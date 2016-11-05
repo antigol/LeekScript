@@ -1,0 +1,1 @@
+let divisors = n -> [1..n.sqrt()].filter(x -> !(n % x)) divisors(1989)

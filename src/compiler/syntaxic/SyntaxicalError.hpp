@@ -12,6 +12,8 @@ public:
 	Token* token;
 	std::string message;
 
+	SyntaxicalError() = delete;
+	SyntaxicalError(SyntaxicalError&);
 	SyntaxicalError(Token* token, std::string message);
 	virtual ~SyntaxicalError();
 };

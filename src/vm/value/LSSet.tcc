@@ -49,6 +49,13 @@ template <typename T>
 inline LSSet<T>::~LSSet() {
 }
 
+template <typename T>
+int LSSet<T>::ls_size() {
+	int s = this->size();
+	LSValue::delete_temporary(this);
+	return s;
+}
+
 template <>
 inline bool LSSet<LSValue*>::ls_insert(LSValue* value) {
 	auto it = lower_bound(value);
@@ -262,14 +269,16 @@ inline bool LSSet<T>::lt(const LSSet<double>* v) const {
 
 template <>
 inline bool LSSet<LSValue*>::in(LSValue* value) const {
-	return count(value);
+	bool r = count(value);
+	LSValue::delete_temporary(this);
+	LSValue::delete_temporary(value);
+	return r;
 }
 template <typename T>
-inline bool LSSet<T>::in(LSValue* value) const {
-	if (LSNumber* number = dynamic_cast<LSNumber*>(value)) {
-		return this->count(number->value);
-	}
-	return false;
+inline bool LSSet<T>::in(T value) const {
+	bool r = this->count(value);
+	LSValue::delete_temporary(this);
+	return r;
 }
 
 template <typename T>
@@ -282,16 +291,6 @@ LSValue** LSSet<T>::atL(const LSValue* ) {
 	return nullptr;
 }
 
-template <>
-inline std::ostream& LSSet<LSValue*>::print(std::ostream& os) const {
-	os << "<";
-	for (auto i = this->begin(); i != this->end(); i++) {
-		if (i != this->begin()) os << ", ";
-		os << **i;
-	}
-	os << ">";
-	return os;
-}
 template <typename T>
 inline std::ostream& LSSet<T>::print(std::ostream& os) const {
 	os << "<";
@@ -303,22 +302,12 @@ inline std::ostream& LSSet<T>::print(std::ostream& os) const {
 	return os;
 }
 
-template <>
-inline std::string LSSet<LSValue*>::json() const {
-	std::string res = "[";
-	for (auto i = this->begin(); i != this->end(); i++) {
-		if (i != this->begin()) res += ",";
-		std::string json = (*i)->to_json();
-		res += json;
-	}
-	return res + "]";
-}
 template <typename T>
 inline std::string LSSet<T>::json() const {
 	std::string res = "[";
 	for (auto i = this->begin(); i != this->end(); i++) {
 		if (i != this->begin()) res += ",";
-		std::string json = std::to_string(*i);
+		std::string json = ls::to_json(*i);
 		res += json;
 	}
 	return res + "]";

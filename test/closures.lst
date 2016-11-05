@@ -24,3 +24,17 @@ let f = function() [a] {
 	aux(2)
 }
 
+// 4ème cas, capture d'une variable qui est détruite entre temps
+
+let f = function() {
+
+	let a = 12
+	return x -> x + a // Capture de a
+	
+	// retour de (x -> x + a)
+	// a est stockée (par exemple dans un paramètre)
+}
+
+let g = f() // retourne la fonction g, et stocke la capture a dans une variable à coté.
+
+g(3, [a]) = 15 // la capture a est envoyée dans la fonction g à son appel.

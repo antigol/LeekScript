@@ -7,8 +7,7 @@ using namespace std;
 
 namespace ls {
 
-For::For() {
-}
+For::For() {}
 
 For::~For() {
 	for (Instruction* ins : inits) delete ins;
@@ -24,7 +23,9 @@ void For::print(ostream& os, int indent, bool debug) const {
 		ins->print(os, indent + 1, debug);
 	}
 	os << "; ";
-	condition->print(os, indent + 1, debug);
+	if (condition != nullptr) {
+		condition->print(os, indent + 1, debug);
+	}
 	os << ";";
 	for (Instruction* ins : increments) {
 		os << " ";
@@ -46,15 +47,18 @@ void For::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	// Init
 	for (Instruction* ins : inits) {
-		ins->analyse(analyser, Type::VOID);
+		ins->analyse(analyser, Type::UNKNOWN);
 		if (dynamic_cast<Return*>(ins)) {
+			type = ins->type;
 			analyser->leave_block();
 			return;
 		}
 	}
 
 	// Condition
-	condition->analyse(analyser, Type::UNKNOWN);
+	if (condition != nullptr) {
+		condition->analyse(analyser, Type::UNKNOWN);
+	}
 
 	// Body
 	analyser->enter_loop();
@@ -106,17 +110,19 @@ jit_value_t For::compile(Compiler& c) const {
 
 	// Cond
 	jit_insn_label(c.F, &label_cond);
-	jit_value_t condition_v = condition->compile(c);
-	if (condition->type.nature == Nature::POINTER) {
-		jit_value_t bool_v = VM::is_true(c.F, condition_v);
+	VM::inc_ops(c.F, 1);
+	if (condition != nullptr) {
+		jit_value_t condition_v = condition->compile(c);
+		if (condition->type.nature == Nature::POINTER) {
+			jit_value_t bool_v = VM::is_true(c.F, condition_v);
 
-		if (condition->type.must_manage_memory()) {
-			VM::delete_temporary(c.F, condition_v);
+			if (condition->type.must_manage_memory()) {
+				VM::delete_temporary(c.F, condition_v);
+			}
+			jit_insn_branch_if_not(c.F, bool_v, &label_end);
+		} else {
+			jit_insn_branch_if_not(c.F, condition_v, &label_end);
 		}
-
-		jit_insn_branch_if_not(c.F, bool_v, &label_end);
-	} else {
-		jit_insn_branch_if_not(c.F, condition_v, &label_end);
 	}
 
 	// Body

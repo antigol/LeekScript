@@ -11,6 +11,7 @@ public:
 	TokenType type;
 	std::string character;
 	int priority;
+	bool reversed;
 
 	Operator(Token* token);
 	virtual ~Operator();

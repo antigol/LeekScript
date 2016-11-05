@@ -259,6 +259,10 @@ jit_value_t PrefixExpression::compile(Compiler& c) const {
 	}
 	jit_value_t result = jit_insn_call_native(c.F, "", func, sig, args.data(), 1, JIT_CALL_NOTHROW);
 
+	if (operatorr->type == TokenType::NOT) {
+		result = VM::pointer_to_value(c.F, result, Type::BOOLEAN);
+	}
+
 	return result;
 }
 

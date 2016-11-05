@@ -6,13 +6,6 @@ using namespace std;
 
 namespace ls {
 
-Token::Token() {
-	character = -1;
-	line = -1;
-	type = TokenType::UNKNOW;
-	size = 0;
-}
-
 Token::Token(std::string content) {
 	character = -1;
 	line = -1;
@@ -37,10 +30,5 @@ Token::Token(TokenType type, unsigned int line, unsigned int character, string c
 }
 
 Token::~Token() {}
-
-std::ostream& operator << (std::ostream& os, Token& token) {
-	os << "[" << token.line << ":" << token.character << " " << (int)token.type << " " << token.content << "]";
-	return os;
-}
 
 }
