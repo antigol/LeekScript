@@ -35,7 +35,7 @@ void Test::test_map() {
 	code("let x = [1 : 1] x.look(1,0)").equals("1");
 	code("let x = ['a' : 'a'] x.look('a','b')").equals("'a'");
 	code("let x = ['a' : 'a'] x.look('b','b')").equals("'b'");
-	code("let x = ['a' : 1] x.look(3.14,'a')").semantic_error( ls::SemanticError::METHOD_NOT_FOUND, ls::Type::PTR_INT_MAP.toString() + ".look(" + ls::Type::REAL.toString() + ", " + ls::Type::STRING.toString() + ")");
+	code("let x = ['a' : 1] x.look(3.14,'a')").semantic_error( ls::SemanticError::METHOD_NOT_FOUND, ls::Type::PTR_INT_MAP.toString() + ".look(" + ls::Type::REAL.toString() + ", " + ls::Type::STRING_TMP.toString() + ")");
 
 	section("Map.operator ==");
 	code("['a':'b'] == [1:1]").equals("false");

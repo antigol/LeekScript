@@ -27,7 +27,7 @@ for var s in S.split('') {
 
 var max = 1.pow(1)
 for var i = 0; i < N.size() - 12; ++i {
-	var prod = N[i : i + 13].foldLeft((x, y -> x × y), 1)
+	var prod = N[i : i + 12].foldLeft((x, y -> x × y), 1)
 	var prod_int = String.number('' + prod)
 	if max < prod_int {
 		max = prod_int

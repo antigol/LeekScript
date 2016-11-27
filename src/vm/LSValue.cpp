@@ -422,6 +422,12 @@ std::string LSValue::to_json() const {
 	return "{\"t\":" + to_string(typeID()) + ",\"v\":" + json() + "}";
 }
 
+LSString* LSValue::ls_json() {
+	LSString* json = new LSString(this->json());
+	LSValue::delete_temporary(this);
+	return json;
+}
+
 }
 
 namespace std {

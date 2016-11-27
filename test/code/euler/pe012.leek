@@ -1,0 +1,22 @@
+function factors(n) {
+	var l = n
+	var c = 0
+	for var i = 1; i < l; ++i {
+		if n % i == 0 {
+			l = n \ i
+			c += 2
+		}
+	}
+	return c
+}
+
+var i = 2
+var n = 1
+
+while true {
+	if factors(n) > 500 {
+		return n
+	}
+	n += i
+	i++
+}

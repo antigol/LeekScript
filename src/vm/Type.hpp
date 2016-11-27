@@ -137,7 +137,9 @@ public:
 	static const BooleanRawType* const BOOLEAN;
 	static const NumberRawType* const NUMBER;
 	static const GmpIntRawType* const GMP_INT;
+	static const IntegerRawType* const UNSIGNED_INTEGER;
 	static const IntegerRawType* const INTEGER;
+	static const LongRawType* const UNSIGNED_LONG;
 	static const LongRawType* const LONG;
 	static const FloatRawType* const REAL;
 	static const StringRawType* const STRING;
@@ -208,13 +210,18 @@ public:
 	static const Type UNKNOWN;
 	static const Type NULLL;
 	static const Type BOOLEAN;
+	static const Type BOOLEAN_P;
+	static const Type NUMBER_VALUE;
 	static const Type NUMBER;
 	static const Type INTEGER;
+	static const Type UNSIGNED_INTEGER;
 	static const Type GMP_INT;
 	static const Type GMP_INT_TMP;
 	static const Type LONG;
+	static const Type UNSIGNED_LONG;
 	static const Type REAL;
 	static const Type STRING;
+	static const Type STRING_TMP;
 	static const Type OBJECT;
 	static const Type ARRAY;
 	static const Type PTR_ARRAY;
@@ -231,6 +238,7 @@ public:
 	static const Type INT_PTR_MAP;
 	static const Type INT_INT_MAP;
 	static const Type INT_REAL_MAP;
+	static const Type SET;
 	static const Type PTR_SET;
 	static const Type INT_SET;
 	static const Type REAL_SET;
@@ -238,6 +246,9 @@ public:
 	static const Type FUNCTION;
 	static const Type FUNCTION_P;
 	static const Type CLASS;
+	static const Type PTR_ARRAY_ARRAY;
+	static const Type REAL_ARRAY_ARRAY;
+	static const Type INT_ARRAY_ARRAY;
 
 	static bool list_compatible(const std::vector<Type>& expected, const std::vector<Type>& actual);
 	static bool list_more_specific(const std::vector<Type>& old, const std::vector<Type>& neww);

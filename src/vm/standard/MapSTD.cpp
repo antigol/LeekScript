@@ -22,7 +22,7 @@ MapSTD::MapSTD() : Module("Map") {
 		{Type::REAL_INT_MAP, Type::REAL, Type::BOOLEAN, (void*) &LSMap<double, int>::in},
 		{Type::INT_PTR_MAP, Type::INTEGER, Type::BOOLEAN, (void*) &LSMap<int, LSValue*>::in},
 		{Type::INT_REAL_MAP, Type::INTEGER, Type::BOOLEAN, (void*) &LSMap<int, double>::in},
-		{Type::INT_INT_MAP, Type::INTEGER, Type::BOOLEAN, (void*) &LSMap<int, int>::in},
+		{Type::INT_INT_MAP, Type::LONG, Type::BOOLEAN, (void*) &LSMap<int, int>::in},
 	});
 
 	method("size", {

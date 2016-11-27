@@ -11,6 +11,7 @@ class Block : public Value {
 public:
 
 	std::vector<Instruction*> instructions;
+	bool temporary_gmp = false;
 
 	Block();
 	virtual ~Block();
@@ -20,7 +21,7 @@ public:
 
 	virtual void analyse(SemanticAnalyser* analyser, const Type& req_type) override;
 
-	jit_value_t compile(Compiler&) const;
+	Compiler::value compile(Compiler&) const;
 
 };
 

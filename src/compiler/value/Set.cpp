@@ -70,7 +70,7 @@ void Set_insert_float(LSSet<int>* set, double value) {
 	set->insert(value);
 }
 
-jit_value_t Set::compile(Compiler& c) const {
+Compiler::value Set::compile(Compiler& c) const {
 	void* create = type.getElementType() == Type::INTEGER ? (void*) Set_create_int :
 				   type.getElementType() == Type::REAL   ? (void*) Set_create_float :
 															(void*) Set_create_ptr;
@@ -85,18 +85,18 @@ jit_value_t Set::compile(Compiler& c) const {
 
 	double i = 0;
 	for (Value* ex : expressions) {
-		jit_value_t v = ex->compile(c);
+		auto v = ex->compile(c);
 
 		jit_type_t args[2] = {LS_POINTER, VM::get_jit_type(type.getElementType())};
 		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_void, args, 3, 0);
-		jit_value_t args_v[] = {s, v};
+		jit_value_t args_v[] = {s, v.v};
 		jit_insn_call_native(c.F, "insert", (void*) insert, sig, args_v, 2, JIT_CALL_NOTHROW);
 		ops += std::log2(++i);
 	}
 
 	VM::inc_ops(c.F, ops);
 
-	return s;
+	return {s, type};
 }
 
 

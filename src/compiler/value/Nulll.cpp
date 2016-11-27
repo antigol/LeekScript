@@ -28,8 +28,8 @@ void Nulll::analyse(SemanticAnalyser*, const Type&) {
 	// nothing to do, always a pointer
 }
 
-jit_value_t Nulll::compile(Compiler& c) const {
-	return VM::get_null(c.F);
+Compiler::value Nulll::compile(Compiler& c) const {
+	return c.new_null();
 }
 
 }

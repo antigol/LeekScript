@@ -1,4 +1,4 @@
-LeekScript language
+[LeekScript language](https://leekscript.com)
 ===================
 
 [![Build Status](https://travis-ci.org/leek-wars/leekscript.svg?branch=master)](https://travis-ci.org/leek-wars/leekscript)

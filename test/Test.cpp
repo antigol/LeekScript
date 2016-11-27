@@ -79,6 +79,8 @@ Test::Input Test::file(const std::string& file_name) {
 }
 
 ls::VM::Result Test::Input::run(bool display_errors) {
+	test->total++;
+
 	ls::VM::operation_limit = this->operation_limit;
 	auto result = test->vm.execute(_code, "{}");
 	ls::VM::operation_limit = ls::VM::DEFAULT_OPERATION_LIMIT;
@@ -87,8 +89,9 @@ ls::VM::Result Test::Input::run(bool display_errors) {
 	test->obj_deleted += result.objects_deleted;
 	test->gmp_obj_created += result.gmp_objects_created;
 	test->gmp_obj_deleted += result.gmp_objects_deleted;
-	test->total++;
-	time = round((float) result.execution_time / 1000) / 1000;
+
+	compilation_time = round((float) result.compilation_time / 1000) / 1000;
+	execution_time = round((float) result.execution_time / 1000) / 1000;
 
 	if (display_errors) {
 		for (const auto& error : result.syntaxical_errors) {
@@ -112,7 +115,7 @@ ls::VM::Result Test::Input::run(bool display_errors) {
 void Test::Input::pass(std::string expected) {
 	std::cout << GREEN << "OK   " << END_COLOR << ": " << name()
 	<<  "  ===>  " << expected;
-	std::cout <<  GREY << " (" << this->time << " ms)" << END_COLOR;
+	std::cout <<  GREY << " (" << this->compilation_time << " ms + " << this->execution_time << " ms)" << END_COLOR;
 	std::cout << std::endl;
 	test->success_count++;
 }
@@ -120,8 +123,19 @@ void Test::Input::pass(std::string expected) {
 void Test::Input::fail(std::string expected, std::string actual) {
 	std::cout << RED << "FAIL " << END_COLOR << ": " << name()
 	<< "  =/=>  " << expected << "  got  " << actual;
-	std::cout <<  GREY << " (" << this->time << " ms)" << END_COLOR;
+	std::cout <<  GREY << " (" << this->compilation_time << " ms + " << this->execution_time << " ms)" << END_COLOR;
 	std::cout << std::endl;
+}
+
+void Test::Input::works() {
+	std::cout << "Try " << code << " ..." << std::endl;
+	try {
+		run();
+	} catch (...) {
+		fail("works", "threw exception!");
+		return;
+	}
+	pass("works");
 }
 
 void Test::Input::_equals(std::string&& expected) {
@@ -153,9 +167,9 @@ void Test::Input::almost(T expected, T delta) {
 	ss >> res_num;
 
 	if (std::abs(res_num - expected) <= delta) {
-		pass(result.value + " (perfect: " + std::to_string(expected) + ")");
+		pass(result.value);
 	} else {
-		fail(std::to_string(expected), result.value);
+		fail(ls::LSNumber::print(expected), result.value);
 	}
 }
 

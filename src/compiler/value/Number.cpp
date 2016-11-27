@@ -94,17 +94,17 @@ void Number::analyse(SemanticAnalyser*, const Type& req_type) {
 	}
 }
 
-jit_value_t Number::compile(Compiler& c) const {
+Compiler::value Number::compile(Compiler& c) const {
 
 	if (type.nature == Nature::POINTER) {
 		jit_value_t val = LS_CREATE_REAL(c.F, double_value);
-		return VM::value_to_pointer(c.F, val, Type::REAL);
+		return {VM::value_to_pointer(c.F, val, Type::REAL), type};
 	}
 	if (type == Type::LONG) {
-		return LS_CREATE_LONG(c.F, long_value);
+		return {LS_CREATE_LONG(c.F, long_value), type};
 	}
 	if (type == Type::REAL) {
-		return LS_CREATE_REAL(c.F, double_value);
+		return {LS_CREATE_REAL(c.F, double_value), type};
 	}
 
 	if (type.raw_type == RawType::GMP_INT) {
@@ -121,10 +121,10 @@ jit_value_t Number::compile(Compiler& c) const {
 		jit_insn_store_relative(c.F, jit_insn_address_of(c.F, gmp_struct), 4, LS_CREATE_INTEGER(c.F, mpz_value->_mp_size));
 		jit_insn_store_relative(c.F, jit_insn_address_of(c.F, gmp_struct), 8, LS_CREATE_POINTER(c.F, mpz_value->_mp_d));
 
-		return gmp_struct;
+		return {gmp_struct, Type::GMP_INT};
 	}
 
-	return LS_CREATE_INTEGER(c.F, int_value);
+	return {LS_CREATE_INTEGER(c.F, int_value), type};
 }
 
 }

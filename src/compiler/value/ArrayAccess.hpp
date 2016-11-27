@@ -26,8 +26,8 @@ public:
 	bool array_access_will_take(SemanticAnalyser* analyser, const std::vector<Type>&, int level);
 	virtual void change_type(SemanticAnalyser*, const Type&) override;
 
-	virtual jit_value_t compile(Compiler&) const override;
-	virtual jit_value_t compile_l(Compiler&) const override;
+	virtual Compiler::value compile(Compiler&) const override;
+	virtual Compiler::value compile_l(Compiler&) const override;
 };
 
 }

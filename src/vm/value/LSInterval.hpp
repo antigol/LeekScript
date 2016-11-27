@@ -24,7 +24,7 @@ public:
 	/*
 	 * Array methods
 	 */
-	LSArray<int>* ls_filter(const void* function);
+	LSArray<int>* ls_filter(LSFunction* function);
 
 	/*
 	 * LSValue methods

@@ -92,7 +92,7 @@ jit_value_t System_nanotime(jit_function_t F) {
 }
 
 jit_value_t System_version(jit_function_t F) {
-	return jit_value_create_nint_constant(F, jit_type_int, 1);
+	return jit_value_create_nint_constant(F, jit_type_int, LEEKSCRIPT_VERSION);
 }
 
 void System_print(LSValue* value) {

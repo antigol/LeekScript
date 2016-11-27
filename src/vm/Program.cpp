@@ -83,7 +83,7 @@ VM::Result Program::compile(VM& vm, const std::string& ctx) {
 
 void Program::compile_main(Context& context) {
 
-	Compiler c;
+	Compiler c(this);
 
 	jit_init();
 	jit_context_t jit_context = jit_context_create();
@@ -130,9 +130,18 @@ std::string Program::execute() {
 
 	Type output_type = main->type.getReturnType();
 
+	if (output_type == Type::VOID) {
+		auto fun = (void (*)()) closure;
+		fun();
+		if (VM::last_exception) throw VM::last_exception;
+		return "(void)";
+	}
+
 	if (output_type == Type::BOOLEAN) {
 		auto fun = (bool (*)()) closure;
-		return fun() ? "true" : "false";
+		bool res = fun();
+		if (VM::last_exception) throw VM::last_exception;
+		return res ? "true" : "false";
 	}
 
 	jit_exception_set_handler(&handler);
@@ -144,16 +153,16 @@ std::string Program::execute() {
 		return std::to_string(res);
 	}
 
-	if (output_type == Type::GMP_INT) {
+	if (output_type == Type::GMP_INT_TMP or output_type == Type::GMP_INT) {
 		auto fun = (__mpz_struct (*)()) closure;
 		__mpz_struct ret = fun();
 		if (VM::last_exception) throw VM::last_exception;
 		char buff[1000000];
 		mpz_get_str(buff, 10, &ret);
-		if (output_type.temporary) {
+//		if (output_type.temporary) {
 			mpz_clear(&ret);
 			VM::gmp_values_deleted++;
-		}
+//		}
 		return std::string(buff);
 	}
 
@@ -250,7 +259,7 @@ void Program::compile_jit(Compiler& c, Context&, bool) {
 	}
 	*/
 
-	jit_value_t res = main->body->compile(c);
+	jit_value_t res = main->body->compile(c).v;
 	jit_insn_return(c.F, res);
 
 	/*

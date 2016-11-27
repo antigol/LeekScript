@@ -66,15 +66,17 @@ public:
 		std::string _name;
 		std::string _code;
 		bool file;
-		float time;
+		float compilation_time;
+		float execution_time;
 		long int operation_limit = ls::VM::DEFAULT_OPERATION_LIMIT;
 	public:
 		Input(Test* test, const std::string& name, const std::string& _code,
 			bool file = false) : test(test), _name(name), _code(_code),
 			file(file) {};
+		void works();
 		void _equals(std::string&& expected);
 		template <typename T>
-		void almost(T expected, T delta = std::numeric_limits<T>::epsilon());
+		void almost(T expected, T delta = 1e-10);
 		template <typename T>
 		void between(T a, T b);
 		void semantic_error(ls::SemanticError::Type error, std::string param);

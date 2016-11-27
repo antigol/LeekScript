@@ -3,6 +3,7 @@
 #include "../../compiler/instruction/ExpressionInstruction.hpp"
 #include "../../vm/Program.hpp"
 #include "../../vm/Context.hpp"
+#include "../../vm/standard/ValueSTD.hpp"
 #include "../../vm/standard/NullSTD.hpp"
 #include "../../vm/standard/NumberSTD.hpp"
 #include "../../vm/standard/BooleanSTD.hpp"
@@ -18,6 +19,9 @@
 #include "SemanticError.hpp"
 #include "../instruction/VariableDeclaration.hpp"
 #include "../../vm/value/LSNumber.hpp"
+#include "../../vm/value/LSNull.hpp"
+
+#include <functional>
 
 using namespace std;
 
@@ -91,27 +95,25 @@ void SemanticAnalyser::analyse(Program* program, Context* context, std::vector<M
 		add_var(new Token(var.first), Type(var.second->getRawType(), Nature::POINTER), nullptr, nullptr);
 	}
 
+	// Add function operators
+	std::vector<std::string> ops = {"+", "-", "*", "×", "/", "÷", "**", "%"};
+	std::vector<void*> ops_funs = {(void*) &op_add, (void*) &op_sub, (void*) &op_mul, (void*) &op_mul, (void*) &op_div, (void*) &op_div, (void*) &op_pow, (void*) &op_mod};
+
 	Type op_type = Type(RawType::FUNCTION, Nature::POINTER);
 	op_type.setArgumentType(0, Type::POINTER);
 	op_type.setArgumentType(1, Type::POINTER);
 	op_type.setReturnType(Type::POINTER);
-	program->system_vars.insert(pair<string, LSValue*>("+", new LSFunction((void*) &op_add)));
-	add_var(new Token("+"), op_type, nullptr, nullptr);
-	program->system_vars.insert(pair<string, LSValue*>("-", new LSFunction((void*) &op_sub)));
-	add_var(new Token("-"), op_type, nullptr, nullptr);
-	program->system_vars.insert(pair<string, LSValue*>("*", new LSFunction((void*) &op_mul)));
-	add_var(new Token("*"), op_type, nullptr, nullptr);
-	program->system_vars.insert(pair<string, LSValue*>("×", new LSFunction((void*) &op_mul)));
-	add_var(new Token("×"), op_type, nullptr, nullptr);
-	program->system_vars.insert(pair<string, LSValue*>("/", new LSFunction((void*) &op_div)));
-	add_var(new Token("/"), op_type, nullptr, nullptr);
-	program->system_vars.insert(pair<string, LSValue*>("÷", new LSFunction((void*) &op_div)));
-	add_var(new Token("÷"), op_type, nullptr, nullptr);
-	program->system_vars.insert(pair<string, LSValue*>("**", new LSFunction((void*) &op_pow)));
-	add_var(new Token("**"), op_type, nullptr, nullptr);
-	program->system_vars.insert(pair<string, LSValue*>("%", new LSFunction((void*) &op_mod)));
-	add_var(new Token("%"), op_type, nullptr, nullptr);
 
+	for (unsigned o = 0; o < ops.size(); ++o) {
+		auto fun = new LSFunction(ops_funs[o]);
+		fun->args = {LSNull::get(), LSNull::get()};
+		fun->return_type = LSNull::get();
+		program->system_vars.insert({ops[o], fun});
+		add_var(new Token(ops[o]), op_type, nullptr, nullptr);
+	}
+
+	// Include STD modules
+	ValueSTD().include(this, program);
 	NullSTD().include(this, program);
 	BooleanSTD().include(this, program);
 	NumberSTD().include(this, program);
@@ -125,6 +127,7 @@ void SemanticAnalyser::analyse(Program* program, Context* context, std::vector<M
 	SystemSTD().include(this, program);
 	IntervalSTD().include(this, program);
 
+	// Include custom modules
 	for (Module* module : modules) {
 		module->include(this, program);
 	}
@@ -134,7 +137,7 @@ void SemanticAnalyser::analyse(Program* program, Context* context, std::vector<M
 	program->main->type.setReturnType(Type::UNKNOWN);
 	program->main->body->analyse(this, Type::UNKNOWN);
 	if (program->main->type.return_types.size() > 1) { // the body contains return instruction
-		Type return_type = program->main->body->type == Type::VOID ? Type::UNKNOWN : program->main->body->type;
+		Type return_type = program->main->body->type;
 		for (size_t i = 1; i < program->main->type.return_types.size(); ++i) {
 			return_type = Type::get_compatible_type(return_type, program->main->type.return_types[i]);
 		}
@@ -182,6 +185,10 @@ Function* SemanticAnalyser::current_function() const {
 		return nullptr;
 	}
 	return functions_stack.top();
+}
+
+void SemanticAnalyser::set_potential_return_type(Type type) {
+	current_function()->type.setReturnType(type);
 }
 
 void SemanticAnalyser::enter_loop() {

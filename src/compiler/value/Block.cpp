@@ -10,7 +10,7 @@ using namespace std;
 namespace ls {
 
 Block::Block() {
-	type = Type::NULLL;
+	type = Type::VOID;
 }
 
 Block::~Block() {
@@ -44,7 +44,7 @@ void Block::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	type = Type::VOID;
 
 	for (unsigned i = 0; i < instructions.size(); ++i) {
-		if (i < instructions.size() - 1 || req_type.nature == Nature::VOID) {
+		if (i < instructions.size() - 1) {
 			instructions[i]->analyse(analyser, Type::VOID);
 		} else {
 			instructions[i]->analyse(analyser, req_type);
@@ -63,8 +63,13 @@ void Block::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		if (req_type.nature != Nature::UNKNOWN) {
 			type.nature = req_type.nature;
 		} else {
-			type = Type::NULLL;
+			type = Type::VOID;
 		}
+	}
+	if (type == Type::GMP_INT) {
+		type = Type::GMP_INT_TMP;
+	} else if (type == Type::GMP_INT_TMP) {
+		temporary_gmp = true;
 	}
 }
 
@@ -80,22 +85,27 @@ LSValue* Block_move(LSValue* value) {
 }
 
 
-jit_value_t Block::compile(Compiler& c) const {
+Compiler::value Block::compile(Compiler& c) const {
 
 	c.enter_block();
 
 	for (unsigned i = 0; i < instructions.size(); ++i) {
-		jit_value_t val = instructions[i]->compile(c);
+
+		auto val = instructions[i]->compile(c);
+
 		if (dynamic_cast<Return*>(instructions[i])) {
 			break; // no need to compile after a return
 		}
-		if (i == instructions.size() - 1 && instructions[i]->type.nature != Nature::VOID) {
+		if (i == instructions.size() - 1 ) {
 			if (type.must_manage_memory()) {
 				jit_type_t args[1] = {LS_POINTER};
 				jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args, 1, 0);
-				jit_value_t ret = jit_insn_call_native(c.F, "true_move", (void*) Block_move, sig, &val, 1, JIT_CALL_NOTHROW);
+				jit_value_t ret = jit_insn_call_native(c.F, "true_move", (void*) Block_move, sig, &val.v, 1, JIT_CALL_NOTHROW);
 				c.leave_block(c.F);
-				return ret;
+				return {ret, type};
+			} else if (type == Type::GMP_INT_TMP && !temporary_gmp) {
+				c.leave_block(c.F);
+				return {VM::clone_gmp_int(c.F, val.v), type};
 			} else {
 				c.leave_block(c.F);
 				return val;
@@ -105,12 +115,12 @@ jit_value_t Block::compile(Compiler& c) const {
 	c.leave_block(c.F);
 
 	if (type.nature == Nature::POINTER) {
-		return VM::get_null(c.F);
+		return c.new_null();
 	}
 	if (type.nature == Nature::VALUE) {
-		return jit_value_create_nint_constant(c.F, VM::get_jit_type(type), 0);
+		return {jit_value_create_nint_constant(c.F, VM::get_jit_type(type), 0), type};
 	}
-	return nullptr;
+	return {nullptr, Type::UNKNOWN};
 }
 
 }

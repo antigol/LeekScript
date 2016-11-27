@@ -32,6 +32,8 @@ public:
 	void push_move(T value); // clone (if not temporaray) increment and push
 	void push_inc(T value); // increment (if not native) and push
 
+	int int_size();
+
 	LSArray<T>* ls_clear();
 	T ls_remove(int index);
 	bool ls_remove_element(T element);
@@ -39,14 +41,15 @@ public:
 	LSValue* ls_pop();
 	int ls_size();
 	T ls_sum();
+	T ls_product();
 	double ls_average();
 	LSValue* ls_first();
 	LSValue* ls_last();
 	int atv(const int i);
 	int* atLv(int i);
-	LSArray<LSValue*>* ls_map(const void*);
-	LSArray<int>* ls_map_int(const void*);
-	LSArray<double>* ls_map_real(const void*);
+	LSArray<LSValue*>* ls_map(LSFunction* function);
+	LSArray<int>* ls_map_int(LSFunction* function);
+	LSArray<double>* ls_map_real(LSFunction* function);
 	LSArray<LSValue*>* ls_chunk(int size = 1);
 	LSValue* ls_unique();
 	LSValue* ls_sort();
@@ -58,13 +61,13 @@ public:
 	LSArray<T>* ls_push_all_flo(LSArray<double>* array);
 	LSArray<T>* ls_shuffle();
 	LSArray<T>* ls_reverse();
-	LSArray<T>* ls_filter(const void* fun);
-	LSValue* ls_foldLeft(const void* fun, LSValue* initial);
-	LSValue* ls_foldRight(const void* fun, LSValue* initial);
+	LSArray<T>* ls_filter(LSFunction* fun);
+	LSValue* ls_foldLeft(LSFunction* function, LSValue* initial);
+	LSValue* ls_foldRight(LSFunction* function, LSValue* initial);
 	LSArray<T>* ls_insert(T value, int pos);
-	LSArray<LSValue*>* ls_partition(const void* fun);
-	LSArray<LSValue*>* ls_map2(LSArray<LSValue*>*, const void* fun);
-	LSArray<LSValue*>* ls_map2_int(LSArray<int>*, const void* fun);
+	LSArray<LSValue*>* ls_partition(LSFunction* function);
+	LSArray<LSValue*>* ls_map2(LSArray<LSValue*>*, LSFunction* function);
+	LSArray<LSValue*>* ls_map2_int(LSArray<int>*, LSFunction* function);
 	int ls_search(T needle, int start);
 	LSString* ls_join(LSString* glue);
 	LSArray<T>* ls_fill(T element, int size);

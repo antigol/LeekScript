@@ -115,7 +115,7 @@ LSValue** object_access_l(LSValue* o, LSString* k) {
 	return o->attrL(k);
 }
 
-jit_value_t ObjectAccess::compile(Compiler& c) const {
+Compiler::value ObjectAccess::compile(Compiler& c) const {
 
 	// Special case for custom attributes, accessible via a function
 	if (access_function != nullptr) {
@@ -124,46 +124,46 @@ jit_value_t ObjectAccess::compile(Compiler& c) const {
 		jit_value_t res = fun(c.F);
 
 		if (field_type.nature != Nature::POINTER and type.nature == Nature::POINTER) {
-			return VM::value_to_pointer(c.F, res, type);
+			return {VM::value_to_pointer(c.F, res, type), type};
 		}
-		return res;
+		return {res, type};
 	}
 
 	if (class_attr) {
 
 		// TODO : only functions!
-		return LS_CREATE_POINTER(c.F, new LSFunction(attr_addr));
+		return {LS_CREATE_POINTER(c.F, new LSFunction(attr_addr)), type};
 
 	} else {
 
-		jit_value_t o = object->compile(c);
+		auto o = object->compile(c);
 
 		jit_type_t args_types[2] = {LS_POINTER, LS_POINTER};
 		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_types, 2, 0);
 
 		jit_value_t k = LS_CREATE_POINTER(c.F, field_string);
-		jit_value_t args[] = {o, k};
+		jit_value_t args[] = {o.v, k};
 
 		jit_value_t res = jit_insn_call_native(c.F, "access", (void*) object_access, sig, args, 2, JIT_CALL_NOTHROW);
 
-		VM::delete_temporary(c.F, o);
-		return res;
+		VM::delete_temporary(c.F, o.v);
+		return {res, type};
 	}
 }
 
-jit_value_t ObjectAccess::compile_l(Compiler& c) const {
+Compiler::value ObjectAccess::compile_l(Compiler& c) const {
 
-	jit_value_t o = object->compile(c);
+	auto o = object->compile(c);
 
 	jit_type_t args_types[2] = {LS_POINTER, LS_POINTER};
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_types, 2, 0);
 
 	jit_value_t k = LS_CREATE_POINTER(c.F, field_string);
-	jit_value_t args[] = {o, k};
+	jit_value_t args[] = {o.v, k};
 
 	jit_value_t res = jit_insn_call_native(c.F, "access_l", (void*) object_access_l, sig, args, 2, JIT_CALL_NOTHROW);
 
-	return res;
+	return {res, type};
 }
 
 }

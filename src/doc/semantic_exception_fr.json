@@ -10,6 +10,8 @@
 	"ARRAY_ACCESS_KEY_MUST_BE_NUMBER" : "Cette clé d'accès au tableau « %s » doit être un nombre",
 	"ARRAY_ACCESS_RANGE_KEY_MUST_BE_NUMBER" : "Cette clé d'accès de plage au tableau « %s » doit être un nombre",
 	"VALUE_MUST_BE_A_LVALUE" : "Cette valeur « %s » doit être une l-value",
-	
+	"WRONG_ARGUMENT_COUNT" : "Nombre d'arguments incorrect pour appeller la fonction « %s »",
+	"NO_SUCH_OPERATOR" : "Opérateur « %s » inconnu entre ces deux types",
+
 	"UNKNOWN_ERROR" : "Erreur inconnue"
 }

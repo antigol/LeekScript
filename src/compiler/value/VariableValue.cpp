@@ -37,10 +37,10 @@ void VariableValue::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		type = var->type;
 		scope = var->scope;
 		attr_types = var->attr_types;
-		if (var->function != analyser->current_function()) {
+		if (scope != VarScope::INTERNAL and var->function != analyser->current_function()) {
 			capture_index = analyser->current_function()->capture(var);
-			std::cout << "Capture " << var->name << " : " << capture_index << std::endl;
-			type.nature = Nature::POINTER;
+//			std::cout << "Capture " << var->name << " : " << capture_index << std::endl;
+			//type.nature = Nature::POINTER;
 			scope = VarScope::CAPTURE;
   		}
 	} else {
@@ -67,6 +67,7 @@ bool VariableValue::will_take(SemanticAnalyser* analyser, const vector<Type>& ar
 	if (var != nullptr and var->value != nullptr) {
 		var->value->will_take(analyser, arg_types);
 		this->type = var->value->type;
+		var->type = this->type;
 	}
 	return false;
 }
@@ -75,6 +76,7 @@ bool VariableValue::will_store(SemanticAnalyser* analyser, const Type& type) {
 	if (var != nullptr and var->value != nullptr) {
 		var->value->will_store(analyser, type);
 		this->type = var->value->type;
+		var->type = this->type;
 	}
 	return false;
 }
@@ -100,10 +102,14 @@ void VariableValue::change_type(SemanticAnalyser*, const Type& type) {
 
 extern map<string, jit_value_t> internals;
 
-jit_value_t VariableValue::compile(Compiler& c) const {
+Compiler::value VariableValue::compile(Compiler& c) const {
 
 //	cout << "compile vv " << name->content << " : " << type << endl;
 //	cout << "req type : " << req_type << endl;
+
+	if (scope == VarScope::CAPTURE) {
+		return c.insn_get_capture(capture_index, type);
+	}
 
 	jit_value_t v;
 
@@ -115,26 +121,21 @@ jit_value_t VariableValue::compile(Compiler& c) const {
 
 		v = c.get_var(name).value;
 
-	} else if (scope == VarScope::PARAMETER) {
+	} else { /* if (scope == VarScope::PARAMETER) */
 
 		v = jit_value_get_param(c.F, 1 + var->index); // 1 offset for function ptr
-
-	} else if (scope == VarScope::CAPTURE) {
-
-		jit_value_t fun = jit_value_get_param(c.F, 0); // function pointer
-		return VM::function_get_capture(c.F, fun, capture_index);
 	}
 
 	if (var->type.nature != Nature::POINTER and type.nature == Nature::POINTER) {
-		return VM::value_to_pointer(c.F, v, var->type);
+		return {VM::value_to_pointer(c.F, v, var->type), type};
 	}
 	if (var->type.raw_type == RawType::INTEGER and type.raw_type == RawType::REAL) {
-		return VM::int_to_real(c.F, v);
+		return {VM::int_to_real(c.F, v), type};
 	}
-	return v;
+	return {v, type};
 }
 
-jit_value_t VariableValue::compile_l(Compiler& c) const {
+Compiler::value VariableValue::compile_l(Compiler& c) const {
 	return compile(c);
 }
 

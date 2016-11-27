@@ -26,6 +26,7 @@ public:
 	virtual bool isLeftValue() const;
 
 	virtual void print(std::ostream&, int indent = 0, bool debug = false) const = 0;
+	std::string to_string() const;
 
 	virtual unsigned line() const = 0;
 
@@ -36,7 +37,7 @@ public:
 	virtual void must_return(SemanticAnalyser*, const Type&);
 	virtual void analyse(SemanticAnalyser*, const Type&) = 0;
 
-	virtual jit_value_t compile(Compiler&) const = 0;
+	virtual Compiler::value compile(Compiler&) const = 0;
 
 	static std::string tabs(int indent);
 };

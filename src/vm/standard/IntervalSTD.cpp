@@ -23,7 +23,7 @@ IntervalSTD::IntervalSTD() : Module("Interval") {
 	/*
 	 * Methods
 	 */
-	Type pred_fun_type_int = Type::FUNCTION;
+	Type pred_fun_type_int = Type::FUNCTION_P;
 	pred_fun_type_int.setArgumentType(0, Type::INTEGER);
 	pred_fun_type_int.setReturnType(Type::BOOLEAN);
 

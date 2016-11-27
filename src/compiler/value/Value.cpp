@@ -42,6 +42,12 @@ std::string Value::tabs(int indent) {
 	return std::string(indent * 4, ' ');
 }
 
+std::string Value::to_string() const {
+	std::ostringstream oss;
+	oss << this;
+	return oss.str();
+}
+
 std::ostream& operator << (std::ostream& os, const Value* v) {
 	v->print(os);
 	return os;

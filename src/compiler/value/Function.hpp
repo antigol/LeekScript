@@ -44,7 +44,9 @@ public:
 
 	void analyse_body(SemanticAnalyser*, const Type& req_type);
 
-	virtual jit_value_t compile(Compiler&) const override;
+	void update_function_args(SemanticAnalyser*);
+
+	virtual Compiler::value compile(Compiler&) const override;
 };
 
 }

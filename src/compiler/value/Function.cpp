@@ -2,6 +2,8 @@
 
 #include "../semantic/SemanticAnalyser.hpp"
 #include "../../vm/value/LSFunction.hpp"
+#include "../../vm/value/LSNull.hpp"
+#include "../../vm/Program.hpp"
 #include <jit/jit-dump.h>
 using namespace std;
 
@@ -37,7 +39,7 @@ void Function::print(std::ostream& os, int indent, bool debug) const {
 		os << "[";
 		for (unsigned c = 0; c < captures.size(); ++c) {
 			if (c > 0) os << ", ";
-			os << captures[c]->name;
+			os << captures[c]->name << " " << captures[c]->type;
 		}
 		os << "] ";
 	}
@@ -81,7 +83,7 @@ void Function::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		function_added = true;
 	}
 
-	type = Type::FUNCTION;
+	type = Type::FUNCTION_P;
 
 	for (unsigned int i = 0; i < arguments.size(); ++i) {
 		type.setArgumentType(i, Type::UNKNOWN);
@@ -96,9 +98,12 @@ void Function::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	if (req_type.nature != Nature::UNKNOWN) {
 		type.nature = req_type.nature;
 	}
-	if (ls_fun == nullptr && type.nature == Nature::POINTER) {
+	if (ls_fun == nullptr) {
 		ls_fun = new LSFunction(nullptr);
+		ls_fun->return_type = LSNull::get();
 	}
+	update_function_args(analyser);
+	type.nature = Nature::POINTER;
 
 //	cout << "Function type: " << type << endl;
 }
@@ -109,9 +114,11 @@ bool Function::will_take(SemanticAnalyser* analyser, const std::vector<Type>& ar
 
 	bool changed = type.will_take(arg_types);
 
-	analyse_body(analyser, type.getReturnType());
-
+	if (changed) {
+		analyse_body(analyser, type.getReturnType());
+	}
 //	cout << "Function::will_take type after " << type << endl;
+	update_function_args(analyser);
 
 	return changed;
 }
@@ -148,8 +155,11 @@ void Function::analyse_body(SemanticAnalyser* analyser, const Type& req_type) {
 		type.setReturnType(body->type);
 	}
 
-	vars = analyser->get_local_vars();
+	if (type.getReturnType() == Type::GMP_INT) {
+		type.setReturnType(Type::GMP_INT_TMP);
+	}
 
+	vars = analyser->get_local_vars();
 	analyser->leave_function();
 
 //	cout << "function analyse body : " << type << endl;
@@ -171,7 +181,27 @@ int Function::capture(SemanticVar* var) {
 	return std::distance(captures.begin(), std::find(captures.begin(), captures.end(), var));
 }
 
-jit_value_t Function::compile(Compiler& c) const {
+void Function::update_function_args(SemanticAnalyser* analyser) {
+	ls_fun->args.clear();
+	for (unsigned int i = 0; i < arguments.size(); ++i) {
+		auto& clazz = type.getArgumentType(i).raw_type->getClass();
+		LSClass* arg_class = (LSClass*) analyser->program->system_vars[clazz];
+		if (arg_class != nullptr) {
+			ls_fun->args.push_back((LSValue*) arg_class);
+		} else {
+			ls_fun->args.push_back(LSNull::get());
+		}
+	}
+	auto return_class_name = type.getReturnType().raw_type->getClass();
+	LSClass* return_class = (LSClass*) analyser->program->system_vars[return_class_name];
+	if (return_class != nullptr) {
+		ls_fun->return_type = (LSValue*) return_class;
+	} else {
+		ls_fun->return_type = LSNull::get();
+	}
+}
+
+Compiler::value Function::compile(Compiler& c) const {
 
 //	cout << "Function::compile : " << type << endl;
 
@@ -199,10 +229,10 @@ jit_value_t Function::compile(Compiler& c) const {
 	c.enter_function(function);
 
 	// Execute function
-	jit_value_t res = body->compile(c);
+	auto res = body->compile(c);
 
 	// Return
-	jit_insn_return(function, res);
+	jit_insn_return(function, res.v);
 
 	jit_insn_rethrow_unhandled(function);
 
@@ -228,8 +258,10 @@ jit_value_t Function::compile(Compiler& c) const {
 		for (const auto& cap : captures) {
 			jit_value_t jit_cap;
 			if (cap->scope == VarScope::LOCAL) {
+//				std::cout << "capture local" << std::endl;
 				jit_cap = c.get_var(cap->name).value;
 			} else {
+//				std::cout << "capture parameter" << std::endl;
 				jit_cap = jit_value_get_param(c.F, 1 + cap->index);
 			}
 			if (cap->type.nature != Nature::POINTER) {
@@ -237,9 +269,9 @@ jit_value_t Function::compile(Compiler& c) const {
 			}
 			VM::function_add_capture(c.F, jit_fun, jit_cap);
 		}
-		return jit_fun;
+		return {jit_fun, type};
 	} else {
-		return LS_CREATE_POINTER(c.F, f);
+		return {LS_CREATE_POINTER(c.F, f), type};
 	}
 }
 

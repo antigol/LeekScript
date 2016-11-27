@@ -30,7 +30,8 @@ public:
 
 	virtual void analyse(SemanticAnalyser*, const Type& req_type) override;
 
-	virtual jit_value_t compile(Compiler&) const override;
+	virtual Compiler::value compile(Compiler&) const override;
+	
 	void compile_foreach(Compiler&c, jit_value_t container_v, jit_value_t output_v,
 						 void* fun_begin, void* fun_condition, void* fun_value, void* fun_key, void* fun_inc,
 						 jit_label_t* label_it, jit_label_t* label_end,

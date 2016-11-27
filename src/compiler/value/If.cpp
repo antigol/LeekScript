@@ -1,5 +1,6 @@
 #include "../../compiler/value/If.hpp"
 
+#include "../semantic/SemanticAnalyser.hpp"
 #include "../../compiler/value/Number.hpp"
 #include "../../vm/LSValue.hpp"
 #include "../../vm/value/LSNull.hpp"
@@ -44,24 +45,33 @@ unsigned If::line() const {
 void If::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	condition->analyse(analyser, Type::UNKNOWN);
-	then->analyse(analyser, req_type);
+	then->analyse(analyser, Type::UNKNOWN);
 
 	if (elze != nullptr) {
 
-		elze->analyse(analyser, req_type);
+		if (then->type != Type::VOID && req_type != Type::VOID) {
+			analyser->set_potential_return_type(then->type);
+		}
 
-		if (req_type == Type::VOID) {
-			type = Type::VOID;
-		} else if (then->type == Type::VOID) { // then contains return instruction
+		elze->analyse(analyser, Type::UNKNOWN);
+
+		if (elze->type != Type::VOID && req_type != Type::VOID) {
+			analyser->set_potential_return_type(elze->type);
+		}
+
+//		if (req_type == Type::VOID) {
+//			type = Type::VOID;
+//		} else
+		if (then->type == Type::VOID) { // then contains return instruction
 			type = elze->type;
 		} else if (elze->type == Type::VOID) { // elze contains return instruction
 			type = then->type;
 		} else {
 			type = Type::get_compatible_type(then->type, elze->type);
 		}
-		if (then->type != type) {
-			then->analyse(analyser, type);
-		}
+
+		then->analyse(analyser, type);
+
 		if (elze->type != type) {
 			elze->analyse(analyser, type);
 		}
@@ -78,9 +88,12 @@ void If::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	if (req_type.nature == Nature::POINTER) {
 		type.nature = req_type.nature;
 	}
+	if (type == Type::GMP_INT) {
+		type = Type::GMP_INT_TMP;
+	}
 }
 
-jit_value_t If::compile(Compiler& c) const {
+Compiler::value If::compile(Compiler& c) const {
 
 	jit_value_t res = nullptr;
 	if (type != Type::VOID) {
@@ -90,40 +103,40 @@ jit_value_t If::compile(Compiler& c) const {
 	jit_label_t label_else = jit_label_undefined;
 	jit_label_t label_end = jit_label_undefined;
 
-	jit_value_t cond = condition->compile(c);
+	auto cond = condition->compile(c);
 
 	if (condition->type.nature == Nature::POINTER) {
-		jit_value_t cond_bool = VM::is_true(c.F, cond);
+		jit_value_t cond_bool = VM::is_true(c.F, cond.v);
 		if (condition->type.must_manage_memory()) {
-			VM::delete_temporary(c.F, cond);
+			VM::delete_temporary(c.F, cond.v);
 		}
 		jit_insn_branch_if_not(c.F, cond_bool, &label_else);
 	} else {
-		jit_insn_branch_if_not(c.F, cond, &label_else);
+		jit_insn_branch_if_not(c.F, cond.v, &label_else);
 	}
 
-	jit_value_t then_v = then->compile(c);
-	if (then_v) {
-		jit_insn_store(c.F, res, then_v);
+	auto then_v = then->compile(c);
+	if (then_v.v) {
+		jit_insn_store(c.F, res, then_v.v);
 	}
 	jit_insn_branch(c.F, &label_end);
 
 	jit_insn_label(c.F, &label_else);
 
 	if (elze != nullptr) {
-		jit_value_t else_v = elze->compile(c);
-		if (else_v) {
-			jit_insn_store(c.F, res, else_v);
+		auto else_v = elze->compile(c);
+		if (else_v.v) {
+			jit_insn_store(c.F, res, else_v.v);
 		}
 	} else {
 		if (type != Type::VOID) {
-			jit_insn_store(c.F, res, VM::get_null(c.F));
+			jit_insn_store(c.F, res, c.new_null().v);
 		}
 	}
 
 	jit_insn_label(c.F, &label_end);
 
-	return res;
+	return {res, type};
 }
 
 }

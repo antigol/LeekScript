@@ -23,7 +23,7 @@ public:
 	void elements_will_take(SemanticAnalyser*, const std::vector<Type>&, int level);
 	virtual bool will_store(SemanticAnalyser* analyser, const Type& type) override;
 
-	virtual jit_value_t compile(Compiler&) const override;
+	virtual Compiler::value compile(Compiler&) const override;
 };
 
 }

@@ -157,5 +157,20 @@ void Test::test_operators() {
 	code("let a = [420987, 'a', 546] a[0] \\ a[2]").equals("771");
 	code("[420987, 'a', 546][0] \\ 12").equals("35082");
 
-
+	/*
+	 * Random operators
+	 */
+	section("Random operators");
+	std::vector<std::string> values = {
+		"0", "5", "-7", "Number.pi", "12.656", "12345678912345", "true", "false",
+		"''", "'hello'", "[]", "[1, 2, 3]", "['a', 'b', 'c']", "[12, 'a', true]",
+		"(x -> x)", "Number", "[:]", "[1: 2, 5: 12]", "[1:100]"
+	};
+	std::vector<std::string> operators = {
+		"+", "-", "/", "*", ">", "<", ">=", "<=", "==", "and", "or", "xor", "\\", "in"
+	};
+	for (int i = 0; i < 10; ++i) {
+		std::string c = values[rand() % values.size()] + " " + operators[rand() % operators.size()] + " " + values[rand() % values.size()];
+		code(c).ops_limit(1000).works();
+	}
 }

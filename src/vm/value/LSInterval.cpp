@@ -12,14 +12,14 @@ LSInterval::LSInterval() {}
 
 LSInterval::~LSInterval() {}
 
-LSArray<int>* LSInterval::ls_filter(const void* function) {
-	auto fun = (bool (*)(void*, int)) function;
+LSArray<int>* LSInterval::ls_filter(LSFunction* function) {
+	auto fun = (bool (*)(void*, int)) function->function;
 
 	LSArray<int>* new_array = new LSArray<int>();
 
 	int i = this->a;
 	while (i <= b) {
-		if (fun(nullptr, i)) new_array->push_clone(i);
+		if (fun(function, i)) new_array->push_clone(i);
 		i++;
 	}
 	if (this->refs == 0) delete this;

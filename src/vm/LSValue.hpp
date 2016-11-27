@@ -465,6 +465,8 @@ public:
 	virtual std::string json() const = 0;
 	std::string to_json() const;
 
+	LSString* ls_json();
+
 	virtual LSValue* clone() const = 0;
 	LSValue* clone_inc();
 	LSValue* move();

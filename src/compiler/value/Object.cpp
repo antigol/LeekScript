@@ -51,7 +51,7 @@ void push_object(LSObject* o, std::string* k, LSValue* v) {
 	o->addField(*k, v);
 }
 
-jit_value_t Object::compile(Compiler& c) const {
+Compiler::value Object::compile(Compiler& c) const {
 
 	jit_value_t object = VM::create_object(c.F);
 
@@ -60,12 +60,12 @@ jit_value_t Object::compile(Compiler& c) const {
 
 	for (unsigned i = 0; i < keys.size(); ++i) {
 		jit_value_t k = LS_CREATE_POINTER(c.F, &keys.at(i)->token->content);
-		jit_value_t v = values[i]->compile(c);
-		jit_value_t args[] = {object, k, v};
+		auto v = values[i]->compile(c);
+		jit_value_t args[] = {object, k, v.v};
 		jit_insn_call_native(c.F, "push", (void*) push_object, sig, args, 3, JIT_CALL_NOTHROW);
 	}
 
-	return object;
+	return {object, Type::OBJECT};
 }
 
 }

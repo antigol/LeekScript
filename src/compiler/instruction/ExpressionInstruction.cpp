@@ -26,15 +26,18 @@ void ExpressionInstruction::analyse(SemanticAnalyser* analyser, const Type& req_
 	}
 }
 
-jit_value_t ExpressionInstruction::compile(Compiler& c) const {
+Compiler::value ExpressionInstruction::compile(Compiler& c) const {
 
-	jit_value_t v = value->compile(c);
+	auto v = value->compile(c);
 
 	if (type.nature == Nature::VOID) {
 		if (value->type.must_manage_memory()) {
-			VM::delete_temporary(c.F, v);
+			VM::delete_temporary(c.F, v.v);
 		}
-		return nullptr;
+		if (value->type == Type::GMP_INT_TMP) {
+			VM::delete_gmp_int(c.F, v.v);
+		}
+		return {nullptr, Type::UNKNOWN};
 	} else {
 		return v;
 	}

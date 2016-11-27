@@ -27,7 +27,7 @@ void Break::analyse(SemanticAnalyser* analyser, const Type&) {
 	}
 }
 
-jit_value_t Break::compile(Compiler& c) const {
+Compiler::value Break::compile(Compiler& c) const {
 
 	/*	{ for {
 	 *		let x = ...
@@ -46,7 +46,7 @@ jit_value_t Break::compile(Compiler& c) const {
 
 	jit_insn_branch(c.F, c.get_current_loop_end_label(deepness));
 
-	return nullptr;
+	return {nullptr, Type::UNKNOWN};
 }
 
 }

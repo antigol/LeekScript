@@ -83,7 +83,7 @@ void For::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	analyser->leave_block();
 }
 
-jit_value_t For::compile(Compiler& c) const {
+Compiler::value For::compile(Compiler& c) const {
 
 	c.enter_block(); // { for init ; cond ; inc { body } }<-- this block
 
@@ -104,7 +104,7 @@ jit_value_t For::compile(Compiler& c) const {
 		if (dynamic_cast<Return*>(ins)) {
 			jit_value_t return_v = VM::clone_obj(c.F, output_v);
 			c.leave_block(c.F);
-			return return_v;
+			return {return_v, type};
 		}
 	}
 
@@ -112,25 +112,25 @@ jit_value_t For::compile(Compiler& c) const {
 	jit_insn_label(c.F, &label_cond);
 	VM::inc_ops(c.F, 1);
 	if (condition != nullptr) {
-		jit_value_t condition_v = condition->compile(c);
+		auto condition_v = condition->compile(c);
 		if (condition->type.nature == Nature::POINTER) {
-			jit_value_t bool_v = VM::is_true(c.F, condition_v);
+			jit_value_t bool_v = VM::is_true(c.F, condition_v.v);
 
 			if (condition->type.must_manage_memory()) {
-				VM::delete_temporary(c.F, condition_v);
+				VM::delete_temporary(c.F, condition_v.v);
 			}
 			jit_insn_branch_if_not(c.F, bool_v, &label_end);
 		} else {
-			jit_insn_branch_if_not(c.F, condition_v, &label_end);
+			jit_insn_branch_if_not(c.F, condition_v.v, &label_end);
 		}
 	}
 
 	// Body
 	c.enter_loop(&label_end, &label_inc);
-	jit_value_t body_v = body->compile(c);
-	if (output_v && body_v) {
+	auto body_v = body->compile(c);
+	if (output_v && body_v.v) {
 		// transfer the ownership of the temporary variable `body_v`
-		VM::push_move_array(c.F, type.getElementType(), output_v, body_v);
+		VM::push_move_array(c.F, type.getElementType(), output_v, body_v.v);
 	}
 	c.leave_loop();
 	jit_insn_label(c.F, &label_inc);
@@ -150,7 +150,7 @@ jit_value_t For::compile(Compiler& c) const {
 	jit_insn_label(c.F, &label_end);
 	jit_value_t return_v = VM::clone_obj(c.F, output_v);
 	c.leave_block(c.F);
-	return return_v;
+	return {return_v, type};
 }
 
 }

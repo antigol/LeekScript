@@ -69,7 +69,7 @@ VM::Result VM::execute(const std::string code, std::string ctx) {
 	VM::Result result = program->compile(*this, ctx);
 	auto compilation_end = chrono::high_resolution_clock::now();
 
-	#if DEBUG
+	#if DEBUG_PRGM_TYPES
 		std::cout << "main() " << result.program << std::endl;
 	#endif
 
@@ -122,8 +122,17 @@ VM::Result VM::execute(const std::string code, std::string ctx) {
 }
 
 jit_type_t VM::get_jit_type(const Type& type) {
+	if (type.nature == Nature::VOID) {
+		return LS_VOID;
+	}
 	if (type.nature == Nature::POINTER) {
 		return LS_POINTER;
+	}
+	if (type.raw_type == RawType::UNSIGNED_LONG) {
+		return jit_type_ulong;
+	}
+	if (type.raw_type == RawType::UNSIGNED_INTEGER) {
+		return jit_type_uint;
 	}
 	if (type.raw_type == RawType::INTEGER) {
 		return LS_INTEGER;
@@ -202,6 +211,9 @@ jit_value_t VM::value_to_pointer(jit_function_t F, jit_value_t v, Type type) {
 int VM_boolean_to_value(LSBoolean* b) {
 	return b->value;
 }
+int VM_integer_to_value(LSNumber* n) {
+	return n->value;
+}
 
 jit_value_t VM::pointer_to_value(jit_function_t F, jit_value_t v, Type type) {
 
@@ -209,6 +221,11 @@ jit_value_t VM::pointer_to_value(jit_function_t F, jit_value_t v, Type type) {
 		jit_type_t args_types[1] = {LS_POINTER};
 		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_INTEGER, args_types, 1, 0);
 		return jit_insn_call_native(F, "convert", (void*) VM_boolean_to_value, sig, &v, 1, JIT_CALL_NOTHROW);
+	}
+	if (type == Type::INTEGER) {
+		jit_type_t args_types[1] = {LS_POINTER};
+		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_INTEGER, args_types, 1, 0);
+		return jit_insn_call_native(F, "convert", (void*) VM_integer_to_value, sig, &v, 1, JIT_CALL_NOTHROW);
 	}
 	return LS_CREATE_INTEGER(F, 0);
 }
@@ -291,11 +308,6 @@ void VM::delete_temporary(jit_function_t F, jit_value_t obj) {
 	jit_insn_call_native(F, "delete_temporary", (void*) &LSValue::delete_temporary, sig, &obj, 1, JIT_CALL_NOTHROW);
 }
 
-
-void VM_operation_exception() {
-	throw vm_operation_exception();
-}
-
 void VM::inc_ops(jit_function_t F, int amount) {
 	jit_value_t amount_jit = LS_CREATE_INTEGER(F, amount);
 	inc_ops_jit(F, amount_jit);
@@ -336,10 +348,6 @@ void VM::print_gmp_int(jit_function_t F, jit_value_t val) {
 	jit_type_t args[1] = {get_jit_type(Type::GMP_INT)};
 	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_void, args, 1, 0);
 	jit_insn_call_native(F, "print_gmp_int", (void*) VM_print_gmp_int, sig, &val, 1, JIT_CALL_NOTHROW);
-}
-
-jit_value_t VM::get_null(jit_function_t F) {
-	return LS_CREATE_POINTER(F, LSNull::get());
 }
 
 LSObject* VM_create_object() {
@@ -421,10 +429,7 @@ jit_value_t VM::create_gmp_int(jit_function_t F, long value) {
 	jit_value_t jit_value = LS_CREATE_LONG(F, value);
 	VM::call(F, LS_VOID, {LS_POINTER, LS_LONG}, {gmp_addr, jit_value}, &mpz_init_set_ui);
 
-	// Increment gmp values counter
-	jit_value_t jit_counter_ptr = jit_value_create_long_constant(F, LS_POINTER, (long) &VM::gmp_values_created);
-	jit_value_t jit_counter = jit_insn_load_relative(F, jit_counter_ptr, 0, jit_type_long);
-	jit_insn_store_relative(F, jit_counter_ptr, 0, jit_insn_add(F, jit_counter, LS_CREATE_INTEGER(F, 1)));
+	VM::inc_gmp_counter(F);
 
 	return gmp_struct;
 }
@@ -468,7 +473,22 @@ void VM::delete_gmp_int(jit_function_t F, jit_value_t gmp) {
 	jit_value_t jit_counter_ptr = jit_value_create_long_constant(F, LS_POINTER, (long) &VM::gmp_values_deleted);
 	jit_value_t jit_counter = jit_insn_load_relative(F, jit_counter_ptr, 0, jit_type_long);
 	jit_insn_store_relative(F, jit_counter_ptr, 0, jit_insn_add(F, jit_counter, LS_CREATE_INTEGER(F, 1)));
+}
 
+jit_value_t VM::clone_gmp_int(jit_function_t F, jit_value_t gmp) {
+
+	jit_value_t r = VM::create_gmp_int(F);
+	jit_value_t r_addr = jit_insn_address_of(F, r);
+	jit_value_t gmp_addr = jit_insn_address_of(F, gmp);
+	VM::call(F, LS_VOID, {LS_POINTER, LS_POINTER}, {r_addr, gmp_addr}, &mpz_init_set);
+	return r;
+}
+
+void VM::inc_gmp_counter(jit_function_t F) {
+
+	jit_value_t jit_counter_ptr = jit_value_create_long_constant(F, LS_POINTER, (long) &VM::gmp_values_created);
+	jit_value_t jit_counter = jit_insn_load_relative(F, jit_counter_ptr, 0, jit_type_long);
+	jit_insn_store_relative(F, jit_counter_ptr, 0, jit_insn_add(F, jit_counter, LS_CREATE_INTEGER(F, 1)));
 }
 
 bool VM_is_true(LSValue* val) {
@@ -504,7 +524,6 @@ std::string VM::exception_message(VM::Exception expected) {
 
 void VM::function_add_capture(jit_function_t F, jit_value_t fun, jit_value_t capture) {
 	VM::call(F, LS_VOID, {LS_POINTER, LS_POINTER}, {fun, capture}, +[](LSFunction* fun, LSValue* cap) {
-		std::cout << "add capture " << fun << " " << cap << std::endl;
 		fun->add_capture(cap);
 	});
 }
@@ -512,8 +531,9 @@ void VM::function_add_capture(jit_function_t F, jit_value_t fun, jit_value_t cap
 jit_value_t VM::function_get_capture(jit_function_t F, jit_value_t fun_ptr, int capture_index) {
 	jit_value_t jit_index = LS_CREATE_INTEGER(F, capture_index);
 	return VM::call(F, LS_POINTER, {LS_POINTER, LS_INTEGER}, {fun_ptr, jit_index}, +[](LSFunction* fun, int index) {
-		std::cout << "get capture " << fun << " " << index << std::endl;
-		return fun->get_capture(index);
+		LSValue* v = fun->get_capture(index);
+//		v->refs++;
+		return v;
 	});
 }
 

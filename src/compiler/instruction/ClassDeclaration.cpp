@@ -26,8 +26,8 @@ void ClassDeclaration::analyse(SemanticAnalyser* analyser, const Type&) {
 	}
 }
 
-jit_value_t ClassDeclaration::compile(Compiler&) const {
-	return nullptr;
+Compiler::value ClassDeclaration::compile(Compiler&) const {
+	return {nullptr, Type::UNKNOWN};
 }
 
 }

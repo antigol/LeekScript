@@ -135,6 +135,9 @@ void Array::elements_will_take(SemanticAnalyser* analyser, const std::vector<Typ
 }
 
 bool Array::will_store(SemanticAnalyser* analyser, const Type& type) {
+
+//	std::cout << "Array::will_store(" << type << ")" << std::endl;
+
 	Type added_type = type;
 	if (added_type.raw_type == RawType::ARRAY) {
 		added_type = added_type.getElementType();
@@ -159,34 +162,34 @@ LSInterval* LSArray_create_interval(int a, int b) {
 	return interval;
 }
 
-jit_value_t Array::compile(Compiler& c) const {
+Compiler::value Array::compile(Compiler& c) const {
 
 	if (interval) {
 
-		jit_value_t a = expressions[0]->compile(c);
-		jit_value_t b = expressions[1]->compile(c);
+		auto a = expressions[0]->compile(c);
+		auto b = expressions[1]->compile(c);
 
 		jit_type_t args[2] = {LS_INTEGER, LS_INTEGER};
 		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args, 2, 0);
-		jit_value_t args_v[] = {a, b};
+		jit_value_t args_v[] = {a.v, b.v};
 
 		jit_value_t interval = jit_insn_call_native(c.F, "new", (void*) LSArray_create_interval, sig, args_v, 2, JIT_CALL_NOTHROW);
 
-		return interval;
+		return {interval, Type::INTERVAL};
 	}
 
 	jit_value_t array = VM::create_array(c.F, type.getElementType(), expressions.size());
 
 	for (Value* val : expressions) {
 
-		jit_value_t v = val->compile(c);
-		VM::push_move_array(c.F, type.getElementType(), array, v);
+		auto v = val->compile(c);
+		VM::push_move_array(c.F, type.getElementType(), array, v.v);
 	}
 
 	// size of the array + 1 operations
 	VM::inc_ops(c.F, expressions.size() + 1);
 
-	return array;
+	return {array, type};
 }
 
 }

@@ -28,6 +28,10 @@ public:
 	void add_capture(LSValue* value);
 	LSValue* get_capture(int index);
 
+	// For reflexion
+	std::vector<LSValue*> args;
+	LSValue* return_type;
+
 	/*
 	 * LSValue methods
 	 */

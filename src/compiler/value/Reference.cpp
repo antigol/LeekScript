@@ -39,7 +39,7 @@ void Reference::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 //	cout << "ref " << variable->content << " : " << type << endl;
 }
 
-jit_value_t Reference::compile(Compiler& c) const {
+Compiler::value Reference::compile(Compiler& c) const {
 
 //	cout << "Reference compile()" << endl;
 
@@ -69,9 +69,9 @@ jit_value_t Reference::compile(Compiler& c) const {
 	*/
 
 	if (type.nature == Nature::POINTER) {
-		return LS_CREATE_POINTER(c.F, LSNull::get());
+		return c.new_null();
 	} else {
-		return LS_CREATE_INTEGER(c.F, 0);
+		return {LS_CREATE_INTEGER(c.F, 0), type};
 	}
 }
 

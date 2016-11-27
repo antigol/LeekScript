@@ -16,6 +16,11 @@ void Test::test_booleans() {
 	code("!true").equals("false");
 	code("!false").equals("true");
 
+	section("Boolean.operator +");
+	code("true + 'salut'").equals("'truesalut'");
+	code("false + '!'").equals("'false!'");
+//	code("false + 12").semantic_error(ls::SemanticError::Type::NO_SUCH_OPERATOR, "+");
+
 	section("operator &&");
 	code("true and true").equals("true");
 	code("true and false").equals("false");
@@ -48,6 +53,14 @@ void Test::test_booleans() {
 	code("Boolean.compare([true, ''][0], [true, ''][0])").equals("0");
 	code("Boolean.compare([false, ''][0], [false, ''][0])").equals("0");
 	code("Boolean.compare([false, ''][0], [true, ''][0])").equals("-1");
+	code("true.compare(false)").equals("1");
+	code("true.compare(true)").equals("0");
+	code("false.compare(false)").equals("0");
+	code("false.compare(true)").equals("-1");
+	//code("[true, ''][0].compare([false, ''][0])").equals("1");
+	//code("[true, ''][0].compare([true, ''][0])").equals("0");
+	//code("[false, ''][0].compare([false, ''][0])").equals("0");
+	//code("[false, ''][0].compare([true, ''][0])").equals("-1");
 
 	section("Conversions");
 	code("12 and 'aaa'").equals("true");

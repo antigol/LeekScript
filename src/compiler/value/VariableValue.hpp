@@ -32,8 +32,8 @@ public:
 	void must_return(SemanticAnalyser* analyser, const Type& type) override;
 	virtual void change_type(SemanticAnalyser*, const Type&) override;
 
-	virtual jit_value_t compile(Compiler&) const override;
-	virtual jit_value_t compile_l(Compiler&) const override;
+	virtual Compiler::value compile(Compiler&) const override;
+	virtual Compiler::value compile_l(Compiler&) const override;
 };
 
 }

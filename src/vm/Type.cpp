@@ -1,4 +1,5 @@
 #include "Type.hpp"
+#include "../constants.h"
 #include <sstream>
 
 using namespace std;
@@ -11,8 +12,10 @@ const NullRawType* const RawType::NULLL = new NullRawType();
 const BooleanRawType* const RawType::BOOLEAN = new BooleanRawType();
 const NumberRawType* const RawType::NUMBER = new NumberRawType();
 const IntegerRawType* const RawType::INTEGER = new IntegerRawType();
+const IntegerRawType* const RawType::UNSIGNED_INTEGER = new IntegerRawType();
 const GmpIntRawType* const RawType::GMP_INT = new GmpIntRawType();
 const LongRawType* const RawType::LONG = new LongRawType();
+const LongRawType* const RawType::UNSIGNED_LONG = new LongRawType();
 const FloatRawType* const RawType::REAL = new FloatRawType();
 const StringRawType* const RawType::STRING = new StringRawType();
 const ArrayRawType* const RawType::ARRAY = new ArrayRawType();
@@ -31,18 +34,25 @@ const Type Type::POINTER(RawType::UNKNOWN, Nature::POINTER);
 
 const Type Type::NULLL(RawType::NULLL, Nature::POINTER, true);
 const Type Type::BOOLEAN(RawType::BOOLEAN, Nature::VALUE);
+const Type Type::BOOLEAN_P(RawType::BOOLEAN, Nature::POINTER);
+const Type Type::NUMBER_VALUE(RawType::NUMBER, Nature::VALUE);
 const Type Type::NUMBER(RawType::NUMBER, Nature::POINTER);
+const Type Type::UNSIGNED_INTEGER(RawType::UNSIGNED_INTEGER, Nature::VALUE);
 const Type Type::INTEGER(RawType::INTEGER, Nature::VALUE);
 const Type Type::GMP_INT(RawType::GMP_INT, Nature::VALUE);
 const Type Type::GMP_INT_TMP(RawType::GMP_INT, Nature::VALUE, false, true);
 const Type Type::LONG(RawType::LONG, Nature::VALUE);
+const Type Type::UNSIGNED_LONG(RawType::UNSIGNED_LONG, Nature::VALUE);
 const Type Type::REAL(RawType::REAL, Nature::VALUE);
 const Type Type::STRING(RawType::STRING, Nature::POINTER);
+const Type Type::STRING_TMP(RawType::STRING, Nature::POINTER, false, true);
 const Type Type::OBJECT(RawType::OBJECT, Nature::POINTER);
+const Type Type::ARRAY(RawType::ARRAY, Nature::POINTER);
 const Type Type::PTR_ARRAY(RawType::ARRAY, Nature::POINTER, Type::POINTER);
 const Type Type::INT_ARRAY(RawType::ARRAY, Nature::POINTER, Type::INTEGER);
 const Type Type::REAL_ARRAY(RawType::ARRAY, Nature::POINTER, Type::REAL);
 const Type Type::STRING_ARRAY(RawType::ARRAY, Nature::POINTER, Type::STRING);
+const Type Type::MAP(RawType::MAP, Nature::POINTER);
 const Type Type::PTR_PTR_MAP(RawType::MAP, Nature::POINTER, Type::POINTER, Type::POINTER);
 const Type Type::PTR_INT_MAP(RawType::MAP, Nature::POINTER, Type::POINTER, Type::INTEGER);
 const Type Type::PTR_REAL_MAP(RawType::MAP, Nature::POINTER, Type::POINTER, Type::REAL);
@@ -52,10 +62,14 @@ const Type Type::REAL_REAL_MAP(RawType::MAP, Nature::POINTER, Type::REAL, Type::
 const Type Type::INT_PTR_MAP(RawType::MAP, Nature::POINTER, Type::INTEGER, Type::POINTER);
 const Type Type::INT_INT_MAP(RawType::MAP, Nature::POINTER, Type::INTEGER, Type::INTEGER);
 const Type Type::INT_REAL_MAP(RawType::MAP, Nature::POINTER, Type::INTEGER, Type::REAL);
+const Type Type::SET(RawType::SET, Nature::POINTER);
 const Type Type::PTR_SET(RawType::SET, Nature::POINTER, Type::POINTER);
 const Type Type::INT_SET(RawType::SET, Nature::POINTER, Type::INTEGER);
 const Type Type::REAL_SET(RawType::SET, Nature::POINTER, Type::REAL);
 const Type Type::INTERVAL(RawType::INTERVAL, Nature::POINTER, Type::INTEGER);
+const Type Type::PTR_ARRAY_ARRAY(RawType::ARRAY, Nature::POINTER, Type::PTR_ARRAY);
+const Type Type::REAL_ARRAY_ARRAY(RawType::ARRAY, Nature::POINTER, Type::REAL_ARRAY);
+const Type Type::INT_ARRAY_ARRAY(RawType::ARRAY, Nature::POINTER, Type::INT_ARRAY);
 
 const Type Type::FUNCTION(RawType::FUNCTION, Nature::VALUE);
 const Type Type::FUNCTION_P(RawType::FUNCTION, Nature::POINTER);
@@ -251,6 +265,7 @@ bool Type::operator ==(const Type& type) const {
 			element_type == type.element_type &&
 			key_type == type.key_type &&
 			return_types == type.return_types &&
+			temporary == type.temporary &&
 			arguments_types == type.arguments_types;
 }
 
@@ -299,6 +314,9 @@ bool Type::compatible(const Type& type) const {
 	if (this->raw_type == RawType::ARRAY || this->raw_type == RawType::SET) {
 		const Type& e1 = this->getElementType();
 		const Type& e2 = type.getElementType();
+		if (e1 == Type::UNKNOWN) {
+			return true;
+		}
 		if (e1.nature == Nature::POINTER && e2.nature == Nature::POINTER) return true;
 		return e1 == e2;
 	}
@@ -458,12 +476,21 @@ string Type::get_nature_symbol(const Nature& nature) {
 	}
 }
 
-#define GREY "\033[0;90m"
-#define GREEN "\033[0;32m"
-#define RED "\033[1;31m"
-#define BLUE "\033[1;34m"
-#define YELLOW "\033[1;33m"
-#define END_COLOR "\033[0m"
+#if PRINT_TYPES_COLORS
+	#define GREY "\033[0;90m"
+	#define GREEN "\033[0;32m"
+	#define RED "\033[1;31m"
+	#define BLUE "\033[1;34m"
+	#define YELLOW "\033[1;33m"
+	#define END_COLOR "\033[0m"
+#else
+	#define GREY ""
+	#define GREEN ""
+	#define RED ""
+	#define BLUE ""
+	#define YELLOW ""
+	#define END_COLOR ""
+#endif
 
 ostream& operator << (ostream& os, const Type& type) {
 
@@ -482,12 +509,11 @@ ostream& operator << (ostream& os, const Type& type) {
 			os << YELLOW << "?";
 		}
 	} else if (type.raw_type == RawType::FUNCTION) {
-		os << "fun" << Type::get_nature_symbol(type.nature);
-		os << "(";
+		os << BLUE << "fun(";
 		for (unsigned t = 0; t < type.arguments_types.size(); ++t) {
 			if (t > 0) os << ", ";
 			os << type.arguments_types[t];
-			os << color;
+			os << BLUE;
 		}
 		os << ") → " << type.getReturnType();
 	} else if (type.raw_type == RawType::STRING || type.raw_type == RawType::CLASS

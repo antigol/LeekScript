@@ -21,7 +21,7 @@ public:
 
 	virtual void analyse(SemanticAnalyser* analyser, const Type& type) = 0;
 
- 	virtual jit_value_t compile(Compiler&) const = 0;
+ 	virtual Compiler::value compile(Compiler&) const = 0;
 };
 
 }

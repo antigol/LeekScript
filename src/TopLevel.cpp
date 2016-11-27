@@ -114,7 +114,7 @@ int main(int argc, char* argv[]) {
 
 	} else {
 
-		cout << "~~~ LeekScript v1.0 ~~~" << endl;
+		cout << "~~~ LeekScript v2.0 ~~~" << endl;
 		string ctx = "{}";
 
 		while (!std::cin.eof()) {

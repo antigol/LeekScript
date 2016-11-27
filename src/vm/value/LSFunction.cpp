@@ -2,6 +2,7 @@
 #include "LSNull.hpp"
 #include "LSClass.hpp"
 #include "LSNumber.hpp"
+#include "LSArray.hpp"
 
 using namespace std;
 
@@ -19,9 +20,15 @@ LSFunction::LSFunction(Json&) {
 	// TODO
 }
 
-LSFunction::~LSFunction() {}
+LSFunction::~LSFunction() {
+	for (auto capture : captures) {
+//		std::cout << "capture " << capture << " " << capture->refs << std::endl;
+		LSValue::delete_ref(capture);
+	}
+}
 
 void LSFunction::add_capture(LSValue* value) {
+	value->refs++;
 	captures.push_back(value);
 }
 
@@ -56,6 +63,16 @@ LSValue** LSFunction::atL(const LSValue*) {
 LSValue* LSFunction::attr(const LSValue* key) const {
 	if (*((LSString*) key) == "class") {
 		return getClass();
+	}
+	if (*((LSString*) key) == "args") {
+		LSArray<LSValue*>* args_list = new LSArray<LSValue*>();
+		for (const auto& arg : args) {
+			args_list->push_back(arg);
+		}
+		return args_list;
+	}
+	if (*((LSString*) key) == "return") {
+		return return_type;
 	}
 	return LSNull::get();
 }

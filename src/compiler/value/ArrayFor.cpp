@@ -27,7 +27,7 @@ void ArrayFor::analyse(SemanticAnalyser* analyser, const Type&) {
 	type = forr->type;
 }
 
-jit_value_t ArrayFor::compile(Compiler& c) const {
+Compiler::value ArrayFor::compile(Compiler& c) const {
 	return forr->compile(c);
 }
 

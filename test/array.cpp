@@ -3,7 +3,6 @@
 void Test::test_arrays() {
 
 	header("Arrays");
-
 	code("[]").equals("[]");
 	code("[1]").equals("[1]");
 	code("[1, 2, 3]").equals("[1, 2, 3]");
@@ -34,41 +33,39 @@ void Test::test_arrays() {
 	code("let a = [] !a").equals("true");
 	code("let a = [1, 2, 3] a[1] = 12 a").equals("[1, 12, 3]");
 	code("[1.2, 321.42, 23.15]").equals("[1.2, 321.42, 23.15]");
-	code("[1, 2, 3, 4, 5][1:3]").equals("[2, 3]");
+	code("[1, 2, 3, 4, 5][1:3]").equals("[2, 3, 4]");
 	code("2 in [1, 2, 3]").equals("true");
 	code("4 in [1, 2, 3]").equals("false");
 	code("'yo' in ['ya', 'yu', 'yo']").equals("true");
 	code("let a = 2 if (a in [1, 2, 3]) { 'ok' } else { 'no' }").equals("'ok'");
 	code("let a = [5, 'yolo', 12] a[1]").equals("'yolo'");
 
-	// No commas
+	section("No commas");
 	code("[1 2 3]").equals("[1, 2, 3]");
 	code("['yo' 'ya' 'yu']").equals("['yo', 'ya', 'yu']");
 	code("[true false true true]").equals("[true, false, true, true]");
+	code("[[1 2] [[3] 4 [5 6] []]]").equals("[[1, 2], [[3], 4, [5, 6], []]]");
 
-	// Type changes
+	section("Type changes");
 	code("let a = [1, 2, 3] a += 'hello' a").equals("[1, 2, 3, 'hello']");
 	code("let a = [1.5] a += ['a', 'b'] a").equals("[1.5, 'a', 'b']");
 	code("let a = [1.5] a += false a").equals("[1.5, false]");
 	code("let a = [1] a += <'z', 'a'> a").equals("[1, 'a', 'z']");
 	code("let a = [1] a += 'a' a").equals("[1, 'a']");
 
-	// Comparison
+	section("Array.operator <");
 	code("[1, 2, 3, 4] < [1, 2, 3, 5]").equals("true");
 	code("[1, 2, 4, 4] < [1, 2, 3, 5]").equals("false");
 	code("[1, 2, 3, 4.1] < [1, 2, 3, 5.1]").equals("true");
 	code("[1, 2, 4, 4.1] < [1, 2, 3, 5.1]").equals("false");
-	code("['1','2','3','4'] < ['1','2','3','5']").equals("true");
-	code("['1','2','4','4'] < ['1','2','3','5']").equals("false");
-	code("[1,2,3,4] < [1,2,3,5.1]").equals("true");
-	code("[1,2,4,4.1] < [1,2,3,5]").equals("false");
-	code("[1,2,'3'] < [1,2,3]").equals("false");
-	code("[1,1,'3'] < [1,2,3]").equals("true");
+	code("['1', '2', '3', '4'] < ['1', '2', '3', '5']").equals("true");
+	code("['1', '2', '4', '4'] < ['1', '2', '3', '5']").equals("false");
+	code("[1, 2, 3, 4] < [1, 2, 3, 5.1]").equals("true");
+	code("[1, 2, 4, 4.1] < [1, 2, 3, 5]").equals("false");
+	code("[1, 2, '3'] < [1, 2, 3]").equals("false");
+	code("[1, 1, '3'] < [1, 2, 3]").equals("true");
 
-	/*
-	 * Array operations
-	 */
-	header("Array operations");
+	section("Array operations");
 	code("[1, 2, 3, 4, 5] ~~ x -> x ** 2").equals("[1, 4, 9, 16, 25]");
 	code("[1.5, 2.5, 3.5] ~~ x -> x.floor()").equals("[1, 2, 3]");
 	code("[1, 2, 3, 4, 5] ~~ (x -> x ** 2)").equals("[1, 4, 9, 16, 25]");
@@ -89,11 +86,6 @@ void Test::test_arrays() {
 	code("[1, 2.5] == [1, 2.5]").equals("true");
 
 //	let f=x->x[0]; [f([1]), f([0..3])]
-
-	/*
-	 * Array standard library
-	 */
-	header("Array standard library");
 
 	section("Constructor");
 	code("Array").equals("<class Array>");
@@ -208,10 +200,10 @@ void Test::test_arrays() {
 	code("[null].search(null, 0)").equals("0");
 
 	section("Array.subArray()");
-	code("Array.subArray([1, 2, 3, 10, true, 'yo', null], 3, 5)").equals("[10, true]");
+	code("Array.subArray([1, 2, 3, 10, true, 'yo', null], 3, 5)").equals("[10, true, 'yo']");
 	code("Array.subArray([1, 2, 3, 10, true, 'yo', null], 3, 1)").equals("[]");
 	code("Array.subArray([1, 2, 3, 10, true, 'yo', null], 0, 100)").equals("[1, 2, 3, 10, true, 'yo', null]");
-	code("Array.subArray([1, 2, 3, 10, true, 'yo', null], 1, 1)").equals("[]");
+	code("Array.subArray([1, 2, 3, 10, true, 'yo', null], 1, 1)").equals("[2]");
 
 	section("Array.pop()");
 	code("[].pop()").equals("null");
@@ -237,6 +229,9 @@ void Test::test_arrays() {
 	code("['salut', 'ça', 'va'].join(' ')").equals("'salut ça va'");
 	code("[1, null, 'va'].join(' ')").equals("'1 null va'");
 
+	section("Array.json()");
+	code("[1, 2, 3].json()").equals("'[1,2,3]'");
+
 	section("Array.clear()");
 	code("let a = [1, 2, 3] a.clear() a").equals("[]");
 	code("let a = [1, 2, 3] Array.clear(a)").equals("[]");
@@ -261,13 +256,19 @@ void Test::test_arrays() {
 
 	section("Array.removeElement()");
 	code("let a = [1, 2, 3] a.removeElement(1) a").equals("[3, 2]");
-	code("let a = [1, 2, 3] a.removeElement('key') a").semantic_error( ls::SemanticError::METHOD_NOT_FOUND, ls::Type::INT_ARRAY.toString() + ".removeElement(" + ls::Type::STRING.toString() + ")");
+	code("let a = [1, 2, 3] a.removeElement('key') a").semantic_error( ls::SemanticError::METHOD_NOT_FOUND, ls::Type::INT_ARRAY.toString() + ".removeElement(" + ls::Type::STRING_TMP.toString() + ")");
 
 	section("Postfix expressions");
 	code("let a = [10, ''] a[0]++").equals("11");
 	code("let a = [10, ''] a[0]--").equals("9");
 	code("let v = 10 [v++, '']").equals("[10, '']");
 	code("let v = 90 [v--, '']").equals("[90, '']");
+
+	section("Range access");
+	code("[1 2 3 4 5 6 7 8][0:0]").equals("[1]");
+	code("[1 2 3 4 5 6 7 8][0:1]").equals("[1, 2]");
+	code("[1 2 3 4 5 6 7 8][3:5]").equals("[4, 5, 6]");
+	// TODO add more
 
 	/*
 	code("3 ~ x -> x ^ x").equals("27");

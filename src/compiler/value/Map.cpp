@@ -167,7 +167,7 @@ void LSMap_insert_real_float(LSMap<double, double>* map, double key, double valu
 	map->emplace(key, value);
 }
 
-jit_value_t Map::compile(Compiler &c) const {
+Compiler::value Map::compile(Compiler &c) const {
 
 	void* create = nullptr;
 	void* insert = nullptr;
@@ -201,25 +201,25 @@ jit_value_t Map::compile(Compiler &c) const {
 	jit_value_t map = jit_insn_call_native(c.F, "new_map", (void*) create, sig, {}, 0, JIT_CALL_NOTHROW); ops += 1;
 
 	for (size_t i = 0; i < keys.size(); ++i) {
-		jit_value_t k = keys[i]->compile(c);
-		jit_value_t v = values[i]->compile(c);
+		auto k = keys[i]->compile(c);
+		auto v = values[i]->compile(c);
 
 		jit_type_t args[3] = {LS_POINTER, VM::get_jit_type(type.getKeyType()), VM::get_jit_type(type.getElementType())};
 		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_void, args, 3, 0);
-		jit_value_t args_v[] = {map, k, v};
+		jit_value_t args_v[] = {map, k.v, v.v};
 		jit_insn_call_native(c.F, "insert", (void*) insert, sig, args_v, 3, JIT_CALL_NOTHROW); ops += std::log2(i + 1);
 
 		if (type.getKeyType().must_manage_memory()) {
-			VM::delete_temporary(c.F, k);
+			VM::delete_temporary(c.F, k.v);
 		}
 		if (type.getElementType().must_manage_memory()) {
-			VM::delete_temporary(c.F, v);
+			VM::delete_temporary(c.F, v.v);
 		}
 	}
 
 	VM::inc_ops(c.F, ops);
 
-	return map;
+	return {map, type};
 }
 
 }

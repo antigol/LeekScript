@@ -39,7 +39,7 @@ void Test::test_loops() {
 	code("let i = 0 let s = 0 while (i < 10) { s += i i++ } s").equals("45");
 	code("let i = 0 while (i < 100) { i++ if (i == 50) break } i").equals("50");
 	code("let i = 0 let a = 0 while (i < 10) { i++ if (i < 8) continue a++ } a").equals("3");
-	code("while (true) { break }").equals("null");
+	code("while (true) { break }").equals("(void)");
 	code("let i = 10 while (['hello', i][1]) { i-- } i").equals("0");
 
 	/*
@@ -47,8 +47,8 @@ void Test::test_loops() {
 	 */
 	header("For loops");
 //	code("for let i = 0; ; i++ {}").equals("null"); // TODO infinite loop
-	code("for let i = 0; false; i++ {}").equals("null");
-	code("for let i = 0; i < 10; i++ {}").equals("null");
+	code("for let i = 0; false; i++ {}").equals("(void)");
+	code("for let i = 0; i < 10; i++ {}").equals("(void)");
 	code("let s = 0 for let i = 0; i < 5; i++ do s += i end s").equals("10");
 	code("let s = 0 for let i = 0; i < 10; i += 2 do s += i end s").equals("20");
 	code("let i = 0 for i = 0; i < 10; i++ { } i").equals("10");
@@ -57,7 +57,7 @@ void Test::test_loops() {
 	code("let a = 0 for let i = 0; i < 10; i++ { if i < 5 { continue } a++ } a").equals("5");
 	code("let c = 0 for var t = []; t.size() < 10; t.push('x') { c++ } c").equals("10");
 	//code("let s = 0 for let m = [1 : 3, 2 : 2, 3 : 1]; m; let l = 0 for k,x in m { l = k } m.erase(l) { for x in m { s += x } } s").equals("14");
-	code("for let i = 0; ['', i < 10][1]; i++ {}").equals("null");
+	code("for let i = 0; ['', i < 10][1]; i++ {}").equals("(void)");
 
 	section("For loops with returns");
 	code("for return 12; true; null {}").equals("12");
@@ -67,9 +67,9 @@ void Test::test_loops() {
 	 * Foreach loops
 	 */
 	header("Foreach loops");
-	code("for v in [1, 2, 3, 4] {}").equals("null");
+	code("for v in [1, 2, 3, 4] {}").equals("(void)");
 	code("let s = 0 for v in [1, 2, 3, 4] { s += v } s").equals("10");
-	code("let s = 0 for v in [1.2, 2, 3.76, 4.01] { s += v } s").almost(10.969999999999998863);
+	code("let s = 0 for v in [1.2, 2, 3.76, 4.01] { s += v } s").almost(10.97);
 	code("let s = '' for v in ['salut ', 'ça ', 'va ?'] { s += v } s").equals("'salut ça va ?'");
 	code("let a = 0 let x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] for i in x { if i < 5 { continue } a++ } a").equals("5");
 	code("let s = 0 for k : v in [1, 2, 3, 4] { s += k * v } s").equals("20");

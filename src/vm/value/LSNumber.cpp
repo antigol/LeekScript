@@ -32,12 +32,12 @@ LSNumber* LSNumber::get(NUMBER_TYPE i) {
 
 std::string LSNumber::print(double d) {
 	std::string s;
-	size_t len = snprintf(0, 0, "%.18f", d);
+	size_t len = snprintf(0, 0, "%.10f", d);
 	size_t oldsize = s.size();
 	s.resize(oldsize + len + 1);
 
 	// technically non-portable
-	snprintf(&s[oldsize], len+1, "%.18f", d);
+	snprintf(&s[oldsize], len+1, "%.10f", d);
 	// remove nul terminator
 	s.pop_back();
 	// remove trailing zeros

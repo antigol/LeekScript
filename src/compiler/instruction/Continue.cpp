@@ -29,13 +29,13 @@ void Continue::analyse(SemanticAnalyser* analyser, const Type&) {
 	}
 }
 
-jit_value_t Continue::compile(Compiler& c) const {
+Compiler::value Continue::compile(Compiler& c) const {
 
 	c.delete_variables_block(c.F, c.get_current_loop_blocks(deepness));
 
 	jit_insn_branch(c.F, c.get_current_loop_cond_label(deepness));
 
-	return nullptr;
+	return {nullptr, Type::UNKNOWN};
 }
 
 }

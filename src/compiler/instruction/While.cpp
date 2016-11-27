@@ -34,7 +34,7 @@ void While::analyse(SemanticAnalyser* analyser, const Type&) {
 	analyser->leave_loop();
 }
 
-jit_value_t While::compile(Compiler& c) const {
+Compiler::value While::compile(Compiler& c) const {
 
 	jit_label_t label_cond = jit_label_undefined;
 	jit_label_t label_end = jit_label_undefined;
@@ -42,15 +42,15 @@ jit_value_t While::compile(Compiler& c) const {
 	// condition
 	jit_insn_label(c.F, &label_cond);
 	VM::inc_ops(c.F, 1);
-	jit_value_t cond = condition->compile(c);
+	auto cond = condition->compile(c);
 	if (condition->type.nature == Nature::POINTER) {
-		jit_value_t cond_bool = VM::is_true(c.F, cond);
+		jit_value_t cond_bool = VM::is_true(c.F, cond.v);
 		if (condition->type.must_manage_memory()) {
-			VM::delete_temporary(c.F, cond);
+			VM::delete_temporary(c.F, cond.v);
 		}
 		jit_insn_branch_if_not(c.F, cond_bool, &label_end);
 	} else {
-		jit_insn_branch_if_not(c.F, cond, &label_end);
+		jit_insn_branch_if_not(c.F, cond.v, &label_end);
 	}
 
 	// body
@@ -64,8 +64,7 @@ jit_value_t While::compile(Compiler& c) const {
 	// end label:
 	jit_insn_label(c.F, &label_end);
 
-
-	return nullptr;
+	return {nullptr, Type::UNKNOWN};
 }
 
 }

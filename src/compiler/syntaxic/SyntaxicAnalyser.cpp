@@ -221,7 +221,7 @@ Instruction* SyntaxicAnalyser::eatInstruction() {
 			eat();
 			if (t->type == TokenType::FINISHED or t->type == TokenType::CLOSING_BRACE
 				or t->type == TokenType::ELSE or t->type == TokenType::END) {
-				return new Return(new Nulll());
+				return new Return();
 			} else {
 				return new Return(eatExpression());
 			}
@@ -360,8 +360,7 @@ Value* SyntaxicAnalyser::eatSimpleExpression(bool pipe_opened, bool set_opened) 
 		eat();
 
 		if (t->type == TokenType::CLOSING_PARENTHESIS) {
-			eat();
-			e = new Nulll();
+			eatValue(); // error, expected a value got ')', it's wrong
 		} else {
 			e = eatExpression();
 			e->parenthesis = true;
@@ -491,8 +490,11 @@ Value* SyntaxicAnalyser::eatSimpleExpression(bool pipe_opened, bool set_opened) 
 					eat();
 				} else if (t->type == TokenType::NUMBER) {
 					oa->field = t;
-					//					oa->isNumber = true;
+					// oa->isNumber = true;
 					eat();
+				} else if (t->type == TokenType::RETURN) {
+					Token* token = eat();
+					oa->field = token;
 				} else {
 					oa->field = eatIdent();
 				}
