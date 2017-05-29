@@ -23,6 +23,12 @@ public:
 
 		void print(std::ostream&, int indent, bool debug) const;
 		jit_value_t match(Compiler &c, jit_value_t v) const;
+
+		Pattern clone() const {
+			Pattern p { begin->clone(), end->clone() };
+			p.interval = interval;
+			return p;
+		}
 	};
 
 	Value* value;
@@ -33,10 +39,12 @@ public:
 	virtual ~Match();
 
 	virtual void print(std::ostream&, int indent, bool debug = false) const override;
-	virtual unsigned line() const override;
+	virtual Location location() const override;
 
 	virtual void analyse(SemanticAnalyser*, const Type&) override;
 	virtual Compiler::value compile(Compiler&) const override;
+
+	virtual Value* clone() const override;
 };
 
 }

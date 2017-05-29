@@ -8,7 +8,6 @@
 #include "../value/LSNumber.hpp"
 #include "../value/LSArray.hpp"
 
-
 using namespace std;
 
 namespace ls {
@@ -18,8 +17,8 @@ bool string_contains(LSString* haystack, LSString* needle);
 bool string_endsWith(LSString* string, LSString* ending);
 int string_indexOf(LSString* haystack, LSString* needle);
 int string_length(LSString* string);
-LSString* string_map(LSString* string, LSFunction* fun);
-LSString* string_replace(LSString* string, LSString* from, LSString* to);
+LSString* string_map(LSString* string, LSFunction<LSValue*>* fun);
+LSValue* string_size_ptr(LSString* string);
 int string_size(LSString* string);
 LSArray<LSValue*>* string_split(LSString* string, LSString* delimiter);
 bool string_startsWith(const LSString* string, const LSString* starting);
@@ -28,10 +27,11 @@ LSValue* string_toLower(LSString* string);
 LSValue* string_toUpper(LSString* string);
 LSValue* string_toArray(const LSString* string);
 int string_begin_code(const LSString*);
+LSValue* string_begin_code_ptr(const LSString*);
 int string_code(const LSString*, int pos);
 long string_number(const LSString*);
 
-LSString* plus_gmp(LSString* s, __mpz_struct mpz) {
+LSString* plus_mpz(LSString* s, __mpz_struct mpz) {
 	char buff[1000];
 	mpz_get_str(buff, 10, &mpz);
 	LSString* res = new LSString(*s + buff);
@@ -39,80 +39,202 @@ LSString* plus_gmp(LSString* s, __mpz_struct mpz) {
 	return res;
 }
 
+LSString* plus_mpz_tmp(LSString* s, __mpz_struct mpz) {
+	char buff[1000];
+	mpz_get_str(buff, 10, &mpz);
+	LSString* res = new LSString(*s + buff);
+	LSValue::delete_temporary(s);
+	mpz_clear(&mpz);
+	VM::current()->mpz_deleted++;
+	return res;
+}
+
 StringSTD::StringSTD() : Module("String") {
 
+	LSString::string_class = clazz;
+
+	/*
+	 * Operators
+	 */
 	operator_("+", {
-		{Type::STRING, Type::GMP_INT, Type::STRING, (void*) &plus_gmp}
+		{Type::STRING, Type::INTEGER, Type::STRING, (void*) &StringSTD::add_int, Method::NATIVE},
+		{Type::STRING, Type::REAL, Type::STRING, (void*) &StringSTD::add_real, Method::NATIVE},
+		{Type::STRING, Type::MPZ, Type::STRING, (void*) &plus_mpz, Method::NATIVE},
+		{Type::STRING, Type::MPZ_TMP, Type::STRING, (void*) &plus_mpz_tmp, Method::NATIVE}
 	});
 	operator_("<", {
-		{Type::STRING, Type::STRING, Type::BOOLEAN, (void*) &StringSTD::lt, Method::NATIVE}
+		{Type::STRING, Type::STRING, Type::BOOLEAN, (void*) &StringSTD::lt}
 	});
 
-	method("charAt", Type::STRING, Type::STRING, {Type::INTEGER}, (void*) &LSString::charAt);
-	method("contains", Type::STRING, Type::BOOLEAN, {Type::STRING}, (void*) &string_contains);
-	method("endsWith", Type::STRING, Type::BOOLEAN, {Type::STRING}, (void*) &string_endsWith);
-	method("indexOf", Type::STRING, Type::INTEGER, {Type::STRING}, (void*) &string_indexOf);
-	method("isPermutation", Type::STRING, Type::BOOLEAN, {Type::POINTER}, (void*) &LSString::is_permutation);
-	method("isPalindrome", Type::STRING, Type::BOOLEAN, {}, (void*) &LSString::is_palindrome);
-	method("length", Type::STRING, Type::INTEGER, {}, (void*) &string_length);
-	method("size", Type::STRING, Type::INTEGER, {}, (void*) &string_size);
-	method("replace", Type::STRING, Type::STRING, {Type::STRING, Type::STRING}, (void*) &string_replace);
-	method("reverse", Type::STRING, Type::STRING, {}, (void*) &LSString::ls_tilde);
-	method("substring", Type::STRING, Type::STRING, {Type::INTEGER, Type::INTEGER}, (void*) &string_substring);
-	method("toArray", Type::STRING, Type::PTR_ARRAY, {}, (void*) &string_toArray);
-	method("toLower", Type::STRING, Type::STRING, {}, (void*) &string_toLower);
-	method("toUpper", Type::STRING, Type::STRING, {}, (void*) &string_toUpper);
-	method("split", Type::STRING, Type::STRING_ARRAY, {Type::STRING}, (void*) &string_split);
-	method("startsWith", Type::STRING, Type::BOOLEAN, {Type::STRING}, (void*) &string_startsWith);
+	/*
+	 * Methods
+	 */
+	method("charAt", {
+		{Type::STRING, Type::STRING, {Type::INTEGER}, (void*) &LSString::charAt, Method::NATIVE}
+	});
+	method("contains", {
+		{Type::STRING, Type::BOOLEAN, {Type::STRING}, (void*) &string_contains, Method::NATIVE}
+	});
+	method("endsWith", {
+		{Type::STRING, Type::BOOLEAN, {Type::STRING}, (void*) &string_endsWith, Method::NATIVE}
+	});
+	Type fold_fun_type = Type::FUNCTION_P;
+	fold_fun_type.setArgumentType(0, Type::POINTER);
+	fold_fun_type.setArgumentType(1, Type::STRING);
+	fold_fun_type.setReturnType(Type::POINTER);
+	method("fold", {
+		{Type::STRING, Type::POINTER, {fold_fun_type, Type::POINTER}, (void*) &LSString::ls_foldLeft, Method::NATIVE}
+	});
+	method("indexOf", {
+		{Type::STRING, Type::INTEGER, {Type::STRING}, (void*) &string_indexOf, Method::NATIVE}
+	});
+	method("isPermutation", {
+		{Type::STRING, Type::BOOLEAN, {Type::POINTER}, (void*) &LSString::is_permutation, Method::NATIVE}
+	});
+	method("isPalindrome", {
+		{Type::STRING, Type::BOOLEAN, {}, (void*) &LSString::is_palindrome, Method::NATIVE}
+	});
+	method("length", {
+		{Type::STRING, Type::INTEGER, {}, (void*) &string_length, Method::NATIVE}
+	});
+	method("size", {
+		{Type::STRING, Type::INTEGER, {}, (void*) &string_size, Method::NATIVE}
+	});
+	method("replace", {
+		{Type::STRING, Type::STRING, {Type::STRING, Type::STRING}, (void*) &StringSTD::replace, Method::NATIVE}
+	});
+	method("reverse", {
+		{Type::STRING, Type::STRING, {}, (void*) &LSString::ls_tilde, Method::NATIVE}
+	});
+	method("substring", {
+		{Type::STRING, Type::STRING, {Type::INTEGER, Type::INTEGER}, (void*) &string_substring, Method::NATIVE}
+	});
+	method("toArray", {
+		{Type::STRING, Type::PTR_ARRAY, {}, (void*) &string_toArray, Method::NATIVE}
+	});
+	method("toLower", {
+		{Type::STRING, Type::STRING, {}, (void*) &string_toLower, Method::NATIVE}
+	});
+	method("toUpper", {
+		{Type::STRING, Type::STRING, {}, (void*) &string_toUpper, Method::NATIVE}
+	});
+	method("split", {
+		{Type::STRING, Type::STRING_ARRAY, {Type::STRING}, (void*) &string_split, Method::NATIVE}
+	});
+	method("startsWith", {
+		{Type::STRING, Type::BOOLEAN, {Type::STRING}, (void*) &string_startsWith, Method::NATIVE}
+	});
 	method("code", {
-		{Type::STRING, Type::INTEGER, {}, (void*) &string_begin_code},
-		{Type::STRING, Type::INTEGER, {Type::INTEGER}, (void*) &string_code},
+		{Type::STRING, Type::INTEGER, {}, (void*) &string_begin_code, Method::NATIVE},
+		{Type::STRING, Type::INTEGER, {Type::INTEGER}, (void*) &string_code, Method::NATIVE},
 	});
-	method("number", Type::STRING, Type::LONG, {}, (void*) &string_number);
-
+	method("number", {
+		{Type::STRING, Type::LONG, {}, (void*) &string_number, Method::NATIVE}
+	});
 	Type map_fun_type = Type::FUNCTION_P;
 	map_fun_type.setArgumentType(0, Type::STRING);
 	map_fun_type.setReturnType(Type::STRING);
-	method("map", Type::STRING, Type::STRING, {map_fun_type}, (void*) &string_map);
-
-	method("sort", Type::STRING, Type::STRING, {}, (void*) &LSString::sort);
+	method("map", {
+		{Type::STRING, Type::STRING, {map_fun_type}, (void*) &string_map, Method::NATIVE}
+	});
+	method("sort", {
+		{Type::STRING, Type::STRING, {}, (void*) &LSString::sort, Method::NATIVE}
+	});
 
 	/*
 	 * Static methods
 	 */
-	static_method("charAt", Type::STRING, {Type::STRING, Type::INTEGER}, (void*) &string_charAt);
-	static_method("contains", Type::BOOLEAN, {Type::STRING, Type::STRING}, (void*) &string_contains);
-	static_method("endsWith", Type::BOOLEAN, {Type::STRING, Type::STRING}, (void*) &string_endsWith);
-	static_method("indexOf", Type::INTEGER, {Type::STRING, Type::STRING}, (void*) &string_indexOf);
-	static_method("length", Type::INTEGER, {Type::STRING}, (void*) &string_length);
-	static_method("size", Type::INTEGER, {Type::STRING}, (void*) &string_size);
-	static_method("replace", Type::STRING, {Type::STRING, Type::STRING, Type::STRING}, (void*) &string_replace);
-	static_method("reverse", Type::STRING, {Type::STRING}, (void*) &LSString::ls_tilde);
-	static_method("substring", Type::STRING, {Type::STRING, Type::INTEGER, Type::INTEGER}, (void*) &string_substring);
-	static_method("toArray", Type::PTR_ARRAY, {Type::STRING}, (void*) &string_toArray);
-	static_method("toLower", Type::STRING, {Type::STRING}, (void*) &string_toLower);
-	static_method("toUpper", Type::STRING, {Type::STRING}, (void*) &string_toUpper);
-	static_method("split", Type::STRING_ARRAY, {Type::POINTER, Type::POINTER}, (void*) &string_split);
-	static_method("startsWith", Type::BOOLEAN, {Type::STRING, Type::STRING}, (void*) &string_startsWith);
-	static_method("map", Type::STRING, {Type::STRING, map_fun_type}, (void*) &string_map);
-	static_method("code", {
-		{Type::INTEGER, {Type::POINTER}, (void*) &string_begin_code},
-		{Type::INTEGER, {Type::STRING, Type::INTEGER}, (void*) &string_code},
+	static_method("charAt", {
+		{Type::STRING, {Type::STRING, Type::INTEGER}, (void*) &string_charAt, Method::NATIVE}
 	});
-	static_method("number", Type::LONG, {Type::POINTER}, (void*) &string_number);
+	static_method("contains", {
+		{Type::BOOLEAN, {Type::STRING, Type::STRING}, (void*) &string_contains, Method::NATIVE}
+	});
+	static_method("endsWith", {
+		{Type::BOOLEAN, {Type::STRING, Type::STRING}, (void*) &string_endsWith, Method::NATIVE}
+	});
+	static_method("indexOf", {
+		{Type::INTEGER, {Type::STRING, Type::STRING}, (void*) &string_indexOf, Method::NATIVE}
+	});
+	static_method("length", {
+		{Type::INTEGER, {Type::STRING}, (void*) &string_length, Method::NATIVE}
+	});
+	static_method("size", {
+		{Type::NUMBER, {Type::STRING}, (void*) &string_size_ptr, Method::NATIVE},
+		{Type::INTEGER, {Type::STRING}, (void*) &string_size, Method::NATIVE}
+	});
+	static_method("replace", {
+		{Type::STRING, {Type::STRING, Type::STRING, Type::STRING}, (void*) &StringSTD::replace, Method::NATIVE}
+	});
+	static_method("reverse", {
+		{Type::STRING, {Type::STRING}, (void*) &LSString::ls_tilde, Method::NATIVE}
+	});
+	static_method("substring", {
+		{Type::STRING, {Type::STRING, Type::INTEGER, Type::INTEGER}, (void*) &string_substring, Method::NATIVE}
+	});
+	static_method("toArray", {
+		{Type::PTR_ARRAY, {Type::STRING}, (void*) &string_toArray, Method::NATIVE}
+	});
+	static_method("toLower", {
+		{Type::STRING, {Type::STRING}, (void*) &string_toLower, Method::NATIVE}
+	});
+	static_method("toUpper", {
+		{Type::STRING, {Type::STRING}, (void*) &string_toUpper, Method::NATIVE}
+	});
+	static_method("split", {
+		{Type::STRING_ARRAY, {Type::POINTER, Type::POINTER}, (void*) &string_split, Method::NATIVE}
+	});
+	static_method("startsWith", {
+		{Type::BOOLEAN, {Type::STRING, Type::STRING}, (void*) &string_startsWith, Method::NATIVE}
+	});
+	static_method("map", {
+		{Type::STRING, {Type::STRING, map_fun_type}, (void*) &string_map, Method::NATIVE}
+	});
+	static_method("code", {
+		{Type::POINTER, {Type::POINTER}, (void*) &string_begin_code_ptr, Method::NATIVE},
+		{Type::INTEGER, {Type::POINTER}, (void*) &string_begin_code, Method::NATIVE},
+		{Type::INTEGER, {Type::STRING, Type::INTEGER}, (void*) &string_code, Method::NATIVE},
+	});
+	static_method("number", {
+		{Type::LONG, {Type::POINTER}, (void*) &string_number, Method::NATIVE}
+	});
 }
 
 StringSTD::~StringSTD() {}
 
+/*
+ * Operators
+ */
+LSString* StringSTD::add_int(LSString* s, int i) {
+	if (s->refs == 0) {
+		s->append(std::to_string(i));
+		return s;
+	} else {
+		return new LSString(*s + std::to_string(i));
+	}
+}
+
+LSString* StringSTD::add_real(LSString* s, double i) {
+	if (s->refs == 0) {
+		s->append(LSNumber::print(i));
+		return s;
+	} else {
+		return new LSString(*s + LSNumber::print(i));
+	}
+}
+
 Compiler::value StringSTD::lt(Compiler& c, std::vector<Compiler::value> args) {
 	auto res = c.insn_call(Type::BOOLEAN, args, +[](LSValue* a, LSValue* b) {
-		return b->rlt(a);
+		return a->lt(b);
 	});
-	c.insn_delete(args[0]);
-	c.insn_delete(args[1]);
+	c.insn_delete_temporary(args[0]);
+	c.insn_delete_temporary(args[1]);
 	return res;
 }
 
+/*
+ * Methods
+ */
 LSValue* string_charAt(LSString* string, int index) {
 	LSValue* r = new LSString(string->operator[] (index));
 	LSValue::delete_temporary(string);
@@ -154,7 +276,7 @@ int string_length(LSString* string) {
 	return r;
 }
 
-LSString* string_map(LSString* s, LSFunction* function) {
+LSString* string_map(LSString* s, LSFunction<LSValue*>* function) {
 
 	char buff[5];
 	LSValue* r = new LSString();
@@ -169,14 +291,14 @@ LSString* string_map(LSString* s, LSFunction* function) {
 		u8_toutf8(buff, 5, &c, 1);
 		LSString* ch = new LSString(buff);
 		ch->refs = 1;
-		r->ls_add_eq(fun(function, ch));
+		r->add_eq(fun(function, ch));
 		LSValue::delete_ref(ch);
 	}
 	LSValue::delete_temporary(s);
 	return (LSString*) r;
 }
 
-LSString* string_replace(LSString* string, LSString* from, LSString* to) {
+LSString* StringSTD::replace(LSString* string, LSString* from, LSString* to) {
 	std::string str(*string);
 	size_t start_pos = 0;
 	while((start_pos = str.find(*from, start_pos)) != std::string::npos) {
@@ -197,14 +319,16 @@ LSString* string_replace(LSString* string, LSString* from, LSString* to) {
 
 int string_size(LSString* string) {
 	int r = string->unicode_length();
-	if (string->refs == 0) {
-		delete string;
-	}
+	LSValue::delete_temporary(string);
 	return r;
 }
 
+LSValue* string_size_ptr(LSString* string) {
+	return LSNumber::get(string_size(string));
+}
+
 LSArray<LSValue*>* string_split(LSString* string, LSString* delimiter) {
-	LSArray<LSValue*>* parts = new LSArray<LSValue*>();
+	auto parts = new LSArray<LSValue*>();
 	if (*delimiter == "") {
 		for (char c : *string) {
 			parts->push_inc(new LSString(c));
@@ -285,13 +409,19 @@ LSValue* string_toUpper(LSString* s) {
 
 int string_begin_code(const LSString* v) {
 	int r = LSString::u8_char_at((char*) v->c_str(), 0);
-	if (v->refs == 0) delete v;
+	LSValue::delete_temporary(v);
+	return r;
+}
+
+LSValue* string_begin_code_ptr(const LSString* v) {
+	auto code = string_begin_code(v);
+	auto r = LSNumber::get(code);
 	return r;
 }
 
 int string_code(const LSString* v, int pos) {
 	int r = LSString::u8_char_at((char*) v->c_str(), pos);
-	if (v->refs == 0) delete v;
+	LSValue::delete_temporary(v);
 	return r;
 }
 

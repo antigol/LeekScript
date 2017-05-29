@@ -16,7 +16,7 @@ namespace ls {
  * ------------------
  * 3| + -
  * ------------------
- * 4| < <= > >= instanceof
+ * 4| < <= > >= is
  * ------------------
  * 5| == != === !===
  * ------------------
@@ -54,14 +54,17 @@ static int operator_priorities[] = {
 	0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, /* ~ ~~ ~= ~~= */
 	0, 0, 0,
-	4, /* instanceof */
+	4, /* is */
 	0, 0, 0, 0, 0, 3, 0, 3, 0, 3, 0, 3, 0, 3, 0,
 	8, /* ?? */
 	2, /* \ */
+	0, 0, 0, 0,
+	8
 };
 
 Operator::Operator(Token* token) {
 
+	this->token.reset(token);
 	this->type = token->type;
 	this->character = token->content;
 	this->priority = operator_priorities[(int) token->type];
@@ -69,8 +72,6 @@ Operator::Operator(Token* token) {
 	this->reversed = type == TokenType::IN;
 //	cout << "operator " << character << " (" << (int)token->type << ") : " << priority << endl;
 }
-
-Operator::~Operator() {}
 
 void Operator::print(std::ostream& os) {
 	os << character;

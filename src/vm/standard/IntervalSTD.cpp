@@ -1,10 +1,3 @@
-/*
- * IntervalSTD.cpp
- *
- *  Created on: 4 nov. 2016
- *      Author: pierre
- */
-
 #include "IntervalSTD.hpp"
 
 #include "../value/LSInterval.hpp"
@@ -13,11 +6,13 @@ namespace ls {
 
 IntervalSTD::IntervalSTD() : Module("Interval") {
 
+	LSInterval::clazz = clazz;
+
 	/*
 	 * Operators
 	 */
 	operator_("in", {
-		{Type::INTERVAL, Type::INTEGER, Type::BOOLEAN, (void*) &LSInterval::in_v}
+		{Type::INTERVAL, Type::INTEGER, Type::BOOLEAN, (void*) &LSInterval::in_i, Method::NATIVE}
 	});
 
 	/*
@@ -28,7 +23,14 @@ IntervalSTD::IntervalSTD() : Module("Interval") {
 	pred_fun_type_int.setReturnType(Type::BOOLEAN);
 
 	method("filter", {
-		{Type::INTERVAL, Type::INT_ARRAY, {pred_fun_type_int}, (void*) &LSInterval::ls_filter},
+		{Type::INTERVAL, Type::INT_ARRAY, {pred_fun_type_int}, (void*) &LSInterval::ls_filter, Method::NATIVE},
+	});
+
+	method("sum", {
+		{Type::INTERVAL, Type::LONG, {}, (void*) &LSInterval::ls_sum, Method::NATIVE},
+	});
+	method("product", {
+		{Type::INTERVAL, Type::LONG, {}, (void*) &LSInterval::ls_product, Method::NATIVE},
 	});
 }
 

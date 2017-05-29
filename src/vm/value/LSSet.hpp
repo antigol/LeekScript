@@ -14,45 +14,37 @@ struct lsset_less {
 template <typename T>
 class LSSet : public LSValue, public std::set<T, lsset_less<T>> {
 public:
-	static LSValue* set_class;
+	static LSValue* clazz;
 
 	LSSet();
 	LSSet(const LSSet<T>& other);
 	virtual ~LSSet();
 
 	/*
-	 * LSSet methods;
+	 * LSSet methods
 	 */
 	int ls_size();
 	bool ls_insert(T value);
 	LSSet<T>* ls_clear();
 	bool ls_erase(T value);
 	bool ls_contains(T value);
+	template <class T2>
+	bool set_lt(const LSSet<T2>* set) const;
 
 	/*
-	 * LSValue methods;
+	 * LSValue methods
 	 */
-	virtual bool isTrue() const override;
-
-	LSVALUE_OPERATORS
-
-	virtual bool eq(const LSSet<LSValue*>*) const override;
-	virtual bool eq(const LSSet<int>*) const override;
-	virtual bool eq(const LSSet<double>*) const override;
-	virtual bool lt(const LSSet<LSValue*>*) const override;
-	virtual bool lt(const LSSet<int>*) const;
-	virtual bool lt(const LSSet<double>*) const;
-
-	bool in(T) const;
-
-	virtual LSValue* at(const LSValue* key) const override;
-	virtual LSValue** atL(const LSValue* key) override;
-	virtual std::ostream& print(std::ostream&) const override;
+ 	virtual bool to_bool() const override;
+	virtual bool ls_not() const override;
+	virtual LSValue* add_eq(LSValue* v) override;
+	bool eq(const LSValue*) const override;
+	bool lt(const LSValue*) const override;
+	bool in(const T) const;
+	int abso() const override;
+	virtual std::ostream& dump(std::ostream&) const override;
 	virtual std::string json() const override;
 	virtual LSValue* clone() const override;
 	virtual LSValue* getClass() const override;
-	virtual int typeID() const override { return 7; }
-	virtual const BaseRawType* getRawType() const override;
 };
 
 }

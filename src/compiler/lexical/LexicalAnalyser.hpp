@@ -20,10 +20,10 @@ public:
 
 	LetterType getLetterType(char32_t c);
 	TokenType getTokenType(std::string word, TokenType by_default);
-	std::vector<Token> parseTokens(std::string code);
+	std::vector<Token*> parseTokens(std::string code);
 
 	LexicalAnalyser();
-	std::vector<Token> analyse(std::string code);
+	std::vector<Token*> analyse(std::string code);
 };
 
 }

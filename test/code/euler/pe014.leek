@@ -1,20 +1,30 @@
+let N = 1000000
+var cache = [0]
+cache.fill(0, N)
+cache[1] = 1
+
 function sequence_length(n) {
-	var l = 1
-	while n != 1 {
-		l++
-		n = if (n % 2) { // TODO replace with a match (doesn't work)
-			3 * n + 1
+	if (n >= N) {
+		return if n % 2 {
+			1 + Number.int(sequence_length(n * 3 + 1));
 		} else {
-			n \ 2
+			1 + Number.int(sequence_length(n / 2));
 		}
 	}
-	l // TODO return l fails
+	var c = cache[n]
+	if c return c
+
+	return cache[n] = if n % 2 {
+		1 + Number.int(sequence_length(3 * n + 1))
+	} else {
+		1 + Number.int(sequence_length(n / 2))
+	}
 }
 
 var max = 0
 var n = 0
 
-for var i = 500001l; i <= 1000000; i += 2 {
+for var i = 1l; i < 1000000; i++ {
 	var l = sequence_length(i)
 	if l > max {
 		max = l
@@ -22,4 +32,4 @@ for var i = 500001l; i <= 1000000; i += 2 {
 	}
 }
 
-return n
+n

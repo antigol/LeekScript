@@ -13,6 +13,12 @@ public:
 	static Compiler::value lt(Compiler&, std::vector<Compiler::value>);
 
 	static Compiler::value size(Compiler&, std::vector<Compiler::value>);
+
+	static LSArray<LSValue*>* chunk_1_ptr(LSArray<LSValue*>* array);
+	static LSArray<LSValue*>* chunk_1_int(LSArray<int>* array);
+	static LSArray<LSValue*>* chunk_1_float(LSArray<double>* array);
+
+	static LSValue* sub(LSArray<LSValue*>* array, int begin, int end);
 };
 
 }

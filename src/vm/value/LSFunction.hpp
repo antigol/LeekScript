@@ -5,62 +5,49 @@
 #include <iostream>
 #include <vector>
 #include <memory>
-#include "../LSValue.hpp"
 #include <map>
 #include <jit/jit.h>
-#include "../../../lib/json.hpp"
-#include "../Type.hpp"
+#include "../LSValue.hpp"
 
 namespace ls {
 
+template <class T = LSValue*>
 class LSFunction : public LSValue {
 public:
 
-	static LSClass* function_class;
+	static LSClass* clazz;
 
 	void* function;
 	std::vector<LSValue*> captures;
+	std::vector<bool> captures_native;
+	// For reflexion
+	std::vector<LSValue*> args;
+	LSValue* return_type;
 
 	LSFunction(void* function);
-	LSFunction(Json& data);
 	virtual ~LSFunction();
 
 	void add_capture(LSValue* value);
 	LSValue* get_capture(int index);
 
-	// For reflexion
-	std::vector<LSValue*> args;
-	LSValue* return_type;
-
 	/*
 	 * LSValue methods
 	 */
-	bool isTrue() const override;
-
-	LSVALUE_OPERATORS
-
-	bool eq(const LSFunction*) const override;
-	bool lt(const LSFunction*) const override;
-
-
-	LSValue* at (const LSValue* value) const override;
-	LSValue** atL (const LSValue* value) override;
-
-	LSValue* attr(const LSValue* key) const override;
-	LSValue** attrL(const LSValue* key) override;
-
-	LSValue* clone() const;
-
-	std::ostream& print(std::ostream& os) const;
+	bool to_bool() const override;
+	bool ls_not() const override;
+	bool eq(const LSValue*) const override;
+	bool lt(const LSValue*) const override;
+	LSValue* attr(const std::string& key) const override;
+	LSValue* clone() const override;
+	std::ostream& dump(std::ostream& os) const override;
 	std::string json() const override;
-
 	LSValue* getClass() const override;
-
-	int typeID() const override { return 8; }
-
-	virtual const BaseRawType* getRawType() const override;
 };
 
 }
+
+#ifndef _GLIBCXX_EXPORT_TEMPLATE
+#include "LSFunction.tcc"
+#endif
 
 #endif

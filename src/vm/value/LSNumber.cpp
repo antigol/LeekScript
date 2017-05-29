@@ -10,23 +10,9 @@ using namespace std;
 
 namespace ls {
 
-LSClass* LSNumber::number_class = new LSClass("Number");
-
-LSNumber* LSNumber::cache[CACHE_HIGH - CACHE_LOW + 1];
-
-void LSNumber::build_cache() {
-	for (int i = CACHE_LOW; i <= CACHE_HIGH; ++i) {
-		cache[-CACHE_LOW + i] = new LSNumber(i);
-	}
-}
+LSClass* LSNumber::clazz;
 
 LSNumber* LSNumber::get(NUMBER_TYPE i) {
-#if USE_CACHE
-	if ((i == (int) i) and i >= CACHE_LOW and i <= CACHE_HIGH) {
-		return cache[(int) (-CACHE_LOW + i)];
-	}
-#endif
-//	std::cout << "Number() " << i << endl;
 	return new LSNumber(i);
 }
 
@@ -49,26 +35,40 @@ std::string LSNumber::print(double d) {
 	return s;
 }
 
-LSNumber::LSNumber() : value(0) {}
+LSNumber::LSNumber(NUMBER_TYPE value) : LSValue(NUMBER), value(value) {}
 
-LSNumber::LSNumber(NUMBER_TYPE value) : value(value) {}
+LSNumber::~LSNumber() {}
 
-LSNumber::LSNumber(Json& json) : value(json) {}
-
-LSNumber::~LSNumber() {
-//	cout << "delete LSNumber : " << value << endl;
+/*
+ * LSNumber methods
+ */
+LSValue* LSNumber::ls_fold(LSFunction<LSValue*>* function, LSValue* v0) {
+	auto fun = (LSValue* (*)(void*, LSValue*, int)) function->function;
+	LSValue* result = ls::move(v0);
+	int number = this->value;
+	while (number) {
+        int digit = number % 10;
+		result = fun(function, result, digit);
+        number /= 10;
+    }
+	LSValue::delete_temporary(this);
+	return result;
 }
 
-int LSNumber::integer() const {
-//	return mpz_get_ui(value.get_mpz_t());
-	return 0;
-}
-
-bool LSNumber::isTrue() const {
+/*
+ * LSValue methods
+ */
+bool LSNumber::to_bool() const {
 	return value != 0;
 }
 
-LSValue*LSNumber::ls_minus() {
+bool LSNumber::ls_not() const {
+	bool r = value == 0;
+	LSValue::delete_temporary(this);
+	return r;
+}
+
+LSValue* LSNumber::ls_minus() {
 	if (refs == 0) {
 		value = -value;
 		return this;
@@ -76,14 +76,7 @@ LSValue*LSNumber::ls_minus() {
 	return LSNumber::get(-value);
 }
 
-LSValue*LSNumber::ls_not() {
-	bool r = value == 0;
-	if (refs == 0) delete this;
-	return LSBoolean::get(r);
-}
-
-LSValue*LSNumber::ls_tilde() {
-
+LSValue* LSNumber::ls_tilde() {
 	if (refs == 0) {
 		value = ~ (int)value;
 		return this;
@@ -91,18 +84,12 @@ LSValue*LSNumber::ls_tilde() {
 	return LSNumber::get(~ (int)value);
 }
 
-LSValue*LSNumber::ls_preinc() {
-	// ++x
+LSValue* LSNumber::ls_preinc() {
 	value += 1;
 	return this;
 }
 
 LSValue* LSNumber::ls_inc() {
-	// x++
-	if (refs == 0) {
-		value += 1;
-		return this;
-	}
 	LSValue* r = LSNumber::get(value);
 	value += 1;
 	return r;
@@ -114,65 +101,84 @@ LSValue* LSNumber::ls_predec() {
 }
 
 LSValue* LSNumber::ls_dec() {
-	if (refs == 0) {
-		value -= 1;
-		return this;
-	}
 	LSValue* r = LSNumber::get(value);
 	value -= 1;
 	return r;
 }
 
-LSValue* LSNumber::ls_add(LSNull*) {
-	LSValue::delete_temporary(this);
-	return LSNull::get();
-}
-LSValue* LSNumber::ls_add(LSBoolean* boolean) {
-	if (boolean->value) {
+LSValue* LSNumber::add(LSValue* v) {
+	if (v->type == NUMBER) {
+		auto number = static_cast<LSNumber*>(v);
 		if (refs == 0) {
-			this->value += 1;
+			value += number->value;
+			LSValue::delete_temporary(number);
 			return this;
 		}
-		return LSNumber::get(value + 1);
+		if (number->refs == 0) {
+			number->value += value;
+			return number;
+		}
+		return LSNumber::get(this->value + number->value);
 	}
-	return this;
-}
-LSValue* LSNumber::ls_add(LSString* string) {
+	if (v->type == BOOLEAN) {
+		auto boolean = static_cast<LSBoolean*>(v);
+		if (boolean->value) {
+			if (refs == 0) {
+				this->value += 1;
+				return this;
+			}
+			return LSNumber::get(value + 1);
+		}
+		return this;
+	}
+	if (v->type != STRING) {
+		LSValue::delete_temporary(this);
+		LSValue::delete_temporary(v);
+		jit_exception_throw(new vm::ExceptionObj(vm::Exception::NO_SUCH_OPERATOR));
+	}
+	auto string = static_cast<LSString*>(v);
 	LSValue* r = new LSString(toString() + *string);
-	if (refs == 0) delete this;
-	if (string->refs == 0) delete string;
+	LSValue::delete_temporary(this);
+	LSValue::delete_temporary(string);
 	return r;
 }
-LSValue* LSNumber::ls_add(LSNumber* number) {
-	if (refs == 0) {
+
+LSValue* LSNumber::add_eq(LSValue* v) {
+	if (v->type == NUMBER) {
+		auto number = static_cast<LSNumber*>(v);
 		value += number->value;
 		if (number->refs == 0) delete number;
 		return this;
 	}
-	if (number->refs == 0) {
-		number->value += value;
-		return number;
+	if (v->type != BOOLEAN) {
+		LSValue::delete_temporary(v);
+		jit_exception_throw(new vm::ExceptionObj(vm::Exception::NO_SUCH_OPERATOR));
 	}
-	return LSNumber::get(this->value + number->value);
-}
-
-LSValue* LSNumber::ls_add_eq(LSNull*) {
-	return LSNull::get();
-}
-LSValue* LSNumber::ls_add_eq(LSBoolean* boolean) {
+	auto boolean = static_cast<LSBoolean*>(v);
 	value += boolean->value;
 	return this;
 }
-LSValue* LSNumber::ls_add_eq(LSNumber* number) {
-	value += number->value;
-	if (number->refs == 0) delete number;
-	return this;
-}
 
-LSValue* LSNumber::ls_sub(LSNull*) {
-	return LSNull::get();
-}
-LSValue* LSNumber::ls_sub(LSBoolean* boolean) {
+LSValue* LSNumber::sub(LSValue* v) {
+	if (v->type == NUMBER) {
+		auto number = static_cast<LSNumber*>(v);
+		if (refs == 0) {
+			value -= number->value;
+			if (number->refs == 0) delete number;
+			return this;
+		}
+		if (number->refs == 0) {
+			number->value = this->value - number->value;
+			return number;
+		}
+		return LSNumber::get(this->value - number->value);
+	}
+	if (v->type != BOOLEAN) {
+		LSValue::delete_temporary(this);
+		LSValue::delete_temporary(v);
+		jit_exception_throw(new vm::ExceptionObj(vm::Exception::NO_SUCH_OPERATOR));
+	}
+	auto boolean = static_cast<LSBoolean*>(v);
 	if (boolean->value) {
 		if (refs == 0) {
 			this->value -= 1;
@@ -182,90 +188,102 @@ LSValue* LSNumber::ls_sub(LSBoolean* boolean) {
 	}
 	return this;
 }
-LSValue* LSNumber::ls_sub(LSNumber* number) {
-	if (refs == 0) {
+
+LSValue* LSNumber::sub_eq(LSValue* v) {
+	if (v->type == NUMBER) {
+		auto number = static_cast<LSNumber*>(v);
 		value -= number->value;
+		LSValue::delete_temporary(number);
 		return this;
 	}
-	if (number->refs == 0) {
-		number->value = this->value - number->value;
-		return number;
+	if (v->type != BOOLEAN) {
+		LSValue::delete_temporary(v);
+		jit_exception_throw(new vm::ExceptionObj(vm::Exception::NO_SUCH_OPERATOR));
 	}
-	return LSNumber::get(this->value - number->value);
-}
-
-LSValue* LSNumber::ls_sub_eq(LSNull*) {
-	return this;
-}
-LSValue* LSNumber::ls_sub_eq(LSBoolean* boolean) {
+	auto boolean = static_cast<LSBoolean*>(v);
 	value -= boolean->value;
 	return this;
 }
-LSValue* LSNumber::ls_sub_eq(LSNumber* number) {
-	value -= number->value;
-	if (number->refs == 0) delete number;
-	return this;
-}
 
-LSValue* LSNumber::ls_mul(LSNull*) {
-	LSValue::delete_temporary(this);
-	return LSNull::get();
-}
-LSValue* LSNumber::ls_mul(LSBoolean* boolean) {
-	if (boolean->value) {
-		return this;
+LSValue* LSNumber::mul(LSValue* v) {
+	if (v->type == NUMBER) {
+		auto number = static_cast<LSNumber*>(v);
+		if (refs == 0) {
+			value *= number->value;
+			if (number->refs == 0) delete number;
+			return this;
+		}
+		if (number->refs == 0) {
+			number->value *= value;
+			return number;
+		}
+		return LSNumber::get(value * number->value);
 	}
-	if (refs == 0) {
-		value = 0;
-		return this;
+	if (v->type == BOOLEAN) {
+		auto boolean = static_cast<LSBoolean*>(v);
+		if (boolean->value) {
+			return this;
+		}
+		if (refs == 0) {
+			value = 0;
+			return this;
+		}
+		return LSNumber::get(0);
 	}
-	return LSNumber::get(0);
-}
-LSValue* LSNumber::ls_mul(LSNumber* number) {
-	if (refs == 0) {
-		value *= number->value;
-		if (number->refs == 0) delete number;
-		return this;
+	if (v->type != STRING) {
+		LSValue::delete_temporary(this);
+		LSValue::delete_temporary(v);
+		jit_exception_throw(new vm::ExceptionObj(vm::Exception::NO_SUCH_OPERATOR));
 	}
-	if (number->refs == 0) {
-		number->value *= value;
-		return number;
-	}
-	return LSNumber::get(value * number->value);
-}
-
-LSValue*LSNumber::ls_mul(LSString* str) {
-	string r;
+	auto string = static_cast<LSString*>(v);
+	std::string r;
 	for (int i = 0; i < value; ++i) {
-		r += *str;
+		r += *string;
 	}
 	if (refs == 0) delete this;
-
-	if (str->refs == 0) {
-		*str = r;
-		return str;
+	if (string->refs == 0) {
+		*string = r;
+		return string;
 	}
 	return new LSString(r);
 }
 
-LSValue* LSNumber::ls_mul_eq(LSNull*) {
-	return LSNull::get();
-}
-LSValue* LSNumber::ls_mul_eq(LSBoolean* boolean) {
+LSValue* LSNumber::mul_eq(LSValue* v) {
+	if (v->type == NUMBER) {
+		auto number = static_cast<LSNumber*>(v);
+		value *= number->value;
+		LSValue::delete_temporary(number);
+		return this;
+	}
+	if (v->type != BOOLEAN) {
+		LSValue::delete_temporary(v);
+		jit_exception_throw(new vm::ExceptionObj(vm::Exception::NO_SUCH_OPERATOR));
+	}
+	auto boolean = static_cast<LSBoolean*>(v);
 	value *= boolean->value;
 	return this;
 }
-LSValue* LSNumber::ls_mul_eq(LSNumber* number) {
-	value *= number->value;
-	if (number->refs == 0) delete number;
-	return this;
-}
 
-LSValue* LSNumber::ls_div(LSNull*) {
-	LSValue::delete_temporary(this);
-	return LSNull::get();
-}
-LSValue* LSNumber::ls_div(LSBoolean* boolean) {
+LSValue* LSNumber::div(LSValue* v) {
+	if (v->type == NUMBER) {
+		auto number = static_cast<LSNumber*>(v);
+		if (refs == 0) {
+			value /= number->value;
+			if (number->refs == 0) delete number;
+			return this;
+		}
+		if (number->refs == 0) {
+			number->value = value / number->value;
+			return number;
+		}
+		return LSNumber::get(value / number->value);
+	}
+	if (v->type != BOOLEAN) {
+		LSValue::delete_temporary(this);
+		LSValue::delete_temporary(v);
+		jit_exception_throw(new vm::ExceptionObj(vm::Exception::NO_SUCH_OPERATOR));
+	}
+	auto boolean = static_cast<LSBoolean*>(v);
 	if (boolean->value) {
 		return this;
 	}
@@ -276,57 +294,99 @@ LSValue* LSNumber::ls_div(LSBoolean* boolean) {
 	return LSNumber::get(NAN);
 }
 
-LSValue* LSNumber::ls_div(LSNumber* number) {
-	if (refs == 0) {
+LSValue* LSNumber::div_eq(LSValue* v) {
+	if (v->type == NUMBER) {
+		auto number = static_cast<LSNumber*>(v);
 		value /= number->value;
-		if (number->refs == 0) delete number;
+		LSValue::delete_temporary(number);
 		return this;
 	}
-	if (number->refs == 0) {
-		number->value = value / number->value;
-		return number;
+	if (v->type != BOOLEAN) {
+		LSValue::delete_temporary(v);
+		jit_exception_throw(new vm::ExceptionObj(vm::Exception::NO_SUCH_OPERATOR));
 	}
-	return LSNumber::get(value / number->value);
-}
-
-LSValue* LSNumber::ls_int_div(LSNumber* number) {
-	if (refs == 0) {
-		value /= number->value;
-		value = floor(value);
-		if (number->refs == 0) delete number;
-		return this;
-	}
-	if (number->refs == 0) {
-		number->value = floor(value / number->value);
-		return number;
-	}
-	return LSNumber::get(floor(value / number->value));
-}
-
-LSValue* LSNumber::ls_div_eq(LSNull*) {
-	value = NAN;
-	return this;
-}
-LSValue* LSNumber::ls_div_eq(LSBoolean* boolean) {
+	auto boolean = static_cast<LSBoolean*>(v);
 	if (!boolean->value) {
 		value = NAN;
 	}
 	return this;
 }
-LSValue* LSNumber::ls_div_eq(LSNumber* number) {
-	value /= number->value;
-	if (number->refs == 0) delete number;
+
+LSValue* LSNumber::int_div(LSValue* v) {
+	if (v->type == NUMBER) {
+		auto number = static_cast<LSNumber*>(v);
+		if (refs == 0) {
+			value /= number->value;
+			value = floor(value);
+			LSValue::delete_temporary(number);
+			return this;
+		}
+		if (number->refs == 0) {
+			number->value = floor(value / number->value);
+			return number;
+		}
+		return LSNumber::get(floor(value / number->value));
+	}
+	if (v->type != BOOLEAN) {
+		LSValue::delete_temporary(this);
+		LSValue::delete_temporary(v);
+		jit_exception_throw(new vm::ExceptionObj(vm::Exception::NO_SUCH_OPERATOR));
+	}
+	auto boolean = static_cast<LSBoolean*>(v);
+	if (!boolean->value) {
+		LSValue::delete_temporary(this);
+		LSValue::delete_temporary(v);
+		jit_exception_throw(new vm::ExceptionObj(vm::Exception::DIVISION_BY_ZERO));
+	}
+	if (refs == 0) {
+		value = floor(value);
+		return this;
+	}
+	return LSNumber::get(floor(value));
+}
+
+LSValue* LSNumber::int_div_eq(LSValue* v) {
+	if (v->type == NUMBER) {
+		auto number = static_cast<LSNumber*>(v);
+		value /= number->value;
+		value = floor(value);
+		LSValue::delete_temporary(number);
+		return this;
+	}
+	if (v->type != BOOLEAN) {
+		LSValue::delete_temporary(this);
+		LSValue::delete_temporary(v);
+		jit_exception_throw(new vm::ExceptionObj(vm::Exception::NO_SUCH_OPERATOR));
+	}
+	auto boolean = static_cast<LSBoolean*>(v);
+	if (!boolean->value) {
+		LSValue::delete_temporary(v);
+		jit_exception_throw(new vm::ExceptionObj(vm::Exception::DIVISION_BY_ZERO));
+	}
+	value = floor(value);
 	return this;
 }
 
-LSValue* LSNumber::ls_pow(LSNull*) {
-	if (refs == 0) {
-		value = 1;
-		return this;
+LSValue* LSNumber::pow(LSValue* v) {
+	if (v->type == NUMBER) {
+		auto number = static_cast<LSNumber*>(v);
+		if (refs == 0) {
+			value = std::pow(value, number->value);
+			if (number->refs == 0) delete number;
+			return this;
+		}
+		if (number->refs == 0) {
+			number->value = std::pow(value, number->value);
+			return number;
+		}
+		return LSNumber::get(std::pow(value, number->value));
 	}
-	return LSNumber::get(1);
-}
-LSValue* LSNumber::ls_pow(LSBoolean* boolean) {
+	if (v->type != BOOLEAN) {
+		LSValue::delete_temporary(this);
+		LSValue::delete_temporary(v);
+		jit_exception_throw(new vm::ExceptionObj(vm::Exception::NO_SUCH_OPERATOR));
+	}
+	auto boolean = static_cast<LSBoolean*>(v);
 	if (boolean->value) {
 		return this;
 	}
@@ -336,102 +396,98 @@ LSValue* LSNumber::ls_pow(LSBoolean* boolean) {
 	}
 	return LSNumber::get(1);
 }
-LSValue* LSNumber::ls_pow(LSNumber* number) {
-	if (refs == 0) {
-		value = pow(value, number->value);
-		if (number->refs == 0) delete number;
+
+LSValue* LSNumber::pow_eq(LSValue* v) {
+	if (v->type == NUMBER) {
+		auto number = static_cast<LSNumber*>(v);
+		value = std::pow(value, number->value);
+		LSValue::delete_temporary(number);
 		return this;
 	}
-	if (number->refs == 0) {
-		number->value = pow(value, number->value);
-		return number;
+	if (v->type != BOOLEAN) {
+		LSValue::delete_temporary(v);
+		jit_exception_throw(new vm::ExceptionObj(vm::Exception::NO_SUCH_OPERATOR));
 	}
-	return LSNumber::get(pow(value, number->value));
-}
-
-LSValue* LSNumber::ls_pow_eq(LSNull*) {
-	value = 1;
-	return this;
-}
-LSValue* LSNumber::ls_pow_eq(LSBoolean* boolean) {
+	auto boolean = static_cast<LSBoolean*>(v);
 	if (!boolean->value) value = 1;
 	return this;
 }
-LSValue* LSNumber::ls_pow_eq(LSNumber* number) {
-	value = pow(value, number->value);
-	if (number->refs == 0) delete number;
-	return this;
+
+LSValue* LSNumber::mod(LSValue* v) {
+	if (v->type == NUMBER) {
+		auto number = static_cast<LSNumber*>(v);
+		if (refs == 0) {
+			value = fmod(value, number->value);
+			LSValue::delete_temporary(number);
+			return this;
+		}
+		if (number->refs == 0) {
+			number->value = fmod(value, number->value);
+			return number;
+		}
+		return LSNumber::get(fmod(value, number->value));
+	}
+	if (v->type != BOOLEAN) {
+		LSValue::delete_temporary(this);
+		LSValue::delete_temporary(v);
+		jit_exception_throw(new vm::ExceptionObj(vm::Exception::NO_SUCH_OPERATOR));
+	}
+	if (refs == 0) {
+		value = 0;
+		return this;
+	}
+	return LSNumber::get(0);
 }
 
-LSValue* LSNumber::ls_mod(LSNull*) {
-	if (refs == 0) {
-		value = 0;
-		return this;
-	}
-	return LSNumber::get(0);
-}
-LSValue* LSNumber::ls_mod(LSBoolean*) {
-	if (refs == 0) {
-		value = 0;
-		return this;
-	}
-	return LSNumber::get(0);
-}
-LSValue* LSNumber::ls_mod(LSNumber* number) {
-	if (refs == 0) {
+LSValue* LSNumber::mod_eq(LSValue* v) {
+	if (v->type == NUMBER) {
+		auto number = static_cast<LSNumber*>(v);
 		value = fmod(value, number->value);
-		if (number->refs == 0) delete number;
+		LSValue::delete_temporary(number);
 		return this;
 	}
-	if (number->refs == 0) {
-		number->value = fmod(value, number->value);
-		return number;
+	if (v->type != BOOLEAN) {
+		LSValue::delete_temporary(v);
+		jit_exception_throw(new vm::ExceptionObj(vm::Exception::NO_SUCH_OPERATOR));
 	}
-	return LSNumber::get(fmod(value, number->value));
-}
-
-LSValue* LSNumber::ls_mod_eq(LSNull*) {
 	value = 0;
 	return this;
 }
-LSValue* LSNumber::ls_mod_eq(LSBoolean*) {
-	value = 0;
-	return this;
-}
-LSValue* LSNumber::ls_mod_eq(LSNumber* number) {
-	value = fmod(value, number->value);
-	if (number->refs == 0) delete number;
-	return this;
+
+bool LSNumber::operator == (int v) const {
+	return value == v;
 }
 
-bool LSNumber::eq(const LSNumber* number) const {
-	return this->value == number->value;
+bool LSNumber::operator == (double v) const {
+	return value == v;
 }
 
-bool LSNumber::lt(const LSNumber* number) const {
-	return this->value < number->value;
+bool LSNumber::operator < (int v) const {
+	return value < v;
 }
 
-LSValue* LSNumber::at(const LSValue*) const {
-	return LSNull::get();
+bool LSNumber::operator < (double v) const {
+	return value < v;
 }
 
-LSValue** LSNumber::atL(const LSValue*) {
-	return nullptr;
-}
-
-LSValue* LSNumber::attr(const LSValue* key) const {
-	if (*((LSString*) key) == "class") {
-		return getClass();
+bool LSNumber::eq(const LSValue* v) const {
+	if (v->type == NUMBER) {
+		auto number = static_cast<const LSNumber*>(v);
+		return this->value == number->value;
 	}
-	return LSNull::get();
-}
-LSValue** LSNumber::attrL(const LSValue*) {
-	return nullptr;
+	return false;
 }
 
-LSValue* LSNumber::abso() const {
-	return LSNumber::get(abs((int) value));
+bool LSNumber::lt(const LSValue* v) const {
+	if (v->type == NUMBER) {
+		auto number = static_cast<const LSNumber*>(v);
+		return this->value < number->value;
+	}
+	return LSValue::lt(v);
+}
+
+int LSNumber::abso() const {
+	return abs((int) value);
 }
 
 LSValue* LSNumber::clone() const {
@@ -444,7 +500,7 @@ bool LSNumber::isInteger() const {
 
 string LSNumber::toString() const {
 
-	if (isInteger()) return to_string((int)value);
+	if (isInteger()) return std::to_string((int)value);
 
 	return LSNumber::print(value);
 }
@@ -452,17 +508,13 @@ string LSNumber::json() const {
 	return toString();
 }
 
-std::ostream& LSNumber::print(std::ostream& os) const {
+std::ostream& LSNumber::dump(std::ostream& os) const {
 	os << toString();
 	return os;
 }
 
 LSValue* LSNumber::getClass() const {
-	return LSNumber::number_class;
-}
-
-const BaseRawType* LSNumber::getRawType() const {
-	return RawType::INTEGER;
+	return LSNumber::clazz;
 }
 
 }

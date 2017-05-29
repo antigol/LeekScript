@@ -1,5 +1,4 @@
 #include "Array.hpp"
-#include "../../vm/VM.hpp"
 #include "../../vm/value/LSArray.hpp"
 #include "../../vm/value/LSInterval.hpp"
 #include <math.h>
@@ -13,7 +12,7 @@ Array::Array() {
 }
 
 Array::~Array() {
-	for (auto ex : expressions) {
+	for (const auto& ex : expressions) {
 		delete ex;
 	}
 }
@@ -42,8 +41,8 @@ void Array::print(std::ostream& os, int indent, bool debug) const {
 	}
 }
 
-unsigned Array::line() const {
-	return 0;
+Location Array::location() const {
+	return {opening_bracket->location.start, closing_bracket->location.end};
 }
 
 void Array::analyse(SemanticAnalyser* analyser, const Type&) {
@@ -62,14 +61,20 @@ void Array::analyse(SemanticAnalyser* analyser, const Type&) {
 
 			Type element_type = Type::UNKNOWN;
 			Type supported_type = Type::UNKNOWN;
+			auto homogeneous = true;
 
+			// First analyse pass
 			for (size_t i = 0; i < expressions.size(); ++i) {
 
 				Value* ex = expressions[i];
+				ex->will_be_in_array(analyser);
 				ex->analyse(analyser, Type::UNKNOWN);
 
 				if (ex->constant == false) {
 					constant = false;
+				}
+				if (element_type != Type::UNKNOWN and element_type != ex->type) {
+					homogeneous = false;
 				}
 				element_type = Type::get_compatible_type(element_type, ex->type);
 			}
@@ -89,16 +94,33 @@ void Array::analyse(SemanticAnalyser* analyser, const Type&) {
 			}
 
 			// Re-analyze expressions with the supported type
+			// and second computation of the array type
+			element_type = Type::UNKNOWN;
 			for (size_t i = 0; i < expressions.size(); ++i) {
-				expressions[i]->analyse(analyser, supported_type);
+				auto ex = expressions[i];
+				ex->analyse(analyser, supported_type);
+				if (!homogeneous and ex->type.raw_type == RawType::ARRAY) {
+					// If the array stores other arrays of different types,
+					// force those arrays to store pointers. (To avoid having
+					// unknown array<int> inside arrays.
+					ex->will_store(analyser, Type::POINTER);
+				}
+				if (ex->type.raw_type == RawType::FUNCTION) {
+					std::vector<Type> types;
+					for (unsigned p = 0; p < ex->type.getArgumentTypes().size(); ++p) {
+						types.push_back(Type::POINTER);
+					}
+					if (types.size() > 0) {
+						ex->will_take(analyser, types, 1);
+					}
+					// e.g. Should compile a generic version
+					ex->must_return(analyser, Type::POINTER);
+				}
+				if (element_type == Type::UNKNOWN or !element_type.compatible(ex->type)) {
+					element_type = Type::get_compatible_type(element_type, ex->type);
+				}
 			}
 
-			// Second computation of the array type
-			element_type = Type::UNKNOWN;
-			for (unsigned i = 0; i < expressions.size(); ++i) {
-				Value* ex = expressions[i];
-				element_type = Type::get_compatible_type(element_type, ex->type);
-			}
 			element_type.temporary = false;
 			type.setElementType(element_type);
 		}
@@ -115,7 +137,7 @@ void Array::elements_will_take(SemanticAnalyser* analyser, const std::vector<Typ
 		if (arr != nullptr && level > 0) {
 			arr->elements_will_take(analyser, arg_types, level - 1);
 		} else {
-			expressions[i]->will_take(analyser, arg_types);
+			expressions[i]->will_take(analyser, arg_types, 1);
 		}
 	}
 
@@ -136,10 +158,8 @@ void Array::elements_will_take(SemanticAnalyser* analyser, const std::vector<Typ
 
 bool Array::will_store(SemanticAnalyser* analyser, const Type& type) {
 
-//	std::cout << "Array::will_store(" << type << ")" << std::endl;
-
 	Type added_type = type;
-	if (added_type.raw_type == RawType::ARRAY) {
+	if (added_type.raw_type == RawType::ARRAY or added_type.raw_type == RawType::SET) {
 		added_type = added_type.getElementType();
 	}
 	Type current_type = this->type.getElementType();
@@ -152,44 +172,48 @@ bool Array::will_store(SemanticAnalyser* analyser, const Type& type) {
 	for (size_t i = 0; i < expressions.size(); ++i) {
 		expressions[i]->analyse(analyser, this->type.getElementType());
 	}
+	this->types = type;
 	return false;
-}
-
-LSInterval* LSArray_create_interval(int a, int b) {
-	LSInterval* interval = new LSInterval();
-	interval->a = a;
-	interval->b = b;
-	return interval;
 }
 
 Compiler::value Array::compile(Compiler& c) const {
 
 	if (interval) {
-
-		auto a = expressions[0]->compile(c);
-		auto b = expressions[1]->compile(c);
-
-		jit_type_t args[2] = {LS_INTEGER, LS_INTEGER};
-		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args, 2, 0);
-		jit_value_t args_v[] = {a.v, b.v};
-
-		jit_value_t interval = jit_insn_call_native(c.F, "new", (void*) LSArray_create_interval, sig, args_v, 2, JIT_CALL_NOTHROW);
-
-		return {interval, Type::INTERVAL};
+		Compiler::value a = {expressions[0]->compile(c).v, Type::INTEGER};
+		Compiler::value b = {expressions[1]->compile(c).v, Type::INTEGER};
+		return c.insn_call(Type::INTERVAL, {a, b}, +[](int a, int b) {
+			// TODO a better constructor?
+			LSInterval* interval = new LSInterval();
+			interval->a = a;
+			interval->b = b;
+			return interval;
+		});
 	}
 
-	jit_value_t array = VM::create_array(c.F, type.getElementType(), expressions.size());
+	Compiler::value array = {VM::create_array(c.F, type.getElementType(), expressions.size()), type};
 
 	for (Value* val : expressions) {
-
 		auto v = val->compile(c);
-		VM::push_move_array(c.F, type.getElementType(), array, v.v);
+		val->compile_end(c);
+		v = c.insn_move(v);
+		c.insn_push_array(array, {v.v, type.getElementType()});
 	}
 
 	// size of the array + 1 operations
-	VM::inc_ops(c.F, expressions.size() + 1);
+	c.inc_ops(expressions.size() + 1);
 
-	return {array, type};
+	return array;
+}
+
+Value* Array::clone() const {
+	auto array = new Array();
+	array->opening_bracket = opening_bracket;
+	array->closing_bracket = closing_bracket;
+	for (const auto& ex : expressions) {
+		array->expressions.push_back(ex->clone());
+	}
+	array->interval = interval;
+	return array;
 }
 
 }

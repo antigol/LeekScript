@@ -8,89 +8,119 @@ using namespace std;
 
 namespace ls {
 
-LSValue* LSBoolean::boolean_class(new LSClass("Boolean"));
-LSBoolean* LSBoolean::false_val(new LSBoolean(false));
-LSBoolean* LSBoolean::true_val(new LSBoolean(true));
+LSValue* LSBoolean::clazz;
+LSBoolean* LSBoolean::false_val;
+LSBoolean* LSBoolean::true_val;
 
-LSBoolean::LSBoolean() : LSBoolean(true) {}
-
-LSBoolean::LSBoolean(bool value) : value(value) {
+LSBoolean::LSBoolean(bool value) : LSValue(BOOLEAN), value(value) {
 	refs = 1;
 	native = true;
 }
 
-LSBoolean::LSBoolean(Json& json) : LSBoolean((bool) json) {}
-
 LSBoolean::~LSBoolean() {}
 
-bool LSBoolean::isTrue() const {
+bool LSBoolean::to_bool() const {
 	return value;
 }
 
-LSValue*LSBoolean::ls_not() {
-	return LSBoolean::get(!value);
+bool LSBoolean::ls_not() const {
+	return !value;
 }
 
-LSValue*LSBoolean::ls_tilde() {
-	return LSBoolean::get(!value);
+LSValue* LSBoolean::ls_tilde() {
+	return LSNumber::get(~value);
 }
 
-LSValue* LSBoolean::ls_add(LSNumber* n) {
-	if (this->value) {
-		if (n->refs == 0) {
-			n->value += 1;
-			return n;
+LSValue* LSBoolean::ls_minus() {
+	return LSNumber::get(-value);
+}
+
+LSValue* LSBoolean::add(LSValue* v) {
+	if (v->type == NUMBER) {
+		auto number = static_cast<LSNumber*>(v);
+		if (this->value) {
+			if (number->refs == 0) {
+				number->value += 1;
+				return number;
+			}
+			auto r = LSNumber::get(number->value + 1);
+			LSValue::delete_temporary(number);
+			return r;
 		}
-		return LSNumber::get(n->value + 1);
+		return number;
 	}
-	return n;
-}
-
-LSValue* LSBoolean::ls_add(LSString* s) {
-	return new LSString((value ? "true" : "false") + *s);
-}
-
-LSValue* LSBoolean::ls_sub(LSNumber* n) {
-	if (this->value) {
-		if (n->refs == 0) {
-			n->value = 1 - n->value;
-			return n;
-		}
-		return LSNumber::get(1 - n->value);
+	if (v->type == BOOLEAN) {
+		auto boolean = static_cast<LSBoolean*>(v);
+		return LSNumber::get(value + boolean->value);
 	}
-	return n;
-}
-
-bool LSBoolean::eq(const LSBoolean* boolean) const {
-	return boolean->value == this->value;
-}
-
-bool LSBoolean::lt(const LSBoolean* boolean) const {
-	return this->value < boolean->value;
-}
-
-LSValue* LSBoolean::at(const LSValue*) const {
+	if (v->type == STRING) {
+		auto string = static_cast<LSString*>(v);
+		auto res = new LSString((value ? "true" : "false") + *string);
+		LSValue::delete_temporary(string);
+		return res;
+	}
+	LSValue::delete_temporary(v);
 	return LSNull::get();
 }
-LSValue** LSBoolean::atL(const LSValue*) {
-	return nullptr;
-}
 
-LSValue* LSBoolean::attr(const LSValue* key) const {
-	if (*((LSString*) key) == "class") {
-		return getClass();
+LSValue* LSBoolean::sub(LSValue* v) {
+	if (v->type == NUMBER) {
+		auto number = static_cast<LSNumber*>(v);
+		if (this->value) {
+			if (number->refs == 0) {
+				number->value = 1 - number->value;
+				return number;
+			}
+			return LSNumber::get(1 - number->value);
+		}
+		if (number->refs == 0) {
+			number->value = -number->value;
+			return number;
+		}
+		LSValue::delete_temporary(this);
+		return LSNumber::get(-number->value);
 	}
+	if (v->type == BOOLEAN) {
+		auto boolean = static_cast<LSBoolean*>(v);
+		return LSNumber::get(value - boolean->value);
+	}
+	LSValue::delete_temporary(v);
 	return LSNull::get();
 }
-LSValue** LSBoolean::attrL(const LSValue*) {
-	return nullptr;
+
+bool LSBoolean::eq(const LSValue* v) const {
+	if (v->type == BOOLEAN) {
+		auto boolean = static_cast<const LSBoolean*>(v);
+		return boolean->value == this->value;
+	}
+	return false;
+}
+
+bool LSBoolean::lt(const LSValue* v) const {
+	if (v->type == BOOLEAN) {
+		auto boolean = static_cast<const LSBoolean*>(v);
+		return this->value < boolean->value;
+	}
+	return LSValue::lt(v);
+}
+
+bool LSBoolean::operator < (int) const {
+	return true;
+}
+
+bool LSBoolean::operator < (double) const {
+	return true;
+}
+
+int LSBoolean::abso() const {
+	return value;
 }
 
 LSValue* LSBoolean::clone() const {
 	return (LSValue*) this;
 }
 
-std::ostream& LSBoolean::print(std::ostream& os) const {
+std::ostream& LSBoolean::dump(std::ostream& os) const {
 	os << (value ? "true" : "false");
 	return os;
 }
@@ -100,11 +130,7 @@ string LSBoolean::json() const {
 }
 
 LSValue* LSBoolean::getClass() const {
-	return LSBoolean::boolean_class;
-}
-
-const BaseRawType* LSBoolean::getRawType() const {
-	return RawType::BOOLEAN;
+	return LSBoolean::clazz;
 }
 
 }

@@ -38,8 +38,8 @@ void Map::print(std::ostream& os, int indent, bool debug) const {
 	}
 }
 
-unsigned Map::line() const {
-	return 0;
+Location Map::location() const {
+	return {opening_bracket->location.start, closing_bracket->location.end};
 }
 
 void Map::analyse(SemanticAnalyser* analyser, const Type&) {
@@ -62,15 +62,11 @@ void Map::analyse(SemanticAnalyser* analyser, const Type&) {
 	value_type.temporary = false;
 
 	if (key_type == Type::INTEGER or key_type == Type::REAL) {
-	} else if (key_type.raw_type == RawType::FUNCTION) {
-		key_type.nature = Nature::POINTER;
 	} else {
 		key_type = Type::POINTER;
 		key_type.setReturnType(Type::POINTER);
 	}
 	if (value_type == Type::INTEGER || value_type == Type::REAL) {
-	} else if (value_type.raw_type == RawType::FUNCTION) {
-		value_type.nature = Nature::POINTER;
 	} else {
 		value_type = Type::POINTER;
 		value_type.setReturnType(Type::POINTER);
@@ -197,29 +193,43 @@ Compiler::value Map::compile(Compiler &c) const {
 
 	unsigned ops = 0;
 
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, {}, 0, 0);
+	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, {}, 0, 1);
 	jit_value_t map = jit_insn_call_native(c.F, "new_map", (void*) create, sig, {}, 0, JIT_CALL_NOTHROW); ops += 1;
+	jit_type_free(sig);
+
+	jit_type_t args[3] = {LS_POINTER, VM::get_jit_type(type.getKeyType()), VM::get_jit_type(type.getElementType())};
+	sig = jit_type_create_signature(jit_abi_cdecl, jit_type_void, args, 3, 1);
 
 	for (size_t i = 0; i < keys.size(); ++i) {
 		auto k = keys[i]->compile(c);
+		keys[i]->compile_end(c);
 		auto v = values[i]->compile(c);
+		values[i]->compile_end(c);
 
-		jit_type_t args[3] = {LS_POINTER, VM::get_jit_type(type.getKeyType()), VM::get_jit_type(type.getElementType())};
-		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_void, args, 3, 0);
 		jit_value_t args_v[] = {map, k.v, v.v};
 		jit_insn_call_native(c.F, "insert", (void*) insert, sig, args_v, 3, JIT_CALL_NOTHROW); ops += std::log2(i + 1);
 
-		if (type.getKeyType().must_manage_memory()) {
-			VM::delete_temporary(c.F, k.v);
-		}
-		if (type.getElementType().must_manage_memory()) {
-			VM::delete_temporary(c.F, v.v);
-		}
+		c.insn_delete_temporary(k);
+		c.insn_delete_temporary(v);
 	}
+	jit_type_free(sig);
 
-	VM::inc_ops(c.F, ops);
+	c.inc_ops(ops);
 
 	return {map, type};
+}
+
+Value* Map::clone() const {
+	auto map = new Map();
+	map->opening_bracket = opening_bracket;
+	map->closing_bracket = closing_bracket;
+	for (const auto& k : keys) {
+		map->keys.push_back(k->clone());
+	}
+	for (const auto& v : values) {
+		map->values.push_back(v->clone());
+	}
+	return map;
 }
 
 }

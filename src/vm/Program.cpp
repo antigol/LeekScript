@@ -10,16 +10,16 @@
 #include "Context.hpp"
 #include "../compiler/semantic/SemanticAnalyser.hpp"
 #include "../compiler/semantic/SemanticError.hpp"
-
+#include "../util/Util.hpp"
+#include "../constants.h"
 
 using namespace std;
 
 namespace ls {
 
-extern map<string, jit_value_t> internals;
-
-Program::Program(const std::string& code) {
+Program::Program(const std::string& code, const std::string& file_name) {
 	this->code = code;
+	this->file_name = file_name;
 	main = nullptr;
 	closure = nullptr;
 }
@@ -27,9 +27,6 @@ Program::Program(const std::string& code) {
 Program::~Program() {
 	if (main != nullptr) {
 		delete main;
-	}
-	for (auto v : system_vars) {
-		delete v.second;
 	}
 }
 
@@ -39,17 +36,19 @@ VM::Result Program::compile(VM& vm, const std::string& ctx) {
 
 	// Lexical analysis
 	LexicalAnalyser lex;
-	vector<Token> tokens = lex.analyse(code);
+	auto tokens = lex.analyse(code);
 
 	if (lex.errors.size()) {
 		result.compilation_success = false;
 		result.lexical_errors = lex.errors;
+		for (auto& t : tokens) delete t;
 		return result;
 	}
 
 	// Syntaxical analysis
 	SyntaxicAnalyser syn;
 	this->main = syn.analyse(tokens);
+	this->main->is_main_function = true;
 
 	if (syn.getErrors().size() > 0) {
 		result.compilation_success = false;
@@ -60,7 +59,8 @@ VM::Result Program::compile(VM& vm, const std::string& ctx) {
 	// Semantical analysis
 	Context context { ctx };
 	SemanticAnalyser sem;
-	sem.analyse(this, &context, vm.modules);
+	sem.vm = &vm;
+	sem.analyse(this, &context);
 
 	std::ostringstream oss;
 	print(oss, true);
@@ -73,126 +73,85 @@ VM::Result Program::compile(VM& vm, const std::string& ctx) {
 	}
 
 	// Compilation
-	internals.clear();
-	this->compile_main(context);
+	jit_init();
+	jit_context_build_start(vm.jit_context);
+	vm.internals.clear();
+	vm.compiler.program = this;
+	main->compile(vm.compiler);
+	closure = main->default_version->function->function;
+	// vm.compiler.leave_function();
+	jit_context_build_end(vm.jit_context);
 
 	// Result
 	result.compilation_success = true;
 	return result;
 }
 
-void Program::compile_main(Context& context) {
-
-	Compiler c(this);
-
-	jit_init();
-	jit_context_t jit_context = jit_context_create();
-	jit_context_build_start(jit_context);
-
-	jit_type_t params[0] = {};
-	jit_type_t signature = jit_type_create_signature(jit_abi_cdecl, VM::get_jit_type(main->type.getReturnType()), params, 0, 0);
-	jit_function_t F = jit_function_create(jit_context, signature);
-	jit_insn_uses_catcher(F);
-	c.enter_function(F);
-
-	compile_jit(c, context, false);
-
-	// catch (ex) {
-	jit_value_t ex = jit_insn_start_catcher(F);
-	VM::store_exception(F, ex);
-	jit_insn_rethrow_unhandled(F);
-
-	//jit_dump_function(fopen("main_uncompiled", "w"), F, "main");
-
-	jit_function_compile(F);
-	jit_context_build_end(jit_context);
-
-	//jit_dump_function(fopen("main_compiled", "w"), F, "main");
-
-	closure = jit_function_to_closure(F);
-	function = F;
+void Program::analyse(SemanticAnalyser* analyser) {
+	main->name = "main";
+	main->file = file_name;
+	main->analyse(analyser, Type::UNKNOWN);
 }
 
-void* handler(int type) {
-	return (void*) (long) type;
-}
+std::string Program::execute(VM& vm) {
 
-std::string Program::execute() {
-
-	/*
-	int buff;
-	jit_function_apply(function, nullptr, &buff);
-	std::cout << "LSString/ stack " << VM::stack_trace << std::endl;
-	std::cout << "LSString/ stack size " << jit_stack_trace_get_size(VM::stack_trace) << std::endl;
-	std::cout << "fun: " << jit_stack_trace_get_pc(VM::stack_trace, 0) << std::endl;
-	if (true) return to_string(buff);
-	*/
+	auto handler = &VM::get_exception_object<1>;
+	jit_exception_set_handler(handler);
 
 	Type output_type = main->type.getReturnType();
 
 	if (output_type == Type::VOID) {
 		auto fun = (void (*)()) closure;
 		fun();
-		if (VM::last_exception) throw VM::last_exception;
+		if (vm.last_exception) throw vm.last_exception;
 		return "(void)";
 	}
 
 	if (output_type == Type::BOOLEAN) {
 		auto fun = (bool (*)()) closure;
 		bool res = fun();
-		if (VM::last_exception) throw VM::last_exception;
+		if (vm.last_exception) throw vm.last_exception;
 		return res ? "true" : "false";
 	}
-
-	jit_exception_set_handler(&handler);
 
 	if (output_type == Type::INTEGER) {
 		auto fun = (int (*)()) closure;
 		int res = fun();
-		if (VM::last_exception) throw VM::last_exception;
+		if (vm.last_exception) throw vm.last_exception;
 		return std::to_string(res);
 	}
 
-	if (output_type == Type::GMP_INT_TMP or output_type == Type::GMP_INT) {
+	if (output_type == Type::MPZ_TMP or output_type == Type::MPZ) {
 		auto fun = (__mpz_struct (*)()) closure;
 		__mpz_struct ret = fun();
-		if (VM::last_exception) throw VM::last_exception;
+		if (vm.last_exception) throw vm.last_exception;
 		char buff[1000000];
 		mpz_get_str(buff, 10, &ret);
-//		if (output_type.temporary) {
-			mpz_clear(&ret);
-			VM::gmp_values_deleted++;
-//		}
+		mpz_clear(&ret);
+		vm.mpz_deleted++;
 		return std::string(buff);
 	}
 
 	if (output_type == Type::REAL) {
 		auto fun = (double (*)()) closure;
 		double res = fun();
-		if (VM::last_exception) throw VM::last_exception;
+		if (vm.last_exception) throw vm.last_exception;
 		return LSNumber::print(res);
 	}
 
 	if (output_type == Type::LONG) {
 		auto fun = (long (*)()) closure;
 		long res = fun();
-		if (VM::last_exception) throw VM::last_exception;
+		if (vm.last_exception) throw vm.last_exception;
 		return std::to_string(res);
 	}
 
-	if (output_type.raw_type == RawType::FUNCTION and output_type.nature == Nature::VALUE) {
-		auto fun = (void* (*)()) closure;
-		fun();
-		if (VM::last_exception) throw VM::last_exception;
-		return "<function>";
-	}
-
 	auto fun = (LSValue* (*)()) closure;
-	LSValue* ptr = fun();
-	if (VM::last_exception) throw VM::last_exception;
+	auto ptr = fun();
+	if (vm.last_exception) throw vm.last_exception;
 	std::ostringstream oss;
-	oss << ptr;
-	LSValue::delete_temporary(ptr);
+	ptr->dump(oss);
+	LSValue::delete_ref(ptr);
 	return oss.str();
 }
 
@@ -205,40 +164,48 @@ std::ostream& operator << (std::ostream& os, const Program* program) {
 	return os;
 }
 
-/*
-extern map<string, jit_value_t> internals;
+std::string Program::underline_code(Location location, Location focus) const {
+	auto padding = 10ul;
+	auto start = padding > location.start.raw ? 0ul : location.start.raw - padding;
+	auto end = std::min(code.size(), location.end.raw + padding);
+	auto padding_left = std::min(padding, location.start.raw - start);
+	auto padding_right = std::min(padding, end - location.end.raw);
+	auto ellipsis_left = start > 0;
+	auto ellipsis_right = end < code.size();
 
-LSArray<LSValue*>* Program_create_array() {
-	return new LSArray<LSValue*>();
-}
-void Program_push_null(LSArray<LSValue*>* array, int) {
-	array->push_clone(LSNull::get());
-}
-void Program_push_boolean(LSArray<LSValue*>* array, int value) {
-	array->push_clone(LSBoolean::get(value));
-}
-void Program_push_integer(LSArray<LSValue*>* array, int value) {
-	array->push_clone(LSNumber::get(value));
-}
-void Program_push_function(LSArray<LSValue*>* array, void* value) {
-	array->push_clone(new LSFunction(value));
-}
-void Program_push_pointer(LSArray<LSValue*>* array, LSValue* value) {
-	array->push_clone(value);
-}
-*/
+	auto extract = code.substr(start, end - start);
+	auto underlined = extract.substr(padding_left, end - start - padding_left - padding_right);
+	auto before = extract.substr(0, padding_left);
+	auto after = extract.substr(extract.size() - padding_right, padding_right);
 
-void Program::compile_jit(Compiler& c, Context&, bool) {
-
-	// System internal variables
-	for (auto var : system_vars) {
-
-		string name = var.first;
-		LSValue* value = var.second;
-
-		jit_value_t jit_val = LS_CREATE_POINTER(c.F, value);
-		internals.insert(pair<string, jit_value_t>(name, jit_val));
+	size_t p = before.rfind('\n');
+	if (p != std::string::npos) {
+		before = before.substr(p + 1, before.size() - p);
+		ellipsis_left = false;
 	}
+	p = after.find('\n');
+	if (p != std::string::npos) {
+		after = after.substr(0, p);
+		ellipsis_right = false;
+	}
+
+	auto focus_start = focus.start.raw - location.start.raw;
+	auto focus_size = focus.end.raw - focus.start.raw;
+	underlined = underlined.substr(0, focus_start)
+		+ YELLOW + underlined.substr(focus_start, focus_size) + END_COLOR
+		+ UNDERLINE + underlined.substr(focus_size + focus_start);
+
+	if (before.size() and before.front() != ' ')
+		before = ' ' + before;
+	if (after.size() and after.back() != ' ')
+		after = after + ' ';
+
+	return (ellipsis_left ? (GREY "[...]" END_COLOR) : "")
+		+ before + UNDERLINE + underlined + END_STYLE + after
+		+ (ellipsis_right ? (GREY "[...]" END_COLOR) : "");
+}
+
+// void Program::compile_jit(VM& vm, Compiler& c, Context&, bool) {
 
 	// User context variables
 	/*
@@ -259,8 +226,8 @@ void Program::compile_jit(Compiler& c, Context&, bool) {
 	}
 	*/
 
-	jit_value_t res = main->body->compile(c).v;
-	jit_insn_return(c.F, res);
+	// jit_value_t res = main->body->compile(c).v;
+	// jit_insn_return(c.F, res);
 
 	/*
 	if (toplevel) {
@@ -330,6 +297,6 @@ void Program::compile_jit(Compiler& c, Context&, bool) {
 		jit_insn_return(F, array);
 	}
 	*/
-}
+// }
 
 }

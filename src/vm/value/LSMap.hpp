@@ -11,10 +11,10 @@ struct lsmap_less {
 	bool operator() (K lhs, K rhs) const;
 };
 
-template <typename K = LSValue*, typename T = LSValue*>
+template <typename K, typename T>
 class LSMap : public LSValue, public std::map<K, T, lsmap_less<K>> {
 public:
-	static LSValue* map_class;
+	static LSValue* clazz;
 
 	LSMap();
 	virtual ~LSMap();
@@ -27,33 +27,31 @@ public:
 	bool ls_erase(K key);
 	T ls_look(K key, T def);
 	LSArray<T>* values() const;
+	template <class K2, class T2>
+	bool map_equals(const LSMap<K2, T2>* map) const;
+	template <class K2, class T2>
+	bool map_lt(const LSMap<K2, T2>* map) const;
 
 	/*
 	 * LSValue methods;
 	 */
-	virtual bool isTrue() const override;
+	virtual bool to_bool() const override;
+	virtual bool ls_not() const override;
 
-	LSVALUE_OPERATORS
-
-	template <typename K2, typename T2>
-	bool eq(const LSMap<K2, T2>*) const;
-
-	template <typename K2, typename T2>
-	bool lt(const LSMap<K2, T2>*) const;
+	bool eq(const LSValue*) const override;
+	bool lt(const LSValue*) const override;
 
 	T at(const K key) const;
 
 	virtual LSValue** atL(const LSValue* key) override;
-	int* atLv(const LSValue* key) const;
+	T* atL_base(K key) const;
 
 	bool in(K) const;
 
-	virtual std::ostream& print(std::ostream&) const override;
+	virtual std::ostream& dump(std::ostream&) const override;
 	virtual std::string json() const override;
 	virtual LSValue* clone() const override;
 	virtual LSValue* getClass() const override;
-	virtual int typeID() const override { return 6; }
-	virtual const BaseRawType* getRawType() const override;
 };
 
 }

@@ -1,30 +1,59 @@
 #include "Type.hpp"
 #include "../constants.h"
 #include <sstream>
+#include "../../lib/utf8.h"
 
 using namespace std;
 
 namespace ls {
 
-const BaseRawType* const RawType::UNKNOWN = new BaseRawType();
-const VoidRawType* const RawType::VOID = new VoidRawType();
-const NullRawType* const RawType::NULLL = new NullRawType();
-const BooleanRawType* const RawType::BOOLEAN = new BooleanRawType();
-const NumberRawType* const RawType::NUMBER = new NumberRawType();
-const IntegerRawType* const RawType::INTEGER = new IntegerRawType();
-const IntegerRawType* const RawType::UNSIGNED_INTEGER = new IntegerRawType();
-const GmpIntRawType* const RawType::GMP_INT = new GmpIntRawType();
-const LongRawType* const RawType::LONG = new LongRawType();
-const LongRawType* const RawType::UNSIGNED_LONG = new LongRawType();
-const FloatRawType* const RawType::REAL = new FloatRawType();
-const StringRawType* const RawType::STRING = new StringRawType();
-const ArrayRawType* const RawType::ARRAY = new ArrayRawType();
-const MapRawType* const RawType::MAP = new MapRawType();
-const SetRawType* const RawType::SET = new SetRawType();
-const IntervalRawType* const RawType::INTERVAL = new IntervalRawType();
-const ObjectRawType* const RawType::OBJECT = new ObjectRawType();
-const FunctionRawType* const RawType::FUNCTION = new FunctionRawType();
-const ClassRawType* const RawType::CLASS = new ClassRawType();
+BaseRawType::~BaseRawType() {}
+
+const UnknownRawType RawType::_UNKNOWN;
+const VoidRawType RawType::_VOID;
+const NullRawType RawType::_NULLL;
+const BooleanRawType RawType::_BOOLEAN;
+const NumberRawType RawType::_NUMBER;
+const MpzRawType RawType::_MPZ;
+const IntegerRawType RawType::_INTEGER;
+const LongRawType RawType::_LONG;
+const FloatRawType RawType::_REAL;
+const StringRawType RawType::_STRING;
+const ArrayRawType RawType::_ARRAY;
+const MapRawType RawType::_MAP;
+const SetRawType RawType::_SET;
+const IntervalRawType RawType::_INTERVAL;
+const ObjectRawType RawType::_OBJECT;
+const FunctionRawType RawType::_FUNCTION;
+const ClassRawType RawType::_CLASS;
+
+const UnknownRawType* const RawType::UNKNOWN = &_UNKNOWN;
+const VoidRawType* const RawType::VOID = &_VOID;
+const NullRawType* const RawType::NULLL = &_NULLL;
+const BooleanRawType* const RawType::BOOLEAN = &_BOOLEAN;
+const NumberRawType* const RawType::NUMBER = &_NUMBER;
+const IntegerRawType* const RawType::INTEGER = &_INTEGER;
+const MpzRawType* const RawType::MPZ = &_MPZ;
+const LongRawType* const RawType::LONG = &_LONG;
+const FloatRawType* const RawType::REAL = &_REAL;
+const StringRawType* const RawType::STRING = &_STRING;
+const ArrayRawType* const RawType::ARRAY = &_ARRAY;
+const MapRawType* const RawType::MAP = &_MAP;
+const SetRawType* const RawType::SET = &_SET;
+const IntervalRawType* const RawType::INTERVAL = &_INTERVAL;
+const ObjectRawType* const RawType::OBJECT = &_OBJECT;
+const FunctionRawType* const RawType::FUNCTION = &_FUNCTION;
+const ClassRawType* const RawType::CLASS = &_CLASS;
+
+std::vector<const BaseRawType*> RawType::placeholder_types;
+
+void RawType::clear_placeholder_types() {
+	for (const auto& t : placeholder_types)
+		delete t;
+	placeholder_types.clear();
+}
+
+unsigned int Type::placeholder_counter = 0;
 
 const Type Type::UNKNOWN(RawType::UNKNOWN, Nature::UNKNOWN);
 
@@ -37,12 +66,10 @@ const Type Type::BOOLEAN(RawType::BOOLEAN, Nature::VALUE);
 const Type Type::BOOLEAN_P(RawType::BOOLEAN, Nature::POINTER);
 const Type Type::NUMBER_VALUE(RawType::NUMBER, Nature::VALUE);
 const Type Type::NUMBER(RawType::NUMBER, Nature::POINTER);
-const Type Type::UNSIGNED_INTEGER(RawType::UNSIGNED_INTEGER, Nature::VALUE);
 const Type Type::INTEGER(RawType::INTEGER, Nature::VALUE);
-const Type Type::GMP_INT(RawType::GMP_INT, Nature::VALUE);
-const Type Type::GMP_INT_TMP(RawType::GMP_INT, Nature::VALUE, false, true);
+const Type Type::MPZ(RawType::MPZ, Nature::VALUE);
+const Type Type::MPZ_TMP(RawType::MPZ, Nature::VALUE, false, true);
 const Type Type::LONG(RawType::LONG, Nature::VALUE);
-const Type Type::UNSIGNED_LONG(RawType::UNSIGNED_LONG, Nature::VALUE);
 const Type Type::REAL(RawType::REAL, Nature::VALUE);
 const Type Type::STRING(RawType::STRING, Nature::POINTER);
 const Type Type::STRING_TMP(RawType::STRING, Nature::POINTER, false, true);
@@ -74,6 +101,13 @@ const Type Type::INT_ARRAY_ARRAY(RawType::ARRAY, Nature::POINTER, Type::INT_ARRA
 const Type Type::FUNCTION(RawType::FUNCTION, Nature::VALUE);
 const Type Type::FUNCTION_P(RawType::FUNCTION, Nature::POINTER);
 const Type Type::CLASS(RawType::CLASS, Nature::POINTER, true);
+
+const Type Type::STRING_ITERATOR(RawType::STRING, Nature::VALUE, Type::STRING);
+const Type Type::INTERVAL_ITERATOR(RawType::INTERVAL, Nature::VALUE, Type::INTEGER);
+const Type Type::SET_ITERATOR(RawType::SET, Nature::VALUE, Type::UNKNOWN);
+const Type Type::INTEGER_ITERATOR(RawType::INTEGER, Nature::VALUE, Type::INTEGER);
+const Type Type::LONG_ITERATOR(RawType::LONG, Nature::VALUE, Type::INTEGER);
+const Type Type::MPZ_ITERATOR(RawType::MPZ, Nature::VALUE, Type::INTEGER);
 
 Type::Type() {
 	raw_type = RawType::UNKNOWN;
@@ -107,6 +141,10 @@ Type::Type(const BaseRawType* raw_type, Nature nature, const Type& key_type, con
 	this->setElementType(element_type);
 }
 
+int Type::id() const {
+	return raw_type->id();
+}
+
 bool Type::must_manage_memory() const {
 	return nature == Nature::POINTER and not native;
 }
@@ -129,11 +167,16 @@ void Type::addArgumentType(Type type) {
 	arguments_types.push_back(type);
 }
 
-void Type::setArgumentType(size_t index, Type type) {
+void Type::setArgumentType(size_t index, Type type, bool has_default) {
 	while (arguments_types.size() <= index) {
 		arguments_types.push_back(Type::UNKNOWN);
 	}
 	arguments_types[index] = type;
+
+	while (arguments_has_default.size() <= index) {
+		arguments_has_default.push_back(false);
+	}
+	arguments_has_default[index] = has_default;
 }
 
 /*
@@ -151,12 +194,24 @@ const std::vector<Type>& Type::getArgumentTypes() const {
 	return arguments_types;
 }
 
+bool Type::argumentHasDefault(size_t index) const {
+	if (index >= arguments_has_default.size()) {
+		return false;
+	}
+	return arguments_has_default[index];
+}
+
 const Type& Type::getElementType() const {
 	if (element_type.size()) {
 		return element_type[0];
 	}
 	return Type::UNKNOWN;
 }
+
+const Type& Type::element() const {
+	return getElementType();
+}
+
 void Type::setElementType(const Type& type) {
 	if (element_type.size() == 0) {
 		element_type.push_back(type);
@@ -169,7 +224,7 @@ const Type& Type::getKeyType() const {
 	if (key_type.size()) {
 		return key_type[0];
 	}
-	return Type::UNKNOWN;
+	assert(false); // LCOV_EXCL_LINE
 }
 void Type::setKeyType(const Type& type) {
 	if (key_type.size() == 0) {
@@ -179,9 +234,6 @@ void Type::setKeyType(const Type& type) {
 	}
 }
 
-/*
- *
- */
 bool Type::will_take(const std::vector<Type>& args_type) {
 
 	bool changed = false;
@@ -199,36 +251,19 @@ bool Type::will_take(const std::vector<Type>& args_type) {
 				changed = true;
 			}
 		}
-
 	}
-
 	return changed;
 }
 
-bool Type::will_take_element(const Type& element_type) {
-
-	if (raw_type != RawType::ARRAY) {
-		return false;
-	}
-
-	Type current = getElementType();
-
-	if (current == element_type) {
-		return false;
-	}
-
-	setElementType(element_type);
-	return true;
-}
-
 Type Type::mix(const Type& x) const {
-
 	if (*this == x) return *this;
 	if (*this == Type::UNKNOWN or x == Type::UNKNOWN) return Type::UNKNOWN;
 	if (nature == Nature::POINTER || x.nature == Nature::POINTER) return Type::POINTER;
+	if (nature == Nature::VOID || x.nature == Nature::VOID) return Type::POINTER;
 	if (raw_type == RawType::REAL || x.raw_type == RawType::REAL) return Type::REAL;
+	if (raw_type == RawType::LONG || x.raw_type == RawType::LONG) return Type::LONG;
 	if (raw_type == RawType::INTEGER || x.raw_type == RawType::INTEGER) return Type::INTEGER;
-	return x;
+	assert(false); // LCOV_EXCL_LINE
 }
 
 void Type::toJson(ostream& os) const {
@@ -247,7 +282,7 @@ void Type::toJson(ostream& os) const {
 	os << "}";
 }
 
-std::string Type::toString() const {
+std::string Type::to_string() const {
 	std::ostringstream oss;
 	oss << *this;
 	return oss.str();
@@ -257,6 +292,21 @@ bool Type::isNumber() const {
 	return dynamic_cast<const NumberRawType*>(raw_type) != nullptr;
 }
 
+bool Type::iterable() const {
+	return raw_type->iterable();
+}
+
+bool Type::is_container() const {
+	return raw_type->is_container();
+}
+
+int Type::size() const {
+	if (nature == Nature::POINTER) {
+		return 64;
+	}
+	return raw_type->size();
+}
+
 bool Type::operator ==(const Type& type) const {
 	return raw_type == type.raw_type &&
 			nature == type.nature &&
@@ -264,15 +314,52 @@ bool Type::operator ==(const Type& type) const {
 			clazz == type.clazz &&
 			element_type == type.element_type &&
 			key_type == type.key_type &&
-			return_types == type.return_types &&
 			temporary == type.temporary &&
-			arguments_types == type.arguments_types;
+			(raw_type != RawType::FUNCTION ||
+				(return_types == type.return_types &&
+				arguments_types == type.arguments_types));
+}
+
+bool Type::operator < (const Type& type) const {
+	if ((void*) raw_type != (void*) type.raw_type) {
+		return (void*) raw_type < (void*) type.raw_type;
+	}
+	if (nature != type.nature) {
+		return nature < type.nature;
+	}
+	if (temporary != type.temporary) {
+		return temporary < type.temporary;
+	}
+	if (native != type.native) {
+		return native < type.native;
+	}
+	for (size_t i = 0; i < element_type.size(); ++i) {
+		if (i >= type.element_type.size()) return false;
+		if (element_type.at(i) != type.element_type.at(i)) {
+			return element_type.at(i) < type.element_type.at(i);
+		}
+	}
+	for (size_t i = 0; i < key_type.size(); ++i) {
+		if (i >= type.key_type.size()) return false;
+		if (key_type.at(i) != type.key_type.at(i)) {
+			return key_type.at(i) < type.key_type.at(i);
+		}
+	}
+	return false;
+}
+
+Type Type::not_temporary() const {
+	Type new_type = *this;
+	new_type.temporary = false;
+	return new_type;
 }
 
 /*
  * Can we convert type into this ?
  * {float}.compatible({int}) == true
  * {int*}.compatible({int}) == true
+ * {int}.compatible({float}) == false
+ * {int}.compatible({int*}) == false
  */
 bool Type::compatible(const Type& type) const {
 
@@ -353,6 +440,25 @@ bool Type::list_compatible(const std::vector<Type>& expected, const std::vector<
 	return true;
 }
 
+bool Type::may_be_compatible(const Type& type) const {
+	if (compatible(type)) {
+		return true;
+	}
+	// Example: Number.abs(number*) => we allow to call with a unknown pointer
+	if (this->nature == Nature::POINTER and type == Type::POINTER) {
+		return true;
+	}
+	return false;
+}
+
+bool Type::list_may_be_compatible(const std::vector<Type>& expected, const std::vector<Type>& actual) {
+	if (expected.size() != actual.size()) return false;
+	for (size_t i = 0; i < expected.size(); ++i) {
+		if (not expected[i].may_be_compatible(actual[i])) return false;
+	}
+	return true;
+}
+
 bool Type::list_more_specific(const std::vector<Type>& old, const std::vector<Type>& neww) {
 
 	if (old.size() != neww.size()) return false;
@@ -413,50 +519,26 @@ bool Type::more_specific(const Type& old, const Type& neww) {
 }
 
 Type Type::get_compatible_type(const Type& t1, const Type& t2) {
-
 	if (t1 == t2) {
 		return t1;
 	}
-
 	if (t1.nature == Nature::POINTER and t2.nature == Nature::VALUE) {
-		if (t1.raw_type == t2.raw_type) {
-			if (t1.element_type == t2.element_type
-					&& t1.key_type == t2.key_type
-					&& t1.return_types == t2.return_types
-					&& t1.arguments_types == t2.arguments_types) {
-				return t1; // They are identical except the Nature
-			}
-			return Type(t1.raw_type, Nature::POINTER); // They have the same raw_type : for example {function* ({int})->{int}} and {function ({int})->{void}}
-		}
 		return Type::POINTER;
 	}
-
-	// symmetric of last it statement
 	if (t2.nature == Nature::POINTER and t1.nature == Nature::VALUE) {
-		if (t2.raw_type == t1.raw_type) {
-			if (t2.element_type == t1.element_type
-					&& t1.key_type == t2.key_type
-					&& t2.return_types == t1.return_types
-					&& t2.arguments_types == t1.arguments_types) {
-				return t2;
-			}
-			return Type(t2.raw_type, Nature::POINTER);
-		}
 		return Type::POINTER;
 	}
-
 	if (t1.raw_type == RawType::UNKNOWN) {
 		return t2;
 	}
 	if (t2.raw_type == RawType::UNKNOWN) {
 		return t1;
 	}
-
-	if (t1.compatible(t2)) {
-		return t1;
-	}
 	if (t2.compatible(t1)) {
 		return t2;
+	}
+	if (t1.compatible(t2)) {
+		return t1;
 	}
 	return Type::POINTER;
 }
@@ -476,21 +558,17 @@ string Type::get_nature_symbol(const Nature& nature) {
 	}
 }
 
-#if PRINT_TYPES_COLORS
-	#define GREY "\033[0;90m"
-	#define GREEN "\033[0;32m"
-	#define RED "\033[1;31m"
-	#define BLUE "\033[1;34m"
-	#define YELLOW "\033[1;33m"
-	#define END_COLOR "\033[0m"
-#else
-	#define GREY ""
-	#define GREEN ""
-	#define RED ""
-	#define BLUE ""
-	#define YELLOW ""
-	#define END_COLOR ""
-#endif
+Type Type::generate_new_placeholder_type() {
+	Type type;
+	type.nature = Nature::VALUE;
+	u_int32_t character = 0x03B1 + placeholder_counter;
+	char buff[5];
+	u8_toutf8(buff, 5, &character, 1);
+	type.raw_type = new PlaceholderRawType(std::string { buff });
+	placeholder_counter++;
+	RawType::placeholder_types.push_back(type.raw_type);
+	return type;
+}
 
 ostream& operator << (ostream& os, const Type& type) {
 
@@ -509,32 +587,41 @@ ostream& operator << (ostream& os, const Type& type) {
 			os << YELLOW << "?";
 		}
 	} else if (type.raw_type == RawType::FUNCTION) {
-		os << BLUE << "fun(";
+		if (type.nature == Nature::POINTER) {
+			os << BLUE_BOLD;
+		}
+		os << "fun(";
 		for (unsigned t = 0; t < type.arguments_types.size(); ++t) {
 			if (t > 0) os << ", ";
 			os << type.arguments_types[t];
-			os << BLUE;
+			if (type.nature == Nature::POINTER) {
+				os << BLUE_BOLD;
+			}
+		}
+		if (type.nature == Nature::POINTER) {
+			os << BLUE_BOLD;
 		}
 		os << ") → " << type.getReturnType();
 	} else if (type.raw_type == RawType::STRING || type.raw_type == RawType::CLASS
 		|| type.raw_type == RawType::OBJECT || type.raw_type == RawType::NULLL
 		|| type.raw_type == RawType::INTERVAL) {
-		os << BLUE << type.raw_type->getName(); // << Type::get_nature_symbol(type.nature);
+		os << BLUE_BOLD << type.raw_type->getName(); // << Type::get_nature_symbol(type.nature);
 	} else if (type.raw_type == RawType::ARRAY || type.raw_type == RawType::SET) {
-		os << BLUE << type.raw_type->getName(); // << Type::get_nature_symbol(type.nature);
-		os << "<" << type.getElementType() << BLUE << ">";
+		os << BLUE_BOLD << type.raw_type->getName(); // << Type::get_nature_symbol(type.nature);
+		os << "<" << type.getElementType() << BLUE_BOLD << ">";
 	} else if (type.raw_type == RawType::MAP) {
-		os << BLUE << type.raw_type->getName();
-		os << "<" << type.getKeyType() << BLUE
-			<< ", " << type.getElementType() << BLUE << ">";
+		os << BLUE_BOLD << type.raw_type->getName();
+		os << "<" << type.getKeyType() << BLUE_BOLD
+			<< ", " << type.getElementType() << BLUE_BOLD << ">";
 	} else {
 		os << type.raw_type->getName() << Type::get_nature_symbol(type.nature);
 	}
-	os << END_COLOR;
-
 	if (type.temporary && type != Type::REAL) {
 		os << "&&";
+	} else if (type.reference) {
+		os << "&";
 	}
+	os << END_COLOR;
 
 	return os;
 }

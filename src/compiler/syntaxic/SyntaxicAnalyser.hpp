@@ -29,27 +29,30 @@ class Continue;
 
 class SyntaxicAnalyser {
 
-	std::vector<Token> tokens;
+	std::vector<Token*> tokens;
 	Token* t;
-	Token* lt;
+	int last_character = 0;
+	size_t last_line = 0;
+	size_t last_size = 0;
 	Token* nt;
 	unsigned i;
-	std::vector<SyntaxicalError*> errors;
+	std::vector<SyntaxicalError> errors;
 	long time;
 	std::vector<std::pair<unsigned,size_t>> stack;
+	Token* finished_token;
 
 public:
 
 	SyntaxicAnalyser();
 	~SyntaxicAnalyser();
 
-	Function* analyse(std::vector<Token>&);
+	Function* analyse(std::vector<Token*>&);
 
 	Block* eatMain();
 	Token* eatIdent();
-	Value* eatExpression(bool pipe_opened = false, bool set_opened = false);
-	Value* eatSimpleExpression(bool pipe_opened = false, bool set_opened = false);
-	Value* eatValue();
+	Value* eatExpression(bool pipe_opened = false, bool set_opened = false, Value* initial = nullptr, bool comma_list = false);
+	Value* eatSimpleExpression(bool pipe_opened = false, bool set_opened = false, bool comma_list = false, Value* initial = nullptr);
+	Value* eatValue(bool comma_list = false);
 	bool isObject();
 	Value* eatBlockOrObject();
 	Block* eatBlock();
@@ -68,19 +71,21 @@ public:
 	Function* eatFunction();
 	VariableDeclaration* eatFunctionDeclaration();
 	Instruction* eatInstruction();
+	Value* eatLambdaContinue(bool parenthesis, bool arobase, Ident ident, Value* expression, bool comma_list = false);
+	Value* eatLambdaOrParenthesisExpression(bool pipe_opened = false, bool set_opened = false, bool comma_list = false);
 
 	bool beginingOfExpression(TokenType type);
+	int findNextClosingParenthesis();
+	int findNextArrow();
+	bool isLambda();
 
-	Token* eat();
-	Token* eat(TokenType type);
+	Token* eat_get();
+	void eat();
+	Token* eat_get(TokenType type);
+	void eat(TokenType type);
 	Token* nextTokenAt(int pos);
 
-	void save_current_state();
-	void restore_saved_state();
-	void forgot_saved_state();
-
-	std::vector<SyntaxicalError*> getErrors();
-	long getTime();
+	std::vector<SyntaxicalError> getErrors();
 };
 
 }

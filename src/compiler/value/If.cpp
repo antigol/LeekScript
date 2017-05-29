@@ -9,11 +9,12 @@ using namespace std;
 
 namespace ls {
 
-If::If() {
+If::If(bool ternary) {
 	elze = nullptr;
 	condition = nullptr;
 	then = nullptr;
 	type = Type::UNKNOWN;
+	this->ternary = ternary;
 }
 
 If::~If() {
@@ -25,43 +26,46 @@ If::~If() {
 }
 
 void If::print(ostream& os, int indent, bool debug) const {
-	os << "if ";
-	condition->print(os, indent + 1, debug);
-	os << " ";
-	then->print(os, indent, debug);
-	if (elze != nullptr) {
-		os << " else ";
-		elze->print(os, indent, debug);
+	if (ternary) {
+		os << "(";
+		condition->print(os, indent, debug);
+		os << " ? ";
+		then->instructions[0]->print(os, indent, debug);
+		os << " : ";
+		elze->instructions[0]->print(os, indent, debug);
+		os << ")";
+	} else {
+		os << "if ";
+		condition->print(os, indent + 1, debug);
+		os << " ";
+		then->print(os, indent, debug);
+		if (elze != nullptr) {
+			os << " else ";
+			elze->print(os, indent, debug);
+		}
 	}
 	if (debug) {
-		os << " " << type;
+		os << " " << types;
 	}
 }
 
-unsigned If::line() const {
-	return 0;
+Location If::location() const {
+	return condition->location(); // TODO better
 }
 
 void If::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
+	types.clear();
+
 	condition->analyse(analyser, Type::UNKNOWN);
-	then->analyse(analyser, Type::UNKNOWN);
+	then->analyse(analyser, req_type);
+
+	types.add(then->types);
 
 	if (elze != nullptr) {
 
-		if (then->type != Type::VOID && req_type != Type::VOID) {
-			analyser->set_potential_return_type(then->type);
-		}
+		elze->analyse(analyser, req_type);
 
-		elze->analyse(analyser, Type::UNKNOWN);
-
-		if (elze->type != Type::VOID && req_type != Type::VOID) {
-			analyser->set_potential_return_type(elze->type);
-		}
-
-//		if (req_type == Type::VOID) {
-//			type = Type::VOID;
-//		} else
 		if (then->type == Type::VOID) { // then contains return instruction
 			type = elze->type;
 		} else if (elze->type == Type::VOID) { // elze contains return instruction
@@ -69,27 +73,24 @@ void If::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		} else {
 			type = Type::get_compatible_type(then->type, elze->type);
 		}
+		types.add(elze->types);
 
-		then->analyse(analyser, type);
+		//then->analyse(analyser, type);
 
-		if (elze->type != type) {
-			elze->analyse(analyser, type);
-		}
+		//if (elze->type != type) {
+		//	elze->analyse(analyser, type);
+		//}
 	} else {
 
-		if (req_type == Type::VOID) {
-			type = Type::VOID;
-		} else {
-			type = Type::POINTER; // Pointer because the else will give null
-		}
-		then->analyse(analyser, type);
+		// if (req_type == Type::VOID) {
+			// type = Type::VOID;
+		// } else {
+			//type = Type::POINTER; // Pointer because the else will give null
+		// }
+		//then->analyse(analyser, type);
 	}
-
 	if (req_type.nature == Nature::POINTER) {
 		type.nature = req_type.nature;
-	}
-	if (type == Type::GMP_INT) {
-		type = Type::GMP_INT_TMP;
 	}
 }
 
@@ -104,18 +105,18 @@ Compiler::value If::compile(Compiler& c) const {
 	jit_label_t label_end = jit_label_undefined;
 
 	auto cond = condition->compile(c);
+	condition->compile_end(c);
 
 	if (condition->type.nature == Nature::POINTER) {
-		jit_value_t cond_bool = VM::is_true(c.F, cond.v);
-		if (condition->type.must_manage_memory()) {
-			VM::delete_temporary(c.F, cond.v);
-		}
-		jit_insn_branch_if_not(c.F, cond_bool, &label_else);
+		auto cond_bool = c.insn_to_bool(cond);
+		c.insn_delete_temporary(cond);
+		jit_insn_branch_if_not(c.F, cond_bool.v, &label_else);
 	} else {
 		jit_insn_branch_if_not(c.F, cond.v, &label_else);
 	}
 
 	auto then_v = then->compile(c);
+	then->compile_end(c);
 	if (then_v.v) {
 		jit_insn_store(c.F, res, then_v.v);
 	}
@@ -125,6 +126,7 @@ Compiler::value If::compile(Compiler& c) const {
 
 	if (elze != nullptr) {
 		auto else_v = elze->compile(c);
+		elze->compile_end(c);
 		if (else_v.v) {
 			jit_insn_store(c.F, res, else_v.v);
 		}
@@ -137,6 +139,15 @@ Compiler::value If::compile(Compiler& c) const {
 	jit_insn_label(c.F, &label_end);
 
 	return {res, type};
+}
+
+Value* If::clone() const {
+	auto iff = new If();
+	iff->condition = condition->clone();
+	iff->then = (Block*) then->clone();
+	iff->elze = elze ? (Block*) elze->clone() : nullptr;
+	iff->ternary = ternary;
+	return iff;
 }
 
 }

@@ -1,0 +1,87 @@
+'salut ' × 10
+[12 15 16.5 18].average()
+[1, 2, 3] + 4 + 5
+~"bonjour"
+['yo', 'hey', 'salut'] ~~ x -> x + ' !'
+12 in [4, 7, 12, 17]
+[1 2 3 4 5 6 7 8 9].chunk(3)
+['😀' '😃' '😆'].last()
+let 🐨 = 'koala' 🐨.toUpper()
+[1, 2, 3, 4].shuffle()
+[1, 2, 3, 4, 5].isPermutation([4, 1, 3, 5, 2])
+['a', 'b', 'c', 'd'].random(2)
+[1 2 3 4 5 6 7][2:4]
+true xor true
+12 is Number
+'hello'.class.name
+[1, 2, 3].class
+String.replace('banana' 'a' '_')
+let f = x -> y -> x + y let g = f('a') g('b')
+let fact = x -> if x == 1 { 1 } else { fact(x - 1) * x } fact(8)
+let a = 10 a ~ x -> x ** 2
+let p = * p(5, 8)
++.class
+|[50..100]|
+[1..100].filter(x -> x > 50 and x < 53)
+[1..1989.sqrt()].filter(x -> !(1989 % x))
+Json.decode('{"a":1,"b":2,"c":3}')
+['a', 'b', 'c'].json()
+<1, 1, 2, 2, 2, 3, 3>
+[for var i = 0; i < 5; ++i { i }]
+match 3 { 1 : 1 2 : 2 3 : 3 }
+match [1] { ..[]: 1 ..[2, 2]: 2 }
+['yolo': 3, false: 1, 12: 4].values()
+0b1001010110
+0xffffffff
+π
+2m ** 1000
+10 \ 4
+123 << 12
+12345 >> 8
+(π / 2).sin()
+1993.isPrime()
+359334085968622831041960188598043661065388726959079837.isPrime()
+Number.randInt(2067, 2070)
+{a: 5, b: 'toto', c: true, d: -> 5}.values()
+'x' in {x: 5, y: 'yo'}.keys()
+let a = 2 let b = 5 a <=> b [a, b]
+var a = 2; let b = @a; a = 5; b
+var a = ['a', 12]; var e = @a[1]; e += 5; a
+System.nanoTime
+System.print('salut !')
+(2m ** 1000).string().fold((x, y) -> x + y.number(), 0)
+let p = x, y -> x + y p(123, 566)
+[5, 6, 7] + [8, 9, 10]
+~[1, 2, 3, 4, 5]
+|'this is a string'|
+let o = {a: 'yo', b: 12, c: []} o.c += o.a o
+let x = 5 let res = if x == 5 then 'ok' else 'no' end res
+let f = -> 12 f()
+let f = -> -> -> 12 f()()()
+let f = -> -> 12 let g = f() g()
+(x -> x + 0.5)(12)
+let f = x -> [x, x, x] f(12)
+let s = 0 for v in [1, 2, 3, 4] { s += v} s
+[1.2, 321.42, 23.15] ~~ x -> x * 1.7
+Number.sqrt(500)
+Number.pow(2, 10)
+String.map('salut', x -> '(' + x + ')')
+String.split('bonjour_*_ça_*_va', '_*_')
+[1, 'yo', true].size()
+[3, 4, 5].map(x -> x ^ 2)
+Array.map2([1, 'yo ', []], [12, 55, 9], (x, y -> x + y))
+%(48, 5)
+(x, y -> x + y).class
+null.class
+let a = {a: 32, b: 'toto', c: false} |a|
+'bonjour'[2:5]
+'salut ' + 'ça va ?'
+2.5 × 4.7
+let a = [23, 23, true, '', [], 123] |a|
+[] + 1 + 2 + 3
+let a = {b: 12, c: 5} a.b *= 10 a
+[1, 2, 3] ~~ x -> [x]
+String.toUpper('salut')
+String.startsWith('salut ça va', 'salut')
+'salut'.toArray()
+'bonjour'[3]

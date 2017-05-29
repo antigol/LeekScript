@@ -1,7 +1,7 @@
 #ifndef IDENT_HPP_
 #define IDENT_HPP_
 
-#include "../../compiler/lexical/Token.hpp"
+#include "Token.hpp"
 
 namespace ls {
 

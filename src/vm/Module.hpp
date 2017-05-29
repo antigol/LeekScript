@@ -3,15 +3,13 @@
 
 #include <string>
 #include <vector>
-
-#include "../compiler/semantic/SemanticAnalyser.hpp"
 #include "Type.hpp"
-#include "Program.hpp"
 #include "value/LSClass.hpp"
+#include "../compiler/Compiler.hpp"
 
 namespace ls {
 
-class LSClass;
+class LSValue;
 
 class StaticMethod {
 public:
@@ -71,7 +69,6 @@ public:
 	void* fun = nullptr;
 	LSValue* value = nullptr;
 
-	ModuleStaticField() {}
 	ModuleStaticField(const ModuleStaticField& f)
 	: name(f.name), type(f.type), fun(f.fun), value(f.value) {}
 	ModuleStaticField(std::string name, Type type, LSValue* value)
@@ -84,11 +81,13 @@ class ModuleField {
 public:
 	std::string name;
 	Type type;
-	ModuleField(std::string name, Type type) : name(name), type(type) {}
+	void* fun;
+	ModuleField(std::string name, Type type) : name(name), type(type), fun(nullptr) {}
+	ModuleField(std::string name, Type type, void* fun) : name(name), type(type), fun(fun) {}
 };
 
 
-class Module : public Type {
+class Module {
 public:
 
 	std::string name;
@@ -104,15 +103,15 @@ public:
 	void operator_(std::string name, std::initializer_list<LSClass::Operator>);
 
 	void method(std::string name, std::initializer_list<Method>);
-	void method(std::string name, Type obj_type, Type return_type, std::initializer_list<Type> args, void* addr);
+	void method(std::string name, Type obj_type, Type return_type, std::initializer_list<Type> args, void* addr, bool native = false);
 
 	void static_method(std::string name, std::initializer_list<StaticMethod>);
-	void static_method(std::string name, Type return_type, std::initializer_list<Type> args, void* addr);
+	void static_method(std::string name, Type return_type, std::initializer_list<Type> args, void* addr, bool native = false);
 
 	void field(std::string name, Type type);
+	void field(std::string name, Type type, void* fun);
 	void static_field(std::string name, Type type, void* fun);
 
-	void include(SemanticAnalyser*, Program*);
 	void generate_doc(std::ostream& os, std::string translation);
 };
 

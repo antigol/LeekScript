@@ -1,4 +1,4 @@
-#include "../../compiler/value/Number.hpp"
+#include "Number.hpp"
 
 #include "../../vm/VM.hpp"
 #include <limits.h>
@@ -8,9 +8,7 @@ using namespace std;
 
 namespace ls {
 
-Number::Number(std::string value, Token* token) {
-	this->value = value;
-	this->token = token;
+Number::Number(std::string value, std::shared_ptr<Token> token) : value(value), token(token) {
 	constant = true;
 }
 
@@ -23,12 +21,12 @@ Number::~Number() {
 void Number::print(ostream& os, int, bool debug) const {
 	os << value;
 	if (debug) {
-		os << " " << type;
+		os << " " << types;
 	}
 }
 
-unsigned Number::line() const {
-	return token->line;
+Location Number::location() const {
+	return token->location;
 }
 
 void Number::analyse(SemanticAnalyser*, const Type& req_type) {
@@ -52,30 +50,33 @@ void Number::analyse(SemanticAnalyser*, const Type& req_type) {
 		clean_value = clean_value.substr(0, clean_value.size() - 1);
 	}
 	// Floating-point?
-	bool floating = std::find(clean_value.begin(), clean_value.end(), '.') != clean_value.end()
-					or req_type.raw_type == RawType::REAL;
+	bool floating = std::find(clean_value.begin(), clean_value.end(), '.') != clean_value.end() or req_type.raw_type == RawType::REAL;
 
 	// Determine the possible container for the number
 	if (floating) {
-		if (mp_number) {
-			//type = Type::GMP_REAL TODO
-			type = Type::REAL;
-			double_value = std::stod(clean_value);
-		} else {
-			type = Type::REAL;
+		if (!mp_number) {
 			try {
 				double_value = std::stod(clean_value);
-			} catch (...) {
-				mpf_t gmp;
-				mpf_init_set_str(gmp, clean_value.c_str(), base);
-				double_value = mpf_get_d(gmp);
+			} catch (...) { // LCOV_EXCL_LINE
+				mp_number = true; // number too large, GMP needed LCOV_EXCL_LINE
 			}
-			// TODO floating-point large values
+		}
+		if (mp_number) {
+			// LCOV_EXCL_START
+			if (!mpz_value_initialized) {
+				mpf_init_set_str(mpf_value, clean_value.c_str(), base);
+				mpz_value_initialized = true;
+			}
+			assert(false && "No support for mpf numbers yet");
+			// LCOV_EXCL_STOP
+		} else {
+			type = Type::REAL;
 		}
 	} else {
-		mpz_init_set_str(mpz_value, clean_value.c_str(), base);
-		mpz_value_initialized = true;
-
+		if (!mpz_value_initialized) {
+			mpz_init_set_str(mpz_value, clean_value.c_str(), base);
+			mpz_value_initialized = true;
+		}
 		if (!mp_number and !long_number and mpz_fits_sint_p(mpz_value)) {
 			type = Type::INTEGER;
 			int_value = mpz_get_si(mpz_value);
@@ -85,13 +86,18 @@ void Number::analyse(SemanticAnalyser*, const Type& req_type) {
 			long_value = mpz_get_si(mpz_value);
 			double_value = long_value;
 		} else {
-			type = Type::GMP_INT;
+			type = Type::MPZ;
 		}
+	}
+
+	if (pointer) {
+		type.nature = Nature::POINTER;
 	}
 
 	if (req_type.nature != Nature::UNKNOWN) {
 		type.nature = req_type.nature;
 	}
+	types = type;
 }
 
 Compiler::value Number::compile(Compiler& c) const {
@@ -107,24 +113,23 @@ Compiler::value Number::compile(Compiler& c) const {
 		return {LS_CREATE_REAL(c.F, double_value), type};
 	}
 
-	if (type.raw_type == RawType::GMP_INT) {
+	if (type.raw_type == RawType::MPZ) {
 
-/*
-		jit_value_t string_jit = LS_CREATE_POINTER(c.F, (void*)&clean_value);
-		jit_value_t base_jit = LS_CREATE_INTEGER(c.F, base);
-		jit_value_t gmp_struct =
-		VM::call(c.F, VM::gmp_int_type, {LS_POINTER, LS_INTEGER}, {string_jit, base_jit}, &new_mpz);
-*/
-		jit_value_t gmp_struct = jit_value_create(c.F, VM::gmp_int_type);
-		jit_value_set_addressable(gmp_struct);
-		jit_insn_store_relative(c.F, jit_insn_address_of(c.F, gmp_struct), 0, LS_CREATE_INTEGER(c.F, mpz_value->_mp_alloc));
-		jit_insn_store_relative(c.F, jit_insn_address_of(c.F, gmp_struct), 4, LS_CREATE_INTEGER(c.F, mpz_value->_mp_size));
-		jit_insn_store_relative(c.F, jit_insn_address_of(c.F, gmp_struct), 8, LS_CREATE_POINTER(c.F, mpz_value->_mp_d));
+		jit_value_t mpz_struct = jit_value_create(c.F, VM::mpz_type);
+		jit_value_set_addressable(mpz_struct);
+		jit_insn_store_relative(c.F, jit_insn_address_of(c.F, mpz_struct), 0, LS_CREATE_INTEGER(c.F, mpz_value->_mp_alloc));
+		jit_insn_store_relative(c.F, jit_insn_address_of(c.F, mpz_struct), 4, LS_CREATE_INTEGER(c.F, mpz_value->_mp_size));
+		jit_insn_store_relative(c.F, jit_insn_address_of(c.F, mpz_struct), 8, c.new_pointer(mpz_value->_mp_d).v);
 
-		return {gmp_struct, Type::GMP_INT};
+		return {mpz_struct, Type::MPZ};
 	}
 
 	return {LS_CREATE_INTEGER(c.F, int_value), type};
+}
+
+Value* Number::clone() const {
+	auto n = new Number(value, token);
+	return n;
 }
 
 }

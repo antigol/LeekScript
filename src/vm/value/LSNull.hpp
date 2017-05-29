@@ -4,7 +4,6 @@
 #include <iostream>
 #include <string>
 #include "../LSValue.hpp"
-#include "../Type.hpp"
 
 namespace ls {
 
@@ -14,35 +13,23 @@ private:
 	LSNull();
 
 public:
-
 	static LSValue* get();
-	static LSClass* null_class;
+	static LSClass* clazz;
+	static LSNull* create() {
+		return new LSNull();
+	}
+	static void set_null_value(LSNull* null_value) {
+		LSNull::null_var = null_value;
+	}
 
 	~LSNull();
 
-	LSValue* clone() const override;
-
-	bool isTrue() const override;
-
-	LSVALUE_OPERATORS
-
-	bool eq(const LSNull*) const override;
-	bool lt(const LSNull*) const override;
-
-	LSValue* at (const LSValue* value) const override;
-	LSValue** atL (const LSValue* value) override;
-
-	LSValue* attr(const LSValue* key) const override;
-	LSValue** attrL(const LSValue* key) override;
-
-	std::ostream& print(std::ostream& os) const override;
-	std::string json() const override;
-
+	bool to_bool() const override;
+	bool ls_not() const override;
+	bool eq(const LSValue*) const override;
+	bool lt(const LSValue*) const override;
+	std::ostream& dump(std::ostream& os) const override;
 	LSValue* getClass() const override;
-
-	int typeID() const override { return 1; }
-
-	virtual const BaseRawType* getRawType() const override;
 };
 
 }

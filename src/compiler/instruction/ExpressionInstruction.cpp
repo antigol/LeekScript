@@ -1,4 +1,4 @@
-#include "../../compiler/instruction/ExpressionInstruction.hpp"
+#include "ExpressionInstruction.hpp"
 
 using namespace std;
 
@@ -16,6 +16,10 @@ void ExpressionInstruction::print(ostream& os, int indent, bool debug) const {
 	value->print(os, indent, debug);
 }
 
+Location ExpressionInstruction::location() const {
+	return value->location();
+}
+
 void ExpressionInstruction::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	if (req_type == Type::VOID) {
 		value->analyse(analyser, Type::VOID);
@@ -23,24 +27,23 @@ void ExpressionInstruction::analyse(SemanticAnalyser* analyser, const Type& req_
 	} else {
 		value->analyse(analyser, req_type);
 		type = value->type;
+		types = value->types;
 	}
 }
 
 Compiler::value ExpressionInstruction::compile(Compiler& c) const {
-
 	auto v = value->compile(c);
-
+	value->compile_end(c);
 	if (type.nature == Nature::VOID) {
-		if (value->type.must_manage_memory()) {
-			VM::delete_temporary(c.F, v.v);
-		}
-		if (value->type == Type::GMP_INT_TMP) {
-			VM::delete_gmp_int(c.F, v.v);
-		}
+		c.insn_delete_temporary(v);
 		return {nullptr, Type::UNKNOWN};
 	} else {
 		return v;
 	}
+}
+
+Instruction* ExpressionInstruction::clone() const {
+	return new ExpressionInstruction(value->clone());
 }
 
 }

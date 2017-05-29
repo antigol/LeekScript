@@ -6,13 +6,17 @@
 #include <jit/jit.h>
 #include <gmp.h>
 #include <gmpxx.h>
+#include <stdio.h>
+#include <execinfo.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-#include "../constants.h"
-#include "Context.hpp"
 #include "../compiler/lexical/LexicalError.hpp"
 #include "../compiler/syntaxic/SyntaxicalError.hpp"
 #include "../compiler/semantic/SemanticError.hpp"
 #include "../compiler/Compiler.hpp"
+#include "Exception.hpp"
 
 #define OPERATION_LIMIT 10000000
 
@@ -20,16 +24,20 @@
 #define LS_INTEGER jit_type_int
 #define LS_LONG jit_type_long
 #define LS_REAL jit_type_float64
-#define LS_BOOLEAN LS_INTEGER
+#define LS_BOOLEAN jit_type_sys_bool
 #define LS_POINTER jit_type_void_ptr
 #define LS_STRING LS_POINTER
 #define LS_NUMBER LS_POINTER
 
 #define LS_CREATE_INTEGER(F, X) jit_value_create_nint_constant((F), LS_INTEGER, (X))
-#define LS_CREATE_BOOLEAN(F, X) LS_CREATE_INTEGER((F), (X))
+#define LS_CREATE_BOOLEAN(F, X) jit_value_create_nint_constant((F), LS_INTEGER, (X))
 #define LS_CREATE_LONG(F, X) jit_value_create_long_constant((F), LS_LONG, (X))
 #define LS_CREATE_REAL(F, X) jit_value_create_float64_constant((F), LS_REAL, (X))
-#define LS_CREATE_POINTER(F, X) jit_value_create_constant((F), new jit_constant_t { LS_POINTER, {(X)} })
+
+struct jit_stack_trace {
+	unsigned int size;
+	void* items[1];
+};
 
 namespace ls {
 
@@ -37,42 +45,28 @@ class Type;
 class Module;
 class Program;
 class LSValue;
-class LexicalError;
-class Compiler;
+class SemanticVar;
+class LSNull;
+class LSBoolean;
+template <class R> class LSFunction;
 
 class VM {
 public:
 
-	enum Exception {
-		DIVISION_BY_ZERO = -2,
-		NO_EXCEPTION = 0,
-		OPERATION_LIMIT_EXCEEDED = 1,
-		NUMBER_OVERFLOW = 2,
-		OTHER = 3
-	};
-
 	static const unsigned long int DEFAULT_OPERATION_LIMIT;
-	static unsigned int operations;
-	static const bool enable_operations;
-	static unsigned long int operation_limit;
-
-	static jit_type_t gmp_int_type;
-	static long gmp_values_created;
-	static long gmp_values_deleted;
-
-	static Exception last_exception;
-	static jit_stack_trace_t stack_trace;
+	static jit_type_t mpz_type;
+	static VM* current_vm;
 
 	struct Result {
 		bool compilation_success = false;
 		bool execution_success = false;
 		std::vector<LexicalError> lexical_errors;
-		std::vector<SyntaxicalError*> syntaxical_errors;
+		std::vector<SyntaxicalError> syntaxical_errors;
 		std::vector<SemanticError> semantical_errors;
-		Exception exception = Exception::NO_EXCEPTION;
-		std::string program;
-		std::string value;
-		std::string context;
+		vm::ExceptionObj* exception = nullptr;
+		std::string program = "";
+		std::string value = "";
+		std::string context = "";
 		long compilation_time = 0;
 		long compilation_time_ms = 0;
 		long execution_time = 0;
@@ -80,29 +74,48 @@ public:
 		long operations = 0;
 		int objects_created = 0;
 		int objects_deleted = 0;
-		int gmp_objects_created = 0;
-		int gmp_objects_deleted = 0;
+		int mpz_objects_created = 0;
+		int mpz_objects_deleted = 0;
 	};
 
 	std::vector<Module*> modules;
+	std::map<std::string, LSValue*> system_vars;
+	std::map<std::string, std::shared_ptr<SemanticVar>> internal_vars;
+	std::map<std::string, jit_value_t> internals;
+	Compiler compiler;
+	LSNull* null_value;
+	LSBoolean* true_value;
+	LSBoolean* false_value;
+	unsigned int operations = 0;
+	bool enable_operations = true;
+	unsigned long int operation_limit;
+	std::ostream* output = &std::cout;
+	long mpz_created = 0;
+	long mpz_deleted = 0;
+	vm::ExceptionObj* last_exception = nullptr;
+	jit_stack_trace_t stack_trace;
+	jit_context_t jit_context;
+	std::string file_name;
 
-	VM();
+	VM(bool v1 = false);
 	virtual ~VM();
 
+	static VM* current();
+
 	/** Main execution function **/
-	Result execute(const std::string code, std::string ctx);
+	Result execute(const std::string code, std::string ctx, std::string file_name, bool debug = false, bool ops = true);
 
 	/** Add a module **/
 	void add_module(Module* m);
+	void add_internal_var(std::string name, Type type);
 	static jit_type_t get_jit_type(const Type& type);
 
+	/** Add a constant **/
+	void add_constant(std::string name, Type type, LSValue* value);
+
 	/** Value creation **/
-	static jit_value_t create_object(jit_function_t F);
 	static jit_value_t create_array(jit_function_t F, const Type& element_type,
 		int cap = 0);
-	static void push_move_array(jit_function_t F, const Type& element_type,
-		jit_value_t array, jit_value_t value);
-	static jit_value_t create_gmp_int(jit_function_t F, long value = 0);
 
 	/** Conversions **/
 	static jit_value_t value_to_pointer(jit_function_t, jit_value_t, Type);
@@ -111,43 +124,49 @@ public:
 
 	/** Ref counting and memory management **/
 	static jit_value_t get_refs(jit_function_t F, jit_value_t obj);
-	static void inc_refs(jit_function_t F, jit_value_t obj);
 	static void inc_refs_if_not_temp(jit_function_t F, jit_value_t obj);
 	static void dec_refs(jit_function_t F, jit_value_t obj);
-	static void delete_ref(jit_function_t F, jit_value_t obj);
-	static void delete_temporary(jit_function_t F, jit_value_t obj);
-	static jit_value_t move_obj(jit_function_t F, jit_value_t ptr);
-	static jit_value_t move_inc_obj(jit_function_t F, jit_value_t ptr);
-	static jit_value_t clone_obj(jit_function_t F, jit_value_t ptr);
-	static void delete_gmp_int(jit_function_t F, jit_value_t gmp);
-	static jit_value_t clone_gmp_int(jit_function_t F, jit_value_t gmp);
-	static void inc_gmp_counter(jit_function_t F);
-
-	/** Operations **/
-	static void inc_ops(jit_function_t F, int add);
-	static void inc_ops_jit(jit_function_t F, jit_value_t add);
-	static void get_operations(jit_function_t F);
-
-	/** Captures **/
-	static void function_add_capture(jit_function_t F, jit_value_t, jit_value_t);
-	static jit_value_t function_get_capture(jit_function_t F, jit_value_t fun_ptr, int capture_index);
+	static void inc_mpz_counter(jit_function_t F);
 
 	/** Utilities **/
-	static void print_gmp_int(jit_function_t F, jit_value_t val);
-	static jit_value_t is_true(jit_function_t F, jit_value_t ptr);
-	static void store_exception(jit_function_t F, jit_value_t ex);
-	static std::string exception_message(VM::Exception expected);
+	static void print_mpz_int(jit_function_t F, jit_value_t val);
+	void store_exception(jit_function_t F, jit_value_t ex);
 
-	template <typename R, typename... A>
-	static jit_value_t call(jit_function_t& f, jit_type_t return_type, std::vector<jit_type_t> types, std::vector<jit_value_t> args, R(*func)(A...))
-	{
-		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, return_type, types.data(), types.size(), 0);
-		return jit_insn_call_native(f, "VM::call", (void*) func, sig, args.data(), types.size(), 0);
+	static unsigned int get_offset(jit_context_t context, void* pc) {
+		auto trace = (jit_stack_trace_t) jit_malloc(sizeof(struct jit_stack_trace));
+		trace->size = 1;
+		trace->items[0] = pc;
+		auto line = jit_stack_trace_get_offset(context, trace, 0);
+		jit_free(trace);
+		return line;
 	}
-	static jit_value_t call(jit_function_t& f, jit_type_t return_type, std::vector<jit_type_t> types, std::vector<jit_value_t> args, void* func)
-	{
-		jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, return_type, types.data(), types.size(), 0);
-		return jit_insn_call_native(f, "VM::call", func, sig, args.data(), types.size(), 0);
+
+	template <unsigned int level>
+	static void* get_exception_object(int obj) {
+		auto ex = new vm::ExceptionObj((vm::Exception) obj);
+		auto context = VM::current()->jit_context;
+		auto frame = __builtin_frame_address(level);
+		size_t N = 16;
+		void* array[N];
+		size_t size = backtrace(array, N);
+		auto pc = array[size - 1]; // take last C++ stacktrace pc as first jit pc
+		while (true) {
+			auto line = get_offset(context, pc);
+			if (line == JIT_NO_OFFSET) break;
+			vm::exception_frame frame_object;
+			frame_object.pc = pc;
+			frame_object.frame = frame;
+			frame_object.line = line;
+			auto fun = jit_function_from_pc(context, pc, nullptr);
+			auto name = fun ? (std::string*) jit_function_get_meta(fun, 12) : nullptr;
+			auto file = fun ? (std::string*) jit_function_get_meta(fun, 13) : nullptr;
+			frame_object.file = file == nullptr ? "?" : *file;
+			frame_object.function = name == nullptr ? "?" : *name;
+			ex->frames.emplace_back(frame_object);
+			frame = jit_get_next_frame_address(frame);
+			pc = jit_get_return_address(frame);
+		}
+		return ex;
 	}
 };
 

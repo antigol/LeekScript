@@ -1,7 +1,19 @@
-var sum = 2l
-for let i = 3; i < 2000000; i += 2 do
-	if i.isPrime() {
-		sum += i
+var N = 2000000
+var numbers = [0]
+numbers.fill(1, N + 1)
+numbers[1] = 0
+
+var S = N.sqrt().floor()
+for var i = 2; i < S; ++i {
+	if numbers[i] {
+		for (var j = i * i; j <= N; j += i) {
+			numbers[j] = 0
+		}
 	}
-end
-return sum
+}
+
+var sum = 0l
+for i, p in numbers {
+	if p sum += i
+}
+sum

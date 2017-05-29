@@ -1,4 +1,4 @@
-#include "../../compiler/value/Object.hpp"
+#include "Object.hpp"
 
 #include "../../vm/value/LSNull.hpp"
 #include "../../vm/value/LSString.hpp"
@@ -13,9 +13,6 @@ Object::Object() {
 }
 
 Object::~Object() {
-	for (auto key : keys) {
-		delete key;
-	}
 	for (auto ex : values) {
 		delete ex;
 	}
@@ -24,7 +21,7 @@ Object::~Object() {
 void Object::print(ostream& os, int indent, bool debug) const {
 	os << "{";
 	for (unsigned i = 0; i < keys.size(); ++i) {
-		os << keys.at(i)->token->content;
+		os << keys.at(i)->content;
 		os << ": ";
 		values.at(i)->print(os, indent);
 		if (i < keys.size() - 1) {
@@ -37,35 +34,39 @@ void Object::print(ostream& os, int indent, bool debug) const {
 	}
 }
 
-unsigned Object::line() const {
-	return 0;
+Location Object::location() const {
+	return {{0, 0, 0}, {0, 0, 0}}; // TODO
 }
 
 void Object::analyse(SemanticAnalyser* analyser, const Type&) {
-	for (Value* value : values) {
+	for (auto& value : values) {
 		value->analyse(analyser, Type::POINTER);
 	}
 }
 
-void push_object(LSObject* o, std::string* k, LSValue* v) {
-	o->addField(*k, v);
-}
-
 Compiler::value Object::compile(Compiler& c) const {
 
-	jit_value_t object = VM::create_object(c.F);
-
-	jit_type_t args[3] = {LS_POINTER, LS_POINTER, LS_POINTER};
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_void, args, 3, 0);
+	auto object = c.new_object();
 
 	for (unsigned i = 0; i < keys.size(); ++i) {
-		jit_value_t k = LS_CREATE_POINTER(c.F, &keys.at(i)->token->content);
+		auto k = c.new_pointer((void*) &keys.at(i)->content);
 		auto v = values[i]->compile(c);
-		jit_value_t args[] = {object, k, v.v};
-		jit_insn_call_native(c.F, "push", (void*) push_object, sig, args, 3, JIT_CALL_NOTHROW);
+		c.insn_call(Type::VOID, {object, k, v}, +[](LSObject* o, std::string* k, LSValue* v) {
+			o->addField(*k, v);
+		});
 	}
+	return object;
+}
 
-	return {object, Type::OBJECT};
+Value* Object::clone() const {
+	auto o = new Object();
+	for (const auto& k : keys) {
+		o->keys.push_back(k);
+	}
+	for (const auto& v : values) {
+		o->values.push_back(v->clone());
+	}
+	return o;
 }
 
 }

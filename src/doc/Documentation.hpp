@@ -13,7 +13,7 @@ public:
 	Documentation();
 	virtual ~Documentation();
 
-	void generate(std::ostream& os);
+	void generate(std::ostream& os, std::string lang = "fr");
 };
 
 }

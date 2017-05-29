@@ -1,5 +1,6 @@
 {
-	"UNDEFINED_VARIABLE" : "Variable « %s » non définie",
+	"UNKNOWN_ERROR" : "Erreur inconnue",
+	"UNDEFINED_VARIABLE" : "Variable « %s » non déclarée",
 	"VARIABLE_ALREADY_DEFINED" : "Variable « %s » déjà définie",
 	"METHOD_NOT_FOUND" : "Cette méthode « %s » n'existe pas",
 	"STATIC_METHOD_NOT_FOUND" : "Cette méthode statique « %s » n'existe pas",
@@ -7,11 +8,14 @@
 	"CANNOT_CALL_VALUE" : "Impossible d'appeller l'expression « %s », elle n'est pas une fonction ou une classe",
 	"BREAK_MUST_BE_IN_LOOP" : "L'instruction « break » doit se trouver à l'intérieur d'une boucle",
 	"CONTINUE_MUST_BE_IN_LOOP" : "L'instruction « continue » doit se trouver à l'intérieur d'une boucle",
-	"ARRAY_ACCESS_KEY_MUST_BE_NUMBER" : "Cette clé d'accès au tableau « %s » doit être un nombre",
+	"ARRAY_ACCESS_KEY_MUST_BE_NUMBER" : "Cette clé « %1 » d'accès au tableau « %2 » doit être un nombre, mais est de type %3",
 	"ARRAY_ACCESS_RANGE_KEY_MUST_BE_NUMBER" : "Cette clé d'accès de plage au tableau « %s » doit être un nombre",
 	"VALUE_MUST_BE_A_LVALUE" : "Cette valeur « %s » doit être une l-value",
-	"WRONG_ARGUMENT_COUNT" : "Nombre d'arguments incorrect pour appeller la fonction « %s »",
-	"NO_SUCH_OPERATOR" : "Opérateur « %s » inconnu entre ces deux types",
-
-	"UNKNOWN_ERROR" : "Erreur inconnue"
+	"WRONG_ARGUMENT_COUNT" : "La fonction « %1 » prend %2 paramètre(s), mais %3 sont passés",
+	"NO_SUCH_OPERATOR" : "L'opérateur %1 %2 %3 n'est pas défini",
+	"CANT_MODIFY_CONSTANT_VALUE": "Cette valeur « %s » est constante, impossible de la modifier",
+	"VALUE_NOT_ITERABLE" : "Cette valeur « %1 » de type %2 n'est pas itérable",
+	"INVALID_MAP_KEY": "Cette clé « %1 » d'accès à la map « %2 » doit être un nombre, mais est de type %3",
+	"NO_SUCH_ATTRIBUTE": "L'attribut « %1 » n'existe pas dans la classe %2",
+	"VALUE_MUST_BE_A_CONTAINER": "Cette valeur « %s » doit être un conteneur"
 }

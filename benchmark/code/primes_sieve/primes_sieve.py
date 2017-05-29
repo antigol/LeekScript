@@ -9,7 +9,7 @@ def is_prime(number):
 	return True
 
 c = 2
-for i in range(5, 1000000, 6):
+for i in range(5, 80000, 6):
 	if is_prime(i):
 		c = c + 1
 	if is_prime(i + 2):

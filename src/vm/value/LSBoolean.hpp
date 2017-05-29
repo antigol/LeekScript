@@ -2,63 +2,57 @@
 #define LSBOOLEAN_HPP_
 
 #include <string>
-#include "../../../lib/json.hpp"
 #include "../LSValue.hpp"
-#include "../Type.hpp"
 
 namespace ls {
 
 class LSBoolean : public LSValue {
 private:
 
-	LSBoolean();
 	LSBoolean(bool value);
 
 public:
 
 	const bool value;
 
-	static LSValue* boolean_class;
+	static LSValue* clazz;
 	static LSBoolean* false_val;
 	static LSBoolean* true_val;
+	static LSBoolean* create(bool value) {
+		return new LSBoolean(value);
+	}
 	static LSBoolean* get(bool value) {
 		return value ? true_val : false_val;
 	}
-
-	LSBoolean(Json& data);
+	static void set_true_value(LSBoolean* v) {
+		true_val = v;
+	}
+	static void set_false_value(LSBoolean* v) {
+		false_val = v;
+	}
 
 	virtual ~LSBoolean();
 
-	bool isTrue() const override;
-
-	LSValue* ls_not() override;
+	bool to_bool() const override;
+	bool ls_not() const override;
 	LSValue* ls_tilde() override;
+	LSValue* ls_minus() override;
 
-	LSVALUE_OPERATORS
+	LSValue* add(LSValue* v) override;
+	LSValue* sub(LSValue* v) override;
+	bool eq(const LSValue*) const override;
+	bool lt(const LSValue*) const override;
+	bool operator < (int value) const override;
+	bool operator < (double value) const override;
 
-	LSValue* ls_add(LSNumber*) override;
-	LSValue* ls_add(LSString* s) override;
-	LSValue* ls_sub(LSNumber*) override;
+	int abso() const override;
 
-	bool eq(const LSBoolean*) const override;
-	bool lt(const LSBoolean*) const override;
+	LSValue* clone() const override;
 
-	LSValue* at (const LSValue* value) const override;
-	LSValue** atL (const LSValue* value) override;
-
-	LSValue* attr(const LSValue* key) const override;
-	LSValue** attrL(const LSValue* key) override;
-
-	LSValue* clone() const;
-
-	std::ostream& print(std::ostream& os) const;
+	std::ostream& dump(std::ostream& os) const override;
 	std::string json() const override;
 
 	LSValue* getClass() const override;
-
-	int typeID() const override { return 2; }
-
-	virtual const BaseRawType* getRawType() const override;
 };
 
 }

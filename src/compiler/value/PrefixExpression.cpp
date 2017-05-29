@@ -1,11 +1,12 @@
-#include "../../compiler/value/PrefixExpression.hpp"
-
-#include "../../compiler/value/FunctionCall.hpp"
-#include "../../compiler/value/LeftValue.hpp"
-#include "../../compiler/value/VariableValue.hpp"
+#include "PrefixExpression.hpp"
+#include "FunctionCall.hpp"
+#include "LeftValue.hpp"
+#include "VariableValue.hpp"
 #include "../../vm/value/LSNumber.hpp"
 #include "../../vm/value/LSArray.hpp"
 #include "../../vm/value/LSObject.hpp"
+#include "../semantic/SemanticAnalyser.hpp"
+#include "../semantic/SemanticError.hpp"
 
 using namespace std;
 
@@ -18,7 +19,6 @@ PrefixExpression::PrefixExpression() {
 
 PrefixExpression::~PrefixExpression() {
 	delete expression;
-	delete operatorr;
 }
 
 void PrefixExpression::print(ostream& os, int indent, bool debug) const {
@@ -32,20 +32,35 @@ void PrefixExpression::print(ostream& os, int indent, bool debug) const {
 	}
 }
 
-unsigned PrefixExpression::line() const {
-	return 0;
+Location PrefixExpression::location() const {
+	return {operatorr->token->location.start, expression->location().end};
 }
 
 void PrefixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
 	expression->analyse(analyser, Type::UNKNOWN);
 
+	if (operatorr->type == TokenType::TILDE) {
+		type = expression->type;
+		if (type == Type::BOOLEAN) {
+			type = Type::INTEGER;
+		}
+	}
+
 	if (operatorr->type == TokenType::PLUS_PLUS
 		or operatorr->type == TokenType::MINUS_MINUS
-		or operatorr->type == TokenType::MINUS
-		or operatorr->type == TokenType::TILDE) {
+		or operatorr->type == TokenType::MINUS) {
 
 		type = expression->type;
+		if (type == Type::MPZ and operatorr->type == TokenType::MINUS) {
+			type = Type::MPZ_TMP;
+		}
+
+		if (operatorr->type == TokenType::PLUS_PLUS or operatorr->type == TokenType::MINUS_MINUS) {
+			if (expression->type.constant) {
+				analyser->add_error({SemanticError::Type::CANT_MODIFY_CONSTANT_VALUE, location(), expression->location(), {expression->to_string()}});
+			}
+		}
 
 	} else if (operatorr->type == TokenType::NOT) {
 
@@ -55,10 +70,13 @@ void PrefixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 
 		if (VariableValue* vv = dynamic_cast<VariableValue*>(expression)) {
 			if (vv->name == "Number") type = Type::INTEGER;
-			if (vv->name == "Boolean") type = Type::BOOLEAN;
-			if (vv->name == "String") type = Type::STRING;
-			if (vv->name == "Array") type = Type::PTR_ARRAY;
-			if (vv->name == "Object") type = Type::OBJECT;
+			else if (vv->name == "Boolean") type = Type::BOOLEAN;
+			else if (vv->name == "String") type = Type::STRING;
+			else if (vv->name == "Array") type = Type::PTR_ARRAY;
+			else if (vv->name == "Object") type = Type::OBJECT;
+			else {
+				type = Type::POINTER;
+			}
 		}
 		if (FunctionCall* fc = dynamic_cast<FunctionCall*>(expression)) {
 			if (VariableValue* vv = dynamic_cast<VariableValue*>(fc->function)) {
@@ -84,7 +102,10 @@ void PrefixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type)
 }
 
 LSValue* jit_not(LSValue* x) {
-	return x->ls_not();
+	// TODO optimization, don't create a LSBoolean
+	auto r = LSBoolean::get(x->ls_not());
+	LSValue::delete_temporary(x);
+	return r;
 }
 LSValue* jit_minus(LSValue* x) {
 	return x->ls_minus();
@@ -101,8 +122,9 @@ LSValue* jit_pre_tilde(LSValue* v) {
 
 Compiler::value PrefixExpression::compile(Compiler& c) const {
 
+	jit_insn_mark_offset(c.F, location().start.line);
+
 	jit_type_t args_types[1] = {LS_POINTER};
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_types, 1, 0);
 	vector<jit_value_t> args;
 
 	void* func = nullptr;
@@ -110,7 +132,13 @@ Compiler::value PrefixExpression::compile(Compiler& c) const {
 	switch (operatorr->type) {
 
 		case TokenType::PLUS_PLUS: {
-			if (expression->type.nature == Nature::VALUE) {
+			if (expression->type == Type::MPZ) {
+				auto x = expression->compile(c);
+				auto x_addr = c.insn_address_of(x);
+				auto one = c.new_integer(1);
+				c.insn_call(Type::VOID, {x_addr, x_addr, one}, &mpz_add_ui);
+				return x;
+			} else if (expression->type.nature == Nature::VALUE) {
 				auto x = expression->compile(c);
 				auto y = c.new_integer(1);
 				jit_value_t sum = jit_insn_add(c.F, x.v, y.v);
@@ -156,7 +184,20 @@ Compiler::value PrefixExpression::compile(Compiler& c) const {
 			break;
 		}
 		case TokenType::MINUS: {
-			if (expression->type.nature == Nature::VALUE) {
+			if (expression->type.not_temporary() == Type::MPZ) {
+				auto x = expression->compile(c);
+				auto r = [&]() {
+					if (x.t.temporary) {
+						return x;
+					} else {
+						return c.new_mpz();
+					}
+				}();
+				auto x_addr = c.insn_address_of(x);
+				auto r_addr = c.insn_address_of(r);
+				c.insn_call(Type::VOID, {r_addr, x_addr}, &mpz_neg);
+				return r;
+			} else if (expression->type.nature == Nature::VALUE) {
 				auto x = expression->compile(c);
 				jit_value_t r = jit_insn_neg(c.F, x.v);
 				if (type.nature == Nature::POINTER) {
@@ -194,21 +235,25 @@ Compiler::value PrefixExpression::compile(Compiler& c) const {
 					}
 					return {n, type};
 				}
-				if (vv->name == "Boolean") {
+				else if (vv->name == "Boolean") {
 					jit_value_t n = LS_CREATE_INTEGER(c.F, 0);
 					if (type.nature == Nature::POINTER) {
 						return {VM::value_to_pointer(c.F, n, Type::BOOLEAN), type};
 					}
 					return {n, type};
 				}
-				if (vv->name == "String") {
-					return {LS_CREATE_POINTER(c.F, new LSString("")), type};
+				else if (vv->name == "String") {
+					return {c.new_pointer(new LSString("")).v, type};
 				}
-				if (vv->name == "Array") {
-					return {LS_CREATE_POINTER(c.F, new LSArray<LSValue*>()), type};
+				else if (vv->name == "Array") {
+					return {c.new_pointer(new LSArray<LSValue*>()).v, type};
 				}
-				if (vv->name == "Object") {
-					return {LS_CREATE_POINTER(c.F, new LSObject()), type};
+				else if (vv->name == "Object") {
+					return {c.new_pointer(new LSObject()).v, type};
+				}
+				else {
+					auto clazz = expression->compile(c);
+					return c.new_object_class(clazz);
 				}
 			}
 
@@ -240,30 +285,35 @@ Compiler::value PrefixExpression::compile(Compiler& c) const {
 						if (fc->arguments.size() > 0) {
 							return fc->arguments[0]->compile(c);
 						}
-						return {LS_CREATE_POINTER(c.F, new LSString("")), type};
+						return {c.new_pointer(new LSString("")).v, type};
 					}
 					if (vv->name == "Array") {
-						return {LS_CREATE_POINTER(c.F, new LSArray<LSValue*>()), type};
+						return {c.new_pointer(new LSArray<LSValue*>()).v, type};
 					}
 					if (vv->name == "Object") {
-						return {LS_CREATE_POINTER(c.F, new LSObject()), type};
+						return {c.new_pointer(new LSObject()).v, type};
 					}
 				}
 			}
-
-			break;
 		}
-		default: {
-
-		}
+		default: {}
 	}
-	jit_value_t result = jit_insn_call_native(c.F, "", func, sig, args.data(), 1, JIT_CALL_NOTHROW);
+	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_types, 1, 1);
+	jit_value_t result = jit_insn_call_native(c.F, "", func, sig, args.data(), 1, 0);
+	jit_type_free(sig);
 
 	if (operatorr->type == TokenType::NOT) {
 		result = VM::pointer_to_value(c.F, result, Type::BOOLEAN);
 	}
 
 	return {result, type};
+}
+
+Value* PrefixExpression::clone() const {
+	auto pe = new PrefixExpression();
+	pe->expression = (LeftValue*) expression->clone();
+	pe->operatorr = operatorr;
+	return pe;
 }
 
 }

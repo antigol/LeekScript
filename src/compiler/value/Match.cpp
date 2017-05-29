@@ -1,5 +1,6 @@
 #include "Match.hpp"
 #include "../../vm/LSValue.hpp"
+#include "../../vm/VM.hpp"
 
 using namespace std;
 
@@ -46,8 +47,8 @@ void Match::print(std::ostream& os, int indent, bool debug) const {
 	}
 }
 
-unsigned Match::line() const {
-	return 0;
+Location Match::location() const {
+	return {{0, 0, 0}, {0, 0, 0}}; // TODO
 }
 
 void Match::analyse(ls::SemanticAnalyser* analyser, const Type&) {
@@ -146,9 +147,7 @@ Compiler::value Match::compile(Compiler& c) const {
 			auto ret = returns[i]->compile(c);
 			jit_insn_store(c.F, res, ret.v);
 			jit_insn_label(c.F, &label_end);
-			if (value->type.must_manage_memory()) {
-				VM::delete_temporary(c.F, v.v);
-			}
+			c.insn_delete_temporary(v);
 			return {res, type};
 		}
 
@@ -178,9 +177,7 @@ Compiler::value Match::compile(Compiler& c) const {
 	jit_insn_store(c.F, res, c.new_null().v);
 
 	jit_insn_label(c.F, &label_end);
-	if (value->type.must_manage_memory()) {
-		VM::delete_temporary(c.F, v.v);
-	}
+	c.insn_delete_temporary(v);
 	return {res, type};
 }
 
@@ -215,7 +212,7 @@ bool jit_greater_equal_(LSValue* x, LSValue* y) {
 jit_value_t Match::Pattern::match(Compiler &c, jit_value_t v) const {
 
 	jit_type_t args_types[2] = {LS_POINTER, LS_POINTER};
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_sys_bool, args_types, 2, 0);
+	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_type_sys_bool, args_types, 2, 1);
 
 	if (interval) {
 		jit_value_t ge = nullptr;
@@ -226,12 +223,9 @@ jit_value_t Match::Pattern::match(Compiler &c, jit_value_t v) const {
 			} else {
 				jit_value_t args[2] = { v, b.v };
 				ge = jit_insn_call_native(c.F, "", (void*) jit_greater_equal_, sig, args, 2, JIT_CALL_NOTHROW);
-				if (begin->type.must_manage_memory()) {
-					VM::delete_temporary(c.F, b.v);
-				}
+				c.insn_delete_temporary(b);
 			}
 		}
-
 		jit_value_t lt = nullptr;
 		if (end) {
 			auto e = end->compile(c);
@@ -240,12 +234,10 @@ jit_value_t Match::Pattern::match(Compiler &c, jit_value_t v) const {
 			} else {
 				jit_value_t args[2] = { v, e.v };
 				lt = jit_insn_call_native(c.F, "", (void*) jit_less_, sig, args, 2, JIT_CALL_NOTHROW);
-				if (end->type.must_manage_memory()) {
-					VM::delete_temporary(c.F, e.v);
-				}
+				c.insn_delete_temporary(e);
 			}
 		}
-
+		jit_type_free(sig);
 		if (ge) {
 			if (lt) {
 				return jit_insn_and(c.F, ge, lt);
@@ -253,13 +245,8 @@ jit_value_t Match::Pattern::match(Compiler &c, jit_value_t v) const {
 				return ge;
 			}
 		} else {
-			if (lt) {
-				return lt;
-			} else {
-				return nullptr; // équivalent à default
-			}
+			return lt;
 		}
-
 	} else {
 		jit_value_t cond;
 		auto p = begin->compile(c);
@@ -269,12 +256,23 @@ jit_value_t Match::Pattern::match(Compiler &c, jit_value_t v) const {
 		} else {
 			jit_value_t args[2] = { v, p.v };
 			cond = jit_insn_call_native(c.F, "", (void*) jit_equals_, sig, args, 2, JIT_CALL_NOTHROW);
-			if (begin->type.must_manage_memory()) {
-				VM::delete_temporary(c.F, p.v);
-			}
+			c.insn_delete_temporary(p);
 		}
+		jit_type_free(sig);
 		return cond;
 	}
+}
+
+Value* Match::clone() const {
+	auto match = new Match();
+	match->value = value->clone();
+	for (const auto& pl : pattern_list) {
+		match->pattern_list.push_back({});
+		for (const auto& p : pl) {
+			match->pattern_list.back().push_back(p.clone());
+		}
+	}
+	return match;
 }
 
 }

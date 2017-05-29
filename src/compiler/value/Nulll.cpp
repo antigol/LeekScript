@@ -1,17 +1,14 @@
-#include "../../compiler/value/Nulll.hpp"
-
+#include "Nulll.hpp"
 #include "../../vm/value/LSNull.hpp"
 
 using namespace std;
 
 namespace ls {
 
-Nulll::Nulll() {
+Nulll::Nulll(std::shared_ptr<Token> token) : token(token) {
 	type = Type::NULLL;
 	constant = true;
 }
-
-Nulll::~Nulll() {}
 
 void Nulll::print(ostream& os, int, bool debug) const {
 	os << "null";
@@ -20,8 +17,8 @@ void Nulll::print(ostream& os, int, bool debug) const {
 	}
 }
 
-unsigned Nulll::line() const {
-	return 0;
+Location Nulll::location() const {
+	return token->location;
 }
 
 void Nulll::analyse(SemanticAnalyser*, const Type&) {
@@ -30,6 +27,10 @@ void Nulll::analyse(SemanticAnalyser*, const Type&) {
 
 Compiler::value Nulll::compile(Compiler& c) const {
 	return c.new_null();
+}
+
+Value* Nulll::clone() const {
+	return new Nulll(token);
 }
 
 }

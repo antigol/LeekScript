@@ -1,5 +1,4 @@
-#include "../../compiler/value/AbsoluteValue.hpp"
-
+#include "AbsoluteValue.hpp"
 #include "../../vm/LSValue.hpp"
 
 using namespace std;
@@ -19,36 +18,42 @@ void AbsoluteValue::print(std::ostream& os, int, bool debug) const {
 	os << "|";
 	expression->print(os, debug);
 	os << "|";
+	if (debug) {
+		os << " " << type;
+	}
 }
 
-unsigned AbsoluteValue::line() const {
-	return 0;
+Location AbsoluteValue::location() const {
+	return {open_pipe->location.start, close_pipe->location.end};
 }
 
 void AbsoluteValue::analyse(SemanticAnalyser* analyser, const Type& req_type) {
-
 	expression->analyse(analyser, Type::POINTER);
 	constant = expression->constant;
-
-	type.nature = req_type.nature;
-}
-
-LSValue* abso(LSValue* v) {
-	return v->abso();
+	if (req_type.nature != Nature::UNKNOWN) {
+		type.nature = req_type.nature;
+	}
 }
 
 Compiler::value AbsoluteValue::compile(Compiler& c) const {
-
 	auto ex = expression->compile(c);
+	jit_insn_mark_offset(c.F, location().start.line);
+	auto abso = c.insn_call(Type::INTEGER, {ex}, (void*) +[](LSValue* v) {
+		return v->abso();
+	});
+	c.insn_delete_temporary(ex);
+	if (type.nature == Nature::POINTER) {
+		abso = c.insn_to_pointer(abso);
+	}
+	return abso;
+}
 
-	jit_type_t args_types[2] = {LS_POINTER};
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_types, 1, 0);
-
-	jit_value_t absolute_value = jit_insn_call_native(c.F, "abso", (void*) abso, sig, &ex.v, 1, JIT_CALL_NOTHROW);
-
-	VM::delete_temporary(c.F, ex.v);
-
-	return {absolute_value, Type::INTEGER};
+Value* AbsoluteValue::clone() const {
+	auto abs = new AbsoluteValue();
+	abs->expression = expression;
+	abs->open_pipe = open_pipe;
+	abs->close_pipe = close_pipe;
+	return abs;
 }
 
 }

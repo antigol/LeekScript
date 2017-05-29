@@ -3,7 +3,8 @@
 
 #include <string>
 
-#include "../../compiler/lexical/TokenType.hpp"
+#include "Location.hpp"
+#include "TokenType.hpp"
 
 namespace ls {
 
@@ -13,13 +14,10 @@ public:
 
 	TokenType type;
 	std::string content;
-	unsigned character;
-	unsigned line;
+	Location location;
 	unsigned size;
 
-	Token(std::string content);
-	Token(TokenType type, unsigned int line, unsigned int character, std::string content);
-	virtual ~Token();
+	Token(TokenType type, size_t raw, size_t line, size_t character, std::string content);
 };
 
 std::ostream& operator << (std::ostream& os, Token& var);

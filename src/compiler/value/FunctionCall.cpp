@@ -27,16 +27,17 @@ using namespace std;
 
 namespace ls {
 
-FunctionCall::FunctionCall() {
+FunctionCall::FunctionCall(std::shared_ptr<Token> t) : token(t) {
 	function = nullptr;
 	type = Type::UNKNOWN;
 	std_func = nullptr;
 	this_ptr = nullptr;
+	constant = false;
 }
 
 FunctionCall::~FunctionCall() {
 	delete function;
-	for (auto arg : arguments) {
+	for (const auto& arg : arguments) {
 		delete arg;
 	}
 }
@@ -53,37 +54,44 @@ void FunctionCall::print(std::ostream& os, int indent, bool debug) const {
 	}
 	os << ")";
 	if (debug) {
-		os << " " << type;
+		os << " " << types;
 	}
 }
 
-unsigned FunctionCall::line() const {
-	return 0;
+Location FunctionCall::location() const {
+	return {function->location().start, closing_parenthesis->location.end};
 }
 
 void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 
-//	cout << "function call analyse : " << req_type << endl;
+	// std::cout << "FunctionCall::analyse(" << req_type << ")" << std::endl;
 
-	constant = false;
-
+	// Analyse the function (can be anything here)
 	function->analyse(analyser, Type::UNKNOWN);
 
+	// Find the function object
+	function_object = dynamic_cast<Function*>(function);
+	if (!function_object) {
+		auto vv = dynamic_cast<VariableValue*>(function);
+		if (vv) {
+			function_object = static_cast<Function*>(vv->var->value);
+		}
+	}
+
+	// The function call be called?
 	if (function->type.raw_type != RawType::UNKNOWN and
 		function->type.raw_type != RawType::FUNCTION and
 		function->type.raw_type != RawType::CLASS) {
-		analyser->add_error({SemanticError::Type::CANNOT_CALL_VALUE,
-			function->line(), function->to_string()});
+		analyser->add_error({SemanticError::Type::CANNOT_CALL_VALUE, location(), function->location(), {function->to_string()}});
 	}
 
-	int a = 0;
-	for (Value* arg : arguments) {
-//		arg->analyse(analyser, function->type.getArgumentType(a++));
+	// Analyse all arguments a first time
+	for (auto& arg : arguments) {
 		arg->analyse(analyser, Type::UNKNOWN);
 	}
 
-	// Standard library constructors
-	VariableValue* vv = dynamic_cast<VariableValue*>(function);
+	// Standard library constructors TODO better
+	auto vv = dynamic_cast<VariableValue*>(function);
 	if (vv != nullptr) {
 		if (vv->name == "Number") type = Type::INTEGER;
 		if (vv->name == "Boolean") type = Type::BOOLEAN;
@@ -93,11 +101,11 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 	}
 
 	// Detect standard library functions
-	ObjectAccess* oa = dynamic_cast<ObjectAccess*>(function);
+	auto oa = dynamic_cast<ObjectAccess*>(function);
 	if (oa != nullptr) {
 
-		string field_name = oa->field->content;
-		Type object_type = oa->object->type;
+		auto field_name = oa->field->content;
+		auto object_type = oa->object->type;
 
 		vector<Type> arg_types;
 		for (auto arg : arguments) {
@@ -114,27 +122,39 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		if (object_type.raw_type == RawType::CLASS) { // String.size("salut")
 
 			string clazz = ((VariableValue*) oa->object)->name;
-			LSClass* object_class = (LSClass*) analyser->program->system_vars[clazz];
-			StaticMethod* m = object_class->getStaticMethod(oa->field->content, arg_types);
+			LSClass* object_class = (LSClass*) analyser->vm->system_vars[clazz];
+			StaticMethod* sm = object_class->getStaticMethod(oa->field->content, arg_types);
 
-			if (m != nullptr) {
-				std_func = m->addr;
-				function->type = m->type;
-				is_native_method = m->native;
+			if (sm != nullptr) {
+				std_func = sm->addr;
+				function->type = sm->type;
+				is_native_method = sm->native;
 			} else {
-				analyser->add_error({SemanticError::Type::STATIC_METHOD_NOT_FOUND, oa->field->line, clazz + "::" + oa->field->content + "(" + args_string + ")"});
+				LSClass* value_class = (LSClass*) analyser->vm->system_vars["Value"];
+				Method* m = value_class->getMethod(oa->field->content, object_type, arg_types);
+
+				if (m != nullptr) {
+					this_ptr = oa->object;
+					this_ptr->analyse(analyser, m->obj_type);
+					std_func = m->addr;
+					function->type = m->type;
+					is_native_method = m->native;
+				} else {
+					analyser->add_error({SemanticError::Type::STATIC_METHOD_NOT_FOUND, location(), oa->field->location, {clazz + "::" + oa->field->content + "(" + args_string + ")"}});
+				}
 			}
+		} else {  // "salut".size()
 
-		} else if (object_type.raw_type != RawType::UNKNOWN) {  // "salut".size()
-
-			LSClass* object_class = (LSClass*) analyser->program->system_vars[object_type.clazz];
-			Method* m = object_class->getMethod(oa->field->content, object_type, arg_types);
-
+			Method* m = nullptr;
+			if (object_type.raw_type != RawType::UNKNOWN) {
+				LSClass* object_class = (LSClass*) analyser->vm->system_vars[object_type.clazz];
+				m = object_class->getMethod(oa->field->content, object_type, arg_types);
+				// std::cout << "Method " << oa->field->content << " found : " << arg_types << std::endl;
+			}
 			if (m == nullptr) {
-				LSClass* value_class = (LSClass*) analyser->program->system_vars["Value"];
+				LSClass* value_class = (LSClass*) analyser->vm->system_vars["Value"];
 				m = value_class->getMethod(oa->field->content, object_type, arg_types);
 			}
-
 			if (m != nullptr) {
 				this_ptr = oa->object;
 				this_ptr->analyse(analyser, m->obj_type);
@@ -142,42 +162,26 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 				function->type = m->type;
 				is_native_method = m->native;
 			} else {
-				std::ostringstream obj_type_ss;
-				obj_type_ss << object_type;
-				analyser->add_error({SemanticError::Type::METHOD_NOT_FOUND, oa->field->line, obj_type_ss.str() + "." + oa->field->content + "(" + args_string + ")"});
-			}
-		}
-		/*
-		if (object_type == Type::PTR_ARRAY) {
-			cout << "array" << endl;
-
-			cout << "type before: " << function->type << endl;
-
-			for (unsigned int i = 0; i < function->type.arguments_types.size(); ++i) {
-				cout << "arg " << i << " type : " << function->type.getArgumentType(i) << endl;
-				Type arg = function->type.getArgumentType(i);
-				if (arg.raw_type == RawType::FUNCTION) {
-					for (unsigned int j = 0; j < arg.getArgumentTypes().size(); ++j) {
-						if (arg.getArgumentType(j) == Type::PTR_ARRAY_ELEMENT) {
-							cout << "set arg " << j << " : " << object_type.getElementType() << endl;
-							arg.setArgumentType(j, object_type.getElementType());
-							function->type.setArgumentType(i, arg);
-						}
-					}
+				if (object_type.raw_type != RawType::UNKNOWN) {
+					std::ostringstream obj_type_ss;
+					obj_type_ss << object_type;
+					analyser->add_error({SemanticError::Type::METHOD_NOT_FOUND, location(), oa->field->location, {obj_type_ss.str() + "." + oa->field->content + "(" + args_string + ")"}});
+				} else {
+					is_unknown_method = true;
+					object = oa->object;
 				}
 			}
-			cout << "type after: " << function->type << endl;
 		}
-		*/
 	}
 
+	// Operator function? TODO better, no special behavior
 	vv = dynamic_cast<VariableValue*>(function);
 	if (vv != nullptr) {
-		string name = vv->name;
+		auto name = vv->name;
 		if (name == "+" or name == "-" or name == "*" or name == "/" or name == "**" or name == "%") {
 			bool isByValue = true;
 			Type effectiveType;
-			for (Value* arg : arguments) {
+			for (auto& arg : arguments) {
 				arg->analyse(analyser, Type::UNKNOWN);
 				effectiveType = arg->type;
 				if (arg->type.nature != Nature::VALUE) {
@@ -193,64 +197,100 @@ void FunctionCall::analyse(SemanticAnalyser* analyser, const Type& req_type) {
 		}
 	}
 
-	// Check argument count
-	if (function->type.raw_type == RawType::FUNCTION && function->type.getArgumentTypes().size() != arguments.size()) {
-		analyser->add_error({SemanticError::Type::WRONG_ARGUMENT_COUNT,
-			function->line(), function->to_string()});
-		type = Type::UNKNOWN;
-		return;
-	}
-
-	vector<Type> arg_types;
-	for (auto arg : arguments) {
-		arg_types.push_back(arg->type);
-	}
-
-	a = 0;
-	for (Value* arg : arguments) {
-		arg->analyse(analyser, function->type.getArgumentType(a));
-		if (function->type.getArgumentType(a).raw_type == RawType::FUNCTION) {
-			arg->will_take(analyser, function->type.getArgumentType(a).arguments_types);
+	// Check arguments count
+	std::vector<Type> arg_types;
+	bool arguments_valid = arguments.size() <= function->type.getArgumentTypes().size();
+	auto total_arguments_passed = std::max(arguments.size(), function->type.getArgumentTypes().size());
+	size_t a = 0;
+	for (auto& argument_type : function->type.getArgumentTypes()) {
+		if (a < arguments.size()) {
+			// OK, the argument is present in the call
+			arguments.at(a)->analyse(analyser, argument_type);
+			if (function->type.getArgumentType(a).raw_type == RawType::FUNCTION) {
+				arguments.at(a)->will_take(analyser, function->type.getArgumentType(a).arguments_types, 1);
+				arguments.at(a)->set_version(function->type.getArgumentType(a).arguments_types);
+			}
+			arg_types.push_back(arguments.at(a)->type);
+		} else if (function->type.argumentHasDefault(a)) {
+			// OK, there's no argument in the call but a default value is set.
+			if (function_object) {
+				arg_types.push_back(function_object->defaultValues.at(a)->type);
+			}
+		} else {
+			// Missing argument
+			arguments_valid = false;
+			total_arguments_passed--;
 		}
 		a++;
 	}
 
-	function->will_take(analyser, arg_types);
+	if (function->type.raw_type == RawType::FUNCTION and !arguments_valid) {
+		analyser->add_error({SemanticError::Type::WRONG_ARGUMENT_COUNT,	location(), location(), {
+			function->to_string(),
+			std::to_string(function->type.getArgumentTypes().size()),
+			std::to_string(total_arguments_passed)
+		}});
+		type = Type::UNKNOWN;
+		return;
+	}
+
+	function->will_take(analyser, arg_types, 1);
+	function->set_version(arg_types);
+
+	// Get the function type
+	function_type = function->type;
+	if (function_object) {
+		if (function_object->versions.size() && function_object->versions.find(arg_types) != function_object->versions.end()) {
+			function_type = function_object->versions.at(arg_types)->type;
+		}
+	}
 
 	// The function is a variable
 	if (vv and vv->var and vv->var->value) {
-
-		vv->var->will_take(analyser, arg_types);
-
-		Type ret_type = vv->var->value->type.getReturnType();
-		if (ret_type.raw_type != RawType::UNKNOWN) {
-			type = ret_type;
+		// Recursive function
+		if (vv->var->name == analyser->current_function()->name) {
+			type = analyser->current_function()->getReturnType();
+		} else {
+			auto ret_type = function_type.getReturnType();
+			if (ret_type.raw_type != RawType::UNKNOWN) {
+				type = ret_type;
+			}
 		}
 	} else {
-		Type ret_type = function->type.getReturnType();
+		auto ret_type = function_type.getReturnType();
 		if (ret_type.nature != Nature::UNKNOWN) {
 			type = ret_type;
 		}
-		/*
-		if (ret_type.raw_type != RawType::UNKNOWN) {
-			type = ret_type;
-		} else {
-			// TODO : to be able to remove temporary variable we must know the nature
-//			type = Type::POINTER; // When the function is unknown, the return type is a pointer
-		}
-		*/
 	}
 
-	return_type = function->type.getReturnType();
+	a = 0;
+	for (auto& arg : arguments) {
+		auto t = function_type.getArgumentType(a);
+		if (t == Type::UNKNOWN) {
+			t = Type::POINTER;
+		}
+		arg->analyse(analyser, t);
+		a++;
+	}
+
+	return_type = function_type.getReturnType();
 
 	if (req_type.nature == Nature::POINTER) {
 		type.nature = req_type.nature;
 	}
+	types = type;
+}
 
-//	cout << "Function call function type : " << type << endl;
+bool FunctionCall::will_take(SemanticAnalyser* analyser, const std::vector<Type>& args, int level) {
+	if (auto vv = dynamic_cast<VariableValue*>(function)) {
+		vv->will_take(analyser, args, level + 1);
+	}
+	return false;
 }
 
 Compiler::value FunctionCall::compile(Compiler& c) const {
+
+	// std::cout << "FunctionCall::compile(" << function_type << ")" << std::endl;
 
 	/** Standard library constructors : Array(), Number() */
 	VariableValue* vv = dynamic_cast<VariableValue*>(function);
@@ -273,13 +313,13 @@ Compiler::value FunctionCall::compile(Compiler& c) const {
 			if (arguments.size() > 0) {
 				return arguments[0]->compile(c);
 			}
-			return {LS_CREATE_POINTER(c.F, new LSString("")), type};
+			return {c.new_pointer(new LSString("")).v, type};
 		}
 		if (vv->name == "Array") {
-			return {LS_CREATE_POINTER(c.F, new LSArray<LSValue*>()), type};
+			return {c.new_pointer(new LSArray<LSValue*>()).v, type};
 		}
 		if (vv->name == "Object") {
-			return {LS_CREATE_POINTER(c.F, new LSObject()), type};
+			return {c.new_pointer(new LSObject()).v, type};
 		}
 	}
 
@@ -287,17 +327,22 @@ Compiler::value FunctionCall::compile(Compiler& c) const {
 	if (this_ptr != nullptr) {
 
 		vector<Compiler::value> args = { this_ptr->compile(c) };
+		this_ptr->compile_end(c);
+		vector<LSValueType> lsvalue_types = { (LSValueType) this_ptr->type.id() };
 		for (unsigned i = 0; i < arguments.size(); ++i) {
-			args.push_back(arguments[i]->compile(c));
+			args.push_back(arguments.at(i)->compile(c));
+			arguments.at(i)->compile_end(c);
+			lsvalue_types.push_back(function->type.getArgumentType(i).id());
 		}
+		c.insn_check_args(args, lsvalue_types);
 
 		Compiler::value res;
 		if (is_native_method) {
-			auto fun = (Compiler::value (*)(Compiler&, vector<Compiler::value>)) std_func;
-			res = fun(c, args);
-		} else {
 			auto fun = (void*) std_func;
 			res = c.insn_call(type, args, fun);
+		} else {
+			auto fun = (Compiler::value (*)(Compiler&, vector<Compiler::value>)) std_func;
+			res = fun(c, args);
 		}
 
 		if (return_type.nature == Nature::VALUE and type.nature == Nature::POINTER) {
@@ -310,17 +355,21 @@ Compiler::value FunctionCall::compile(Compiler& c) const {
 	if (std_func != nullptr) {
 
 		vector<Compiler::value> args;
+		vector<LSValueType> lsvalue_types;
 		for (unsigned i = 0; i < arguments.size(); ++i) {
-			args.push_back(arguments[i]->compile(c));
+			args.push_back(arguments.at(i)->compile(c));
+			arguments.at(i)->compile_end(c);
+			lsvalue_types.push_back((LSValueType) function->type.getArgumentType(i).id());
 		}
+		c.insn_check_args(args, lsvalue_types);
 
 		Compiler::value res;
 		if (is_native_method) {
-			auto fun = (Compiler::value (*)(Compiler&, vector<Compiler::value>)) std_func;
-			res = fun(c, args);
-		} else {
 			auto fun = (void*) std_func;
 			res = c.insn_call(type, args, fun);
+		} else {
+			auto fun = (Compiler::value (*)(Compiler&, vector<Compiler::value>)) std_func;
+			res = fun(c, args);
 		}
 
 		if (return_type.nature == Nature::VALUE and type.nature == Nature::POINTER) {
@@ -365,66 +414,111 @@ Compiler::value FunctionCall::compile(Compiler& c) const {
 
 	/** Default function : f(12) */
 	jit_value_t fun;
-	jit_value_t ls_fun_addr = LS_CREATE_POINTER(c.F, nullptr);
+	auto ls_fun_addr = c.new_pointer(nullptr);
+	auto jit_object = c.new_pointer(nullptr);
 
-	if (function->type.nature == Nature::POINTER) {
-		ls_fun_addr = function->compile(c).v;
-		fun = jit_insn_load_relative(c.F, ls_fun_addr, 16, LS_POINTER);
+	if (is_unknown_method) {
+		auto oa = static_cast<ObjectAccess*>(function);
+		jit_object = c.insn_load(((LeftValue*) object)->compile_l(c));
+		// jit_object = object->compile(c);
+		auto k = c.new_pointer(&oa->field->content);
+		ls_fun_addr = c.insn_call(type, {jit_object, k}, (void*) +[](LSValue* object, std::string* key) {
+			return object->attr(*key);
+		});
+		fun = jit_insn_load_relative(c.F, ls_fun_addr.v, 24, LS_POINTER);
 	} else {
-		fun = function->compile(c).v;
+		ls_fun_addr = function->compile(c);
+		fun = jit_insn_load_relative(c.F, ls_fun_addr.v, 24, LS_POINTER);
 	}
 
 	/** Arguments */
-	int arg_count = arguments.size() + 1;
-	vector<jit_value_t> args;
+	size_t offset = 1;
+
+	size_t arg_count = function_type.getArgumentTypes().size() + offset;
+	vector<Compiler::value> args;
 	vector<jit_type_t> args_types;
+	vector<LSValueType> lsvalue_types;
 
-	// Function pointer as first argument
-	args.push_back(ls_fun_addr);
-	args_types.push_back(LS_POINTER);
+	if (is_unknown_method) {
+		// add 'this' object as first argument
+		args.push_back(jit_object);
+		args_types.push_back(VM::get_jit_type(object->type));
+		lsvalue_types.push_back(object->type.id());
+	} else {
+		// Function pointer as first argument
+		args.push_back(ls_fun_addr);
+		args_types.push_back(LS_POINTER);
+		lsvalue_types.push_back(Type::FUNCTION_P.id());
+	}
 
-	for (int i = 0; i < arg_count - 1; ++i) {
-
-		args.push_back(arguments[i]->compile(c).v);
-		args_types.push_back(VM::get_jit_type(function->type.getArgumentType(i)));
-
-		if (function->type.getArgumentType(i).must_manage_memory()) {
-			args[1 + i] = VM::move_inc_obj(c.F, args[1 + i]);
+	for (size_t i = 0; i < arg_count - offset; ++i) {
+		if (i < arguments.size()) {
+			args.push_back(arguments.at(i)->compile(c));
+			arguments.at(i)->compile_end(c);
+			if (function_type.getArgumentType(i) == Type::MPZ &&
+				arguments.at(i)->type != Type::MPZ_TMP) {
+				args.at(offset + i) = c.insn_clone_mpz(args.at(offset + i));
+			}
+		} else {
+			args.push_back(function_object->defaultValues.at(i)->compile(c));
 		}
-		if (function->type.getArgumentType(i) == Type::GMP_INT &&
-			arguments[i]->type != Type::GMP_INT_TMP) {
-			args[1 + i] = VM::clone_gmp_int(c.F, args[1 + i]);
+		args_types.push_back(VM::get_jit_type(function_type.getArgumentType(i)));
+		lsvalue_types.push_back(function_type.getArgumentType(i).id());
+		if (function_type.getArgumentType(i).must_manage_memory()) {
+			args.at(offset + i) = c.insn_move_inc(args.at(offset + i));
 		}
 	}
+
+	jit_insn_mark_offset(c.F, location().start.line);
+
+	// TODO : some tests are failing with this
+	// c.insn_check_args(args, lsvalue_types);
 
 	jit_type_t jit_return_type = VM::get_jit_type(type);
 
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_return_type, args_types.data(), arg_count, 0);
-
-	jit_value_t ret = jit_insn_call_indirect(c.F, fun, sig, args.data(), arg_count, 0);
+	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, jit_return_type, args_types.data(), args_types.size(), 1);
+	vector<jit_value_t> jit_args;
+	for (const auto& a : args) jit_args.push_back(a.v);
+	jit_value_t ret = jit_insn_call_indirect(c.F, fun, sig, jit_args.data(), arg_count, 0);
+	// FIXME Not a fail : need two free() here ^^
+	jit_type_free(sig);
+	jit_type_free(sig);
 
 	// Destroy temporary arguments
-	for (int i = 0; i < arg_count; ++i) {
-		if (function->type.getArgumentType(i).must_manage_memory()) {
-			VM::delete_ref(c.F, args[1 + i]);
+	for (size_t i = 0; i < arg_count - offset; ++i) {
+		if (function_type.getArgumentType(i).must_manage_memory()) {
+			c.insn_delete(args.at(offset + i));
 		}
-		if (function->type.getArgumentType(i) == Type::GMP_INT ||
-			function->type.getArgumentType(i) == Type::GMP_INT_TMP) {
-			VM::delete_gmp_int(c.F, args[1 + i]);
+		if (function_type.getArgumentType(i) == Type::MPZ ||
+			function_type.getArgumentType(i) == Type::MPZ_TMP) {
+			c.insn_delete_mpz(args.at(offset + i));
 		}
 	}
-	// Delete temporary function
-	//if (function->type.must_manage_memory()) {
-		VM::delete_temporary(c.F, fun);
-	//}
+	c.insn_delete_temporary(ls_fun_addr);
+
+	if (is_unknown_method) {
+		object->compile_end(c);
+	} else {
+		function->compile_end(c);
+	}
 
 	// Custom function call : 1 op
-	VM::inc_ops(c.F, 1);
+	c.inc_ops(1);
 
 	if (return_type.nature != Nature::POINTER and type.nature == Nature::POINTER) {
 		return {VM::value_to_pointer(c.F, ret, type), type};
 	}
 	return {ret, type};
+}
+
+Value* FunctionCall::clone() const {
+	auto fc = new FunctionCall(token);
+	fc->function = function->clone();
+	for (const auto& a : arguments) {
+		fc->arguments.push_back(a->clone());
+	}
+	fc->closing_parenthesis = closing_parenthesis;
+	return fc;
 }
 
 }

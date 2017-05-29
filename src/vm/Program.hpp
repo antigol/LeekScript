@@ -2,31 +2,25 @@
 #define PROGRAM_HPP
 
 #include "../compiler/value/Function.hpp"
-#include "../compiler/semantic/SemanticAnalyser.hpp"
 
 namespace ls {
-
-class LSValue;
 
 class Program {
 private:
 
 	std::string code; // The program code
-	jit_function_t function;
 	void* closure;
-
-	void compile_main(Context&);
-	void compile_jit(Compiler&, Context&, bool);
 
 public:
 
 	Function* main;
 	std::vector<Function*> functions;
-	std::map<std::string, LSValue*> system_vars;
+	std::string file_name;
 
-
-	Program(const std::string& code);
+	Program(const std::string& code, const std::string& file_name);
 	virtual ~Program();
+
+	void analyse(SemanticAnalyser* analyser);
 
 	/*
 	 * Compile the program with a VM and a context (json)
@@ -34,11 +28,13 @@ public:
 	VM::Result compile(VM& vm, const std::string& context);
 
 	/*
-	 * Execute the program and get a LSValue* result
+	 * Execute the program and get a std::string result
 	 */
-	std::string execute();
+	std::string execute(VM& vm);
 
 	void print(std::ostream& os, bool debug = false) const;
+
+	std::string underline_code(Location location, Location focus) const;
 };
 
 std::ostream& operator << (std::ostream& os, const Program* program);

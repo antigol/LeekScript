@@ -1,10 +1,10 @@
 let m = ['A', 'T', 'C', 'G']
 var count = 0
-var tests = 5000
+var tests = 1000
 
 for var k = 0; k < tests; k++ {
 
-	let adn = ''
+	var adn = ''
 	for var j = 0; j < 200; j++ {
 		adn += m[Number.randInt(0, 4)]
 	}

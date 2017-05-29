@@ -2,12 +2,10 @@
 #define VARIABLEDECLARATION_HPP
 
 #include <vector>
-
-#include "../../compiler/instruction/Instruction.hpp"
-#include "../../compiler/semantic/SemanticAnalyser.hpp"
-#include "../../compiler/value/Expression.hpp"
+#include "Instruction.hpp"
+#include "../semantic/SemanticAnalyser.hpp"
+#include "../value/Expression.hpp"
 #include "../lexical/Ident.hpp"
-#include "../../vm/VM.hpp"
 
 namespace ls {
 
@@ -17,18 +15,23 @@ class VariableDeclaration : public Instruction {
 public:
 
 	bool global;
-	std::vector<Token*> variables;
+	bool constant;
+	std::vector<std::shared_ptr<Token>> variables;
 	std::vector<Value*> expressions;
-	std::map<std::string, SemanticVar*> vars;
+	std::map<std::string, std::shared_ptr<SemanticVar>> vars;
+	std::shared_ptr<Token> keyword;
 
 	VariableDeclaration();
 	virtual ~VariableDeclaration();
 
 	virtual void print(std::ostream&, int indent, bool debug) const override;
+	virtual Location location() const override;
 
 	virtual void analyse(SemanticAnalyser*, const Type& req_type) override;
 
 	virtual Compiler::value compile(Compiler&) const override;
+
+	virtual Instruction* clone() const override;
 };
 
 }

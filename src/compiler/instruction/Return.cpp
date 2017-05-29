@@ -23,22 +23,25 @@ void Return::print(ostream& os, int indent, bool debug) const {
 	}
 }
 
-void Return::analyse(SemanticAnalyser* analyser, const Type& ) {
+void Return::analyse(SemanticAnalyser* analyser, const Type&) {
 
-	Function* f = analyser->current_function();
+	auto f = analyser->current_function();
 
 	if (expression != nullptr) {
-		if (f->type.getReturnType() == Type::UNKNOWN) {
-			expression->analyse(analyser, Type::UNKNOWN);
-			f->type.setReturnType(Type::UNKNOWN); // ensure that the vector is not empty
-			f->type.return_types.push_back(expression->type);
-		} else {
-			expression->analyse(analyser, f->type.getReturnType());
+		Type required_type = Type::UNKNOWN;
+		if (f->current_version->type.getReturnType() != Type::UNKNOWN) {
+			required_type = f->current_version->type.getReturnType();
 		}
+		expression->analyse(analyser, required_type);
+		f->current_version->body->types.add(expression->type);
 	}
 	function = f;
 	in_function = true;
 	type = Type::VOID;
+}
+
+Location Return::location() const {
+	return expression->location();
 }
 
 Compiler::value Return::compile(Compiler& c) const {
@@ -47,18 +50,18 @@ Compiler::value Return::compile(Compiler& c) const {
 
 		auto v = expression->compile(c);
 
-		if (expression->type.must_manage_memory()) {
-			jit_value_t r = VM::move_obj(c.F, v.v);
-			c.delete_variables_block(c.F, c.get_current_function_blocks());
-			jit_insn_return(c.F, r);
-		} else {
-			c.delete_variables_block(c.F, c.get_current_function_blocks());
-			jit_insn_return(c.F, v.v);
-		}
+		auto r = c.insn_move(v);
+		c.delete_variables_block(c.get_current_function_blocks());
+		jit_insn_return(c.F, r.v);
 	}
 
-	jit_insn_return(c.F, LS_CREATE_INTEGER(c.F, 0));
+	jit_insn_return(c.F, c.new_integer(0).v);
 	return {nullptr, Type::UNKNOWN};
+}
+
+Instruction* Return::clone() const {
+	auto r = new Return(expression->clone());
+	return r;
 }
 
 }

@@ -4,9 +4,8 @@
 [![Build Status](https://travis-ci.org/leek-wars/leekscript.svg?branch=master)](https://travis-ci.org/leek-wars/leekscript)
 [![Coverage Status](https://coveralls.io/repos/github/leek-wars/leekscript/badge.svg?branch=master)](https://coveralls.io/github/leek-wars/leekscript?branch=master)
 [![GPL Licence](https://badges.frapsoft.com/os/gpl/gpl.svg?v=103)](https://opensource.org/licenses/GPL-3.0/)
-[![HitCount](https://hitt.herokuapp.com/leek-wars/leekscript.svg)](https://github.com/leek-wars/leekscript)
 
-LeekScript is a language initially designed for Leek Wars, and for games in general. Design to be simple to use for beginners, but with rich syntax and functionnalities, and a good speed thanks to an optimized JIT compiler.
+LeekScript is a language initially designed for [Leek Wars](https://leekwars.com), and for games in general. Design to be simple to use for beginners, but with rich syntax and functionnalities, and a good speed thanks to an optimized JIT compiler.
 
 The project is still in development, and shouldn't be used for the moment.
 
@@ -32,25 +31,33 @@ make lib
 
 Usage
 -----
-
 Run a LeekScript top-level
 ```
-./leekscript
+leekscript
 ```
+Execute a file or a code snippet
+```
+leekscript my_file.leek
+leekscript "[5, 6, 7] ~~ x -> x ** 2"
+```
+Option | Effect
+------ | ------
+-v -V --version	| Print the current version
+-e -E --example | Output an example code
+-j -J --json	| Get the result in JSON format
+-t -T --time	| Print execution time and operations
+-d -D --debug | Print debug information like types
+-nop --no-operations | Disable operations counting
 
-Run the tests
-```
-./leekscript -test
-```
-
-Execute a file
-```
-./leekscript -f my_file.ls
-```
-
-Run a code, and get the result as JSON
-```
-./leekscript -e "my code" "{}"
+Tests, coverage, Valgrind, benchmark, doc
+------------------
+```shell
+make test
+make coverage # test coverage by gcov + lcov
+make valgrind # valgrind default tool 
+make callgrind # valgrind callgrind tool
+make benchmark
+make doc
 ```
 
 Libraries used
@@ -62,4 +69,4 @@ Libraries used
 License
 -------
 
-Distributed under the GPL3 license. Copyright (c) 2016, Pierre Lauprêtre
+Distributed under the GPL3 license. Copyright (c) 2016-2017, Pierre Lauprêtre

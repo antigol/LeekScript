@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 
+#include "../../vm/VM.hpp"
 #include "../../vm/Type.hpp"
 #include "SemanticError.hpp"
 
@@ -31,16 +32,19 @@ public:
 	Type type;
 	std::map<std::string, Type> attr_types;
 	int index;
+	int parent_index;
 	Value* value;
 	VariableDeclaration* vd;
 	Function* function; // In which function the variable is declared
+	Type initial_type;
+	std::vector<Type> version;
+	bool has_version = false;
 
-	SemanticVar(std::string name, VarScope scope, Type type, int index, Value* value,
-		VariableDeclaration* vd, Function* function) :
-		name(name), scope(scope), type(type), index(index), value(value), vd(vd), function(function) {}
+	SemanticVar(std::string name, VarScope scope, Type type, int index, Value* value, VariableDeclaration* vd, Function* function) :
+		name(name), scope(scope), type(type), index(index), parent_index(0), value(value), vd(vd), function(function), initial_type(type) {}
 
-	void will_take(SemanticAnalyser*, const std::vector<Type>&);
-	void will_take_element(SemanticAnalyser*, const Type&);
+	SemanticVar(const SemanticVar& o) : name(o.name), scope(o.scope), type(o.type), attr_types(o.attr_types), index(o.index), parent_index(o.parent_index), value(o.value), vd(o.vd), function(o.function), initial_type(type) {}
+
 	void must_be_pointer(SemanticAnalyser*);
 };
 
@@ -48,11 +52,10 @@ class SemanticAnalyser {
 public:
 
 	Program* program;
-	bool in_program = false;
+	VM* vm;
 
-	std::map<std::string, SemanticVar*> internal_vars;
-	std::vector<std::vector<std::map<std::string, SemanticVar*>>> variables;
-	std::vector<std::map<std::string, SemanticVar*>> parameters;
+	std::vector<std::vector<std::map<std::string, std::shared_ptr<SemanticVar>>>> variables;
+	std::vector<std::map<std::string, std::shared_ptr<SemanticVar>>> parameters;
 
 	std::vector<Function*> functions;
 	std::stack<Function*> functions_stack;
@@ -63,7 +66,7 @@ public:
 	SemanticAnalyser();
 	virtual ~SemanticAnalyser();
 
-	void analyse(Program*, Context*, std::vector<Module*>&);
+	void analyse(Program*, Context*);
 
 	void enter_function(Function*);
 	void leave_function();
@@ -71,18 +74,16 @@ public:
 	void leave_block();
 	void add_function(Function*);
 	Function* current_function() const;
-	void set_potential_return_type(Type type);
 
 	void enter_loop();
 	void leave_loop();
 	bool in_loop(int deepness) const;
 
-	SemanticVar* add_var(Token*, Type, Value*, VariableDeclaration*);
-	SemanticVar* add_parameter(Token*, Type);
+	std::shared_ptr<SemanticVar> add_var(Token*, Type, Value*, VariableDeclaration*);
+	std::shared_ptr<SemanticVar> add_parameter(Token*, Type);
 
-	SemanticVar* get_var(Token* name);
-	SemanticVar* get_var_direct(std::string name);
-	std::map<std::string, SemanticVar*>& get_local_vars();
+	std::shared_ptr<SemanticVar> get_var(Token* name);
+	std::map<std::string, std::shared_ptr<SemanticVar>>& get_local_vars();
 
 	void add_error(SemanticError ex);
 

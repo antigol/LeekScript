@@ -18,12 +18,8 @@ Module::Module(std::string name) : name(name) {
 	clazz = new LSClass(name);
 }
 
-Module::~Module() {}
-
-void Module::include(SemanticAnalyser* analyser, Program* program) {
-
-	program->system_vars.insert({name, clazz});
-	analyser->add_var(new Token(name), Type::CLASS, nullptr, nullptr);
+Module::~Module() {
+	//delete clazz;
 }
 
 void Module::operator_(std::string name, std::initializer_list<LSClass::Operator> impl) {
@@ -33,7 +29,12 @@ void Module::operator_(std::string name, std::initializer_list<LSClass::Operator
 
 void Module::field(std::string name, Type type) {
 	fields.push_back(ModuleField(name, type));
-	clazz->addField(name, type);
+	clazz->addField(name, type, nullptr);
+}
+
+void Module::field(std::string name, Type type, void* fun) {
+	fields.push_back(ModuleField(name, type, fun));
+	clazz->addField(name, type, fun);
 }
 
 void Module::static_field(std::string name, Type type, void* fun) {
@@ -47,9 +48,9 @@ void Module::method(std::string name, initializer_list<Method> impl) {
 	clazz->addMethod(name, methods);
 }
 
-void Module::method(std::string name, Type obj_type, Type return_type, initializer_list<Type> args, void* addr) {
-	methods.push_back(ModuleMethod(name, {{obj_type, return_type, args, addr}}));
-	clazz->addMethod(name, {{obj_type, return_type, args, addr}});
+void Module::method(std::string name, Type obj_type, Type return_type, initializer_list<Type> args, void* addr, bool native) {
+	methods.push_back(ModuleMethod(name, {{obj_type, return_type, args, addr, native}}));
+	clazz->addMethod(name, {{obj_type, return_type, args, addr, native}});
 }
 
 void Module::static_method(string name, initializer_list<StaticMethod> impl) {
@@ -57,17 +58,16 @@ void Module::static_method(string name, initializer_list<StaticMethod> impl) {
 	clazz->addStaticMethod(name, impl);
 }
 
-void Module::static_method(string name, Type return_type, initializer_list<Type> args, void* addr) {
-	static_methods.push_back(ModuleStaticMethod(name, {{return_type, args, addr}}));
-	clazz->addStaticMethod(name, {{return_type, args, addr}});
+void Module::static_method(string name, Type return_type, initializer_list<Type> args, void* addr, bool native) {
+	static_methods.push_back(ModuleStaticMethod(name, {{return_type, args, addr, native}}));
+	clazz->addStaticMethod(name, {{return_type, args, addr, native}});
 }
 
 void Module::generate_doc(std::ostream& os, std::string translation_file) {
 
 	ifstream f;
-	try {
-		f.open(translation_file);
-	} catch (std::exception& e) {
+	f.open(translation_file);
+	if (!f.good()) {
 		return; // no file
 	}
 	stringstream j;
@@ -82,8 +82,8 @@ void Module::generate_doc(std::ostream& os, std::string translation_file) {
 	Json translation;
 	try {
 		translation = Json::parse(str);
-	} catch (std::exception& e) {
-		return; // error parsing json
+	} catch (std::exception& e) { // LCOV_EXCL_LINE
+		assert(false); // LCOV_EXCL_LINE
 	}
 
 	map<std::string, Json> translation_map;

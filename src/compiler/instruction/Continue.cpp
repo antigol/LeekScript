@@ -21,21 +21,31 @@ void Continue::print(std::ostream& os, int, bool) const {
 	}
 }
 
+Location Continue::location() const {
+	return {{0, 0, 0}, {0, 0, 0}};
+}
+
 void Continue::analyse(SemanticAnalyser* analyser, const Type&) {
 
 	// continue must be in a loop
 	if (!analyser->in_loop(deepness)) {
-		analyser->add_error({SemanticError::Type::CONTINUE_MUST_BE_IN_LOOP, 0});
+		analyser->add_error({SemanticError::Type::CONTINUE_MUST_BE_IN_LOOP, {{0, 0, 0}, {0, 0, 0}}, {{0, 0, 0}, {0, 0, 0}}}); // TODO location
 	}
 }
 
 Compiler::value Continue::compile(Compiler& c) const {
 
-	c.delete_variables_block(c.F, c.get_current_loop_blocks(deepness));
+	c.delete_variables_block(c.get_current_loop_blocks(deepness));
 
 	jit_insn_branch(c.F, c.get_current_loop_cond_label(deepness));
 
 	return {nullptr, Type::UNKNOWN};
+}
+
+Instruction* Continue::clone() const {
+	auto c = new Continue();
+	c->deepness = deepness;
+	return c;
 }
 
 }

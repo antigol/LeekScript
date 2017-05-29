@@ -2,6 +2,8 @@
 
 #include "../../compiler/value/LeftValue.hpp"
 #include "../../vm/LSValue.hpp"
+#include "../semantic/SemanticAnalyser.hpp"
+#include "../semantic/SemanticError.hpp"
 
 using namespace std;
 
@@ -15,7 +17,6 @@ PostfixExpression::PostfixExpression() {
 
 PostfixExpression::~PostfixExpression() {
 	delete expression;
-	delete operatorr;
 }
 
 void PostfixExpression::print(ostream& os, int indent, bool debug) const {
@@ -26,13 +27,25 @@ void PostfixExpression::print(ostream& os, int indent, bool debug) const {
 	}
 }
 
-unsigned PostfixExpression::line() const {
-	return 0;
+Location PostfixExpression::location() const {
+	return expression->location(); // TODO add the op
 }
 
 void PostfixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type) {
+
 	expression->analyse(analyser, Type::UNKNOWN);
+
+	if (expression->type.constant) {
+		analyser->add_error({SemanticError::Type::CANT_MODIFY_CONSTANT_VALUE, location(), expression->location(), {expression->to_string()}});
+	}
+	if (!expression->isLeftValue()) {
+		analyser->add_error({SemanticError::Type::VALUE_MUST_BE_A_LVALUE, location(), expression->location(), {expression->to_string()}});
+	}
+
 	type = expression->type;
+	if (type == Type::MPZ) {
+		type.temporary = true;
+	}
 	this->return_value = return_value;
 
 	if (req_type.nature == Nature::POINTER) {
@@ -40,50 +53,41 @@ void PostfixExpression::analyse(SemanticAnalyser* analyser, const Type& req_type
 	}
 }
 
-LSValue* jit_inc(LSValue* x) {
-	return x->ls_inc();
-}
-LSValue* jit_dec(LSValue* x) {
-	return x->ls_dec();
-}
-
 Compiler::value PostfixExpression::compile(Compiler& c) const {
 
-	VM::inc_ops(c.F, 1);
-
-	jit_type_t args_types[1] = {LS_POINTER};
-	jit_type_t sig = jit_type_create_signature(jit_abi_cdecl, LS_POINTER, args_types, 1, 0);
-	vector<jit_value_t> args;
-
-	void* func = nullptr;
+	c.inc_ops(1);
 
 	switch (operatorr->type) {
 
 		case TokenType::PLUS_PLUS: {
-			if (expression->type.nature == Nature::VALUE) {
-				//std::cout << "++ value " << std::endl;
 
-//				jit_value_t x = expression->compile_l(c);
+			if (expression->type == Type::MPZ) {
+
 				auto x = expression->compile(c);
+				auto r = c.insn_clone_mpz(x);
+				auto x_addr = c.insn_address_of(x);
+				auto one = c.new_integer(1);
+				c.insn_call(Type::VOID, {x_addr, x_addr, one}, &mpz_add_ui);
+				return r;
 
-//				jit_value_t ox = jit_insn_load_relative(c.F, x, 0, jit_type_int);
-				jit_value_t ox = jit_insn_load(c.F, x.v);
+			} else if (expression->type.nature == Nature::VALUE) {
 
-				jit_value_t y = LS_CREATE_INTEGER(c.F, 1);
+				auto x_addr = expression->compile_l(c);
 
-//				jit_value_t sum = jit_insn_add(c.F, ox, y);
-//				jit_insn_store_relative(c.F, x, 0, sum);
+				jit_value_t x = jit_insn_load_relative(c.F, x_addr.v, 0, jit_type_int);
 
-				jit_value_t sum = jit_insn_add(c.F, x.v, y);
-				jit_insn_store(c.F, x.v, sum);
+				auto sum = c.insn_add({x, Type::INTEGER}, c.new_integer(1));
+				jit_insn_store_relative(c.F, x_addr.v, 0, sum.v);
 
 				if (type.nature == Nature::POINTER) {
-					return {VM::value_to_pointer(c.F, ox, type), type};
+					return {VM::value_to_pointer(c.F, x, type), type};
 				}
-				return {ox, type};
+				return {x, type};
 			} else {
-				args.push_back(expression->compile(c).v);
-				func = (void*) jit_inc;
+				auto e = expression->compile_l(c);
+				return c.insn_call(Type::POINTER, {e}, (void*) +[](LSValue** x) {
+					return (*x)->ls_inc();
+				});
 			}
 			break;
 		}
@@ -99,14 +103,23 @@ Compiler::value PostfixExpression::compile(Compiler& c) const {
 				}
 				return {ox, type};
 			} else {
-				args.push_back(expression->compile(c).v);
-				func = (void*) jit_dec;
+				auto e = expression->compile_l(c);
+				return c.insn_call(Type::POINTER, {e}, (void*) +[](LSValue** x) {
+					return (*x)->ls_dec();
+				});
 			}
 			break;
 		}
 		default: {}
 	}
-	return {jit_insn_call_native(c.F, "", func, sig, args.data(), 1, JIT_CALL_NOTHROW), type};
+	return {nullptr, Type::UNKNOWN};
+}
+
+Value* PostfixExpression::clone() const {
+	auto pe = new PostfixExpression();
+	pe->expression = (LeftValue*) expression->clone();
+	pe->operatorr = operatorr;
+	return pe;
 }
 
 }

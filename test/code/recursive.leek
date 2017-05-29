@@ -1,0 +1,39 @@
+/*
+let f = function(x) {
+	if (x < 10) {
+		return true
+	}
+	return 12
+}
+[f(5), f(20)]
+
+function rec(n) {
+	if n < 1 return rec(n - 1)
+	return ''
+}
+rec(12)
+*/
+
+let N = 100
+var cache = [0]
+cache.fill(0, N)
+cache[1] = 1
+
+function sequence_length(n) {
+	if (n >= N) {
+		return if n % 2 {
+			1 + sequence_length(n * 3 + 1)
+		} else {
+			1 + sequence_length(n / 2)
+		}
+	}
+	var c = cache[n]
+	if c return c
+
+	return if n % 2 {
+		1 + sequence_length(3 * n + 1)
+	} else {
+		1 + sequence_length(n / 2)
+	}
+}
+sequence_length(7)

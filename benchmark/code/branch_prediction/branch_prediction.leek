@@ -1,0 +1,15 @@
+let size = 32768
+var data = []
+for var i = 0; i < size; ++i {
+	data += Number.randInt(0, 256)
+}
+data.sort()
+
+var sum = 0l
+for (var i = 0; i < 70000; ++i) {
+	for var e in data {
+		if e >= 128 sum += e
+	}
+}
+
+System.print(sum)

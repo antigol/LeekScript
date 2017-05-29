@@ -1,5 +1,4 @@
-#include "../../compiler/instruction/VariableDeclaration.hpp"
-
+#include "VariableDeclaration.hpp"
 #include "../../vm/LSValue.hpp"
 #include "../../vm/value/LSNull.hpp"
 #include "../semantic/SemanticAnalyser.hpp"
@@ -13,33 +12,34 @@ namespace ls {
 
 VariableDeclaration::VariableDeclaration() {
 	global = false;
+	constant = false;
 }
 
 VariableDeclaration::~VariableDeclaration() {
-	for (auto ex : expressions) {
+	for (const auto& ex : expressions) {
 		delete ex;
 	}
 }
 
 void VariableDeclaration::print(ostream& os, int indent, bool debug) const {
 
-	os << (global ? "global " : "let ");
+	os << (global ? "global " : (constant ? "let " : "var "));
 
 	for (unsigned i = 0; i < variables.size(); ++i) {
 		os << variables.at(i)->content;
+		if (expressions[i] != nullptr) {
+			os << " = ";
+			expressions.at(i)->print(os, indent, debug);
+		}
 		if (i < variables.size() - 1) {
 			os << ", ";
 		}
 	}
-	if (expressions.size() > 0) {
-		os << " = ";
-	}
-	for (unsigned i = 0; i < expressions.size(); ++i) {
-		expressions.at(i)->print(os, indent, debug);
-		if (i < expressions.size() - 1) {
-			os << ", ";
-		}
-	}
+}
+
+Location VariableDeclaration::location() const {
+	auto end = variables.size() > expressions.size() ? variables.back()->location.end : expressions.back()->location().end;
+	return {keyword->location.start, end};
 }
 
 void VariableDeclaration::analyse(SemanticAnalyser* analyser, const Type&) {
@@ -49,22 +49,31 @@ void VariableDeclaration::analyse(SemanticAnalyser* analyser, const Type&) {
 	vars.clear();
 	for (unsigned i = 0; i < variables.size(); ++i) {
 
-		Token* var = variables[i];
+		auto& var = variables.at(i);
 		Value* value = nullptr;
 
-		SemanticVar* v = analyser->add_var(var, Type::UNKNOWN, value, this);
+		auto v = analyser->add_var(var.get(), Type::UNKNOWN, value, this);
+		if (v == nullptr) {
+			continue;
+		}
 
-		if (i < expressions.size()) {
+		if (expressions[i] != nullptr) {
+			if (Function* f = dynamic_cast<Function*>(expressions[i])) {
+				f->name = var->content;
+				f->file = VM::current()->file_name;
+			}
 			expressions[i]->analyse(analyser, Type::UNKNOWN);
 			v->type = expressions[i]->type;
+			v->type.constant = constant;
 			v->value = expressions[i];
-		}
 
+		} else {
+			v->type = Type::NULLL;
+		}
 		if (v->type == Type::VOID) {
-			analyser->add_error({SemanticError::Type::CANT_ASSIGN_VOID, var->line, var->content});
+			analyser->add_error({SemanticError::Type::CANT_ASSIGN_VOID, location(), var->location, {var->content}});
 		}
-
-		vars.insert(pair<string, SemanticVar*>(var->content, v));
+		vars.insert({var->content, v});
 	}
 }
 
@@ -73,34 +82,51 @@ Compiler::value VariableDeclaration::compile(Compiler& c) const {
 	for (unsigned i = 0; i < variables.size(); ++i) {
 
 		std::string name = variables[i]->content;
-		SemanticVar* v = vars.at(name);
+		auto v = vars.at(name);
 
-		if (i < expressions.size()) {
+		if (expressions[i] != nullptr) {
 
 			Value* ex = expressions[i];
 
 			if (Reference* ref = dynamic_cast<Reference*>(ex)) {
-				jit_value_t val = c.get_var(ref->variable->content).value;
-				c.add_var(name, val, v->type, true);
+				if (ref->name != "") {
+					jit_value_t val;
+					if (ref->scope == VarScope::LOCAL) {
+						val = c.get_var(ref->name).v;
+					} else if (ref->scope == VarScope::INTERNAL) {
+						val = c.vm->internals.at(ref->name);
+					} else {
+						val = jit_value_get_param(c.F, 1 + ref->var->index);
+					}
+					if (v->type.must_manage_memory() && ref->scope != VarScope::INTERNAL) {
+						c.insn_inc_refs({val, v->type});
+					}
+					c.add_var(name, val, v->type, true);
+				} else {
+					auto val = ref->compile(c);
+					c.insn_inc_refs(val);
+					c.add_var(name, val.v, v->type, true);
+				}
 			} else {
 				jit_value_t var = jit_value_create(c.F, VM::get_jit_type(v->type));
 				c.add_var(name, var, Type::POINTER, false);
 
 				if (Function* f = dynamic_cast<Function*>(ex)) {
-					jit_insn_store(c.F, var, LS_CREATE_POINTER(c.F, (void*) f->ls_fun));
+					if (v->has_version && f->versions.find(v->version) != f->versions.end()) {
+						jit_insn_store(c.F, var, c.new_pointer((void*) f->versions.at(v->version)->function).v);
+					} else {
+						jit_insn_store(c.F, var, c.new_pointer((void*) f->default_version->function).v);
+					}
 				}
 
 				auto val = ex->compile(c);
-				if (ex->type.must_manage_memory()) {
-					val.v = VM::move_inc_obj(c.F, val.v);
-				}
-				c.set_var_type(name, ex->type);
+				ex->compile_end(c);
+				val = c.insn_move_inc(val);
 
-				if (v->type == Type::GMP_INT) {
-					jit_insn_store(c.F, var, VM::clone_gmp_int(c.F, val.v));
-				} else {
-					jit_insn_store(c.F, var, val.v);
-				}
+				c.set_var_type(name, ex->type);
+				c.add_function_var(var, v->type);
+
+				jit_insn_store(c.F, var, val.v);
 			}
 		} else {
 
@@ -112,6 +138,20 @@ Compiler::value VariableDeclaration::compile(Compiler& c) const {
 		}
 	}
 	return {nullptr, Type::UNKNOWN};
+}
+
+Instruction* VariableDeclaration::clone() const {
+	auto vd = new VariableDeclaration();
+	vd->keyword = keyword;
+	vd->global = global;
+	vd->constant = constant;
+	for (const auto& v : variables) {
+		vd->variables.push_back(v);
+	}
+	for (const auto& v : expressions) {
+		vd->expressions.push_back(v->clone());
+	}
+	return vd;
 }
 
 }

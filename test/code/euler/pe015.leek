@@ -1,11 +1,11 @@
 let S = 20
 
 var paths = [0] // TODO var paths = new Array<int>(20) ?
-paths.fill(0, 20) // TODO fill gives the array his element type
+paths.fill(0, 21) // TODO fill gives the array his element type
 
 function walk(x, y) {
 	if (x + y == S) {
-		paths[y] = paths[y] + 1 // TODO paths[y]++
+		paths[y]++
 		return
 	}
 	if (x > 0) walk(x - 1, y)
@@ -17,6 +17,7 @@ walk(S, S)
 
 var sum = 1l
 for (var i = 0; i < S; ++i) {
-	sum += paths[i] ** 2 // TODO x ** 2 optimization into x * x
+	var long = (0l + paths[i]) * paths[i]
+	sum += long
 }
 return sum

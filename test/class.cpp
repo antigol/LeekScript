@@ -3,7 +3,12 @@
 void Test::test_classes() {
 
 	header("Classes");
+	section("type ID");
+	code("Number.typeID()").equals("11");
+	code("[Number, ''][0].typeID()").equals("11");
+	code("Number = 12").semantic_error(ls::SemanticError::Type::CANT_MODIFY_CONSTANT_VALUE, {"Number"});
 
+	section(".class attribute");
 	code("null.class").equals("<class Null>");
 	code("true.class").equals("<class Boolean>");
 	code("false.class").equals("<class Boolean>");
@@ -14,35 +19,89 @@ void Test::test_classes() {
 	code("''.class").equals("<class String>");
 	code("'salut'.class").equals("<class String>");
 	code("[].class").equals("<class Array>");
+	code("[1..12].class").equals("<class Interval>");
+	code("[:].class").equals("<class Map>");
+	code("<>.class").equals("<class Set>");
 	code("[1, 2, 3].class").equals("<class Array>");
 	code("{}.class").equals("<class Object>");
 	code("{a: 12, b: 'yo'}.class").equals("<class Object>");
 	code("(-> 12).class").equals("<class Function>");
 	code("(x, y -> x + y).class").equals("<class Function>");
 	code("12.class.class").equals("<class Class>");
+	code("[null, true, 12, 'foo', [], [1, 2], [1.5, 2.5], [1..12], [1:12], <>, <1.5>, <'a'>, {}, x -> x, Number] ~~ x -> x.class").equals("[<class Null>, <class Boolean>, <class Number>, <class String>, <class Array>, <class Array>, <class Array>, <class Interval>, <class Map>, <class Set>, <class Set>, <class Set>, <class Object>, <class Function>, <class Class>]");
 
-	code("12 instanceof Number").equals("true");
-	code("'yo' instanceof Number").equals("false");
-	code("'yo' instanceof String").equals("true");
-	code("[1, 2, 3] instanceof Array").equals("true");
-	code("{a: 12} instanceof Object").equals("true");
-	code("(-> 12) instanceof Function").equals("true");
-	code("null instanceof Null").equals("true");
-	code("true instanceof Boolean").equals("true");
-	code("Number instanceof Class").equals("true");
+	section("Class.name");
+	code("Null.name").equals("'Null'");
+	code("Boolean.name").equals("'Boolean'");
+	code("Number.name").equals("'Number'");
+	code("String.name").equals("'String'");
+	code("Array.name").equals("'Array'");
+	code("Interval.name").equals("'Interval'");
+	code("Set.name").equals("'Set'");
+	code("Map.name").equals("'Map'");
+	code("Object.name").equals("'Object'");
+	code("Function.name").equals("'Function'");
+	code("Class.name").equals("'Class'");
+	code("[Array, ''][0].name").equals("'Array'");
 
-/*
-	code("class A {} let a = new A").equals("{}");
-	code("class A { let b = 2 } let a = new A").equals("{}");
-	code("class A { let b = 2 } let a = new A a.b").equals("2");
+	section("Class.attr");
+	code("Number.toto").semantic_error(ls::SemanticError::NO_SUCH_ATTRIBUTE, {"toto", "Number"});
+
+	section("Class.operator ==");
+	code("Number == 12").equals("false");
+
+	section("Class.operator <");
+	code("Number < 12").equals("false");
+	code("12 < Number").equals("true");
+	code("[Number, 2][0] < 12").equals("false");
+
+	section("is operator");
+	code("12 is Number").equals("true");
+	code("'yo' is Number").equals("false");
+	code("'yo' is String").equals("true");
+	code("[1, 2, 3] is Array").equals("true");
+	code("[1..12] is Interval").equals("true");
+	code("{a: 12} is Object").equals("true");
+	// TODO ?
+	// code("(-> 12) is Function").equals("true");
+	code("null is Null").equals("true");
+	code("true is Boolean").equals("true");
+	code("Number is Class").equals("true");
+
+	section("Class creation");
+	code("class A {} A").equals("<class A>");
+	code("class A {} let a = new A a").equals("A {}");
+	code("class A { let b = 2 } let a = new A a").equals("A {}");
 	code("class A { let b = 2 } let a = new A a.class").equals("<class A>");
-	code("class A {} let t = [A] let a = new t[0]").equals("{}");
-	code("class A {} let a = new A let b = new a.class b.class").equals("<class A>");
-*/
+	// TODO classes implementation
+	// code("class A { let b = 2 } let a = new A a.b").equals("2");
+	// code("class A {} let t = [A] let a = new t[0] a").equals("A {}");
+	// code("class A {} let a = new A let b = new a.class b.class").equals("<class A>");
 
-//	code("let my_map = [].map; my_map([1, 2, 3], x -> x ^ 2)").equals("[1, 4, 9]");
-//	code("[].map == [].map").equals("true");
-//	code("{}.map == {}.map").equals("true");
-//	code("[].map == {}.map").equals("false");
-//	code("let a = [].map; a == [].map").equals("true");
+	section("Methods access");
+	code("['hello', 2][0].toto").exception(ls::vm::Exception::NO_SUCH_ATTRIBUTE);
+	code("[].map").equals("<function>");
+	code("[].azertyuiop").semantic_error(ls::SemanticError::NO_SUCH_ATTRIBUTE, {"azertyuiop", "Array"});
+	code("[[], ''][0].azertyuiop").exception(ls::vm::Exception::NO_SUCH_ATTRIBUTE);
+	// TODO
+	// code("let my_map = [].map; my_map([1, 2, 3], x -> x ^ 2)").equals("[1, 4, 9]");
+	code("[].map == [].map").equals("true");
+	code("{}.map == {}.map").equals("true");
+	code("[].map == {}.map").equals("false");
+	code("let a = [].map; a == [].map").equals("true");
+
+	section("Class.operator ==");
+	code("Number == 12.class").equals("true");
+	code("Number == 'salut'.class").equals("false");
+
+	section("Class.operator <");
+	code("Number < String").equals("true");
+	code("Number < Array").equals("false");
+
+	section("Class::isTrue()");
+	code("Number ? 12 : 5").equals("12");
+	code("!(!String)").equals("true");
+
+	section("Class::clone()");
+	code("var a = Number a").equals("<class Number>");
 }

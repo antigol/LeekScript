@@ -1,0 +1,19 @@
+// TODO f = f * i  slower than  f *= i
+
+function factorial(n) {
+	var f = 1l
+	for var i = 1; i < n; i++ {
+		f *= i
+	}
+	return f
+}
+
+var c = 0l
+for (var i = 1; i < 3000; ++i) {
+	for (var j = 1; j < 1000; ++j) {
+		c += factorial(j) + i
+	}
+	c = c % 1000000
+}
+
+System.print(c)

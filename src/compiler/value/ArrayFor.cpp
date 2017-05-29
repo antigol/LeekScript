@@ -18,8 +18,8 @@ void ArrayFor::print(ostream& os, int indent, bool debug) const {
 	}
 }
 
-unsigned ArrayFor::line() const {
-	return 0;
+Location ArrayFor::location() const {
+	return {{0, 0, 0}, {0, 0, 0}}; // TODO
 }
 
 void ArrayFor::analyse(SemanticAnalyser* analyser, const Type&) {
@@ -31,5 +31,10 @@ Compiler::value ArrayFor::compile(Compiler& c) const {
 	return forr->compile(c);
 }
 
+Value* ArrayFor::clone() const {
+	auto af = new ArrayFor();
+	af->forr = forr->clone();
+	return af;
+}
 
 }

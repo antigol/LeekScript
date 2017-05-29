@@ -9,8 +9,8 @@ namespace ls {
 class LeftValue : public Value {
 public:
 
-	LeftValue();
-	virtual ~LeftValue();
+	LeftValue() = default;
+	virtual ~LeftValue() = default;
 
 	virtual bool isLeftValue() const override;
 	virtual void change_type(SemanticAnalyser*, const Type&) = 0;

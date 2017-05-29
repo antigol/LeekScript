@@ -27,5 +27,6 @@ value
 #include "vm/value/LSNumber.hpp"
 #include "vm/value/LSArray.hpp"
 #include "vm/value/LSObject.hpp"
+#include "vm/Program.hpp"
 
 #endif

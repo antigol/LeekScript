@@ -1,0 +1,21 @@
+function crash() {
+	let a = [[], 0][0]
+	a[0] = 2
+}
+
+function power(x) {
+	let a = 2
+	crash()
+}
+
+function will_crash(a) {
+	let b = 3
+	power(12)
+}
+
+function do_something() {
+	let c = 4
+	will_crash(3)
+}
+
+do_something()

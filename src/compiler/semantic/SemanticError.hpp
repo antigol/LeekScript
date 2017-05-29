@@ -24,20 +24,27 @@ public:
 		INVALID_MAP_KEY,
 		VALUE_MUST_BE_A_LVALUE,
 		WRONG_ARGUMENT_COUNT,
-		NO_SUCH_OPERATOR
+		NO_SUCH_OPERATOR,
+		CANT_MODIFY_CONSTANT_VALUE,
+		VALUE_NOT_ITERABLE,
+		NO_SUCH_ATTRIBUTE,
+		VALUE_MUST_BE_A_CONTAINER
 	};
 
 	static bool translation_loaded;
 	static Json translation;
 	static std::string type_to_string(Type);
-	static std::string build_message(Type, std::string);
+	static std::string build_message(Type, std::vector<std::string> parameters);
 
 	Type type;
-	unsigned line;
-	std::string content;
+	Location location;
+	Location focus;
+	std::vector<std::string> parameters;
+	std::string underline_code;
+	std::string file;
 
-	SemanticError(Type type, unsigned line);
-	SemanticError(Type type, unsigned line, const std::string& content);
+	SemanticError(Type type, Location location, Location focus);
+	SemanticError(Type type, Location location, Location focus, std::vector<std::string> parameters);
 	virtual ~SemanticError();
 
 	std::string message() const;

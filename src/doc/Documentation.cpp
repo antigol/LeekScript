@@ -18,9 +18,7 @@ Documentation::Documentation() {}
 
 Documentation::~Documentation() {}
 
-void Documentation::generate(ostream& os) {
-
-	string lang = "fr";
+void Documentation::generate(ostream& os, std::string lang) {
 
 	vector<Module*> modules;
 
@@ -30,7 +28,7 @@ void Documentation::generate(ostream& os) {
 	modules.push_back(new MapSTD());
 	modules.push_back(new ObjectSTD());
 	modules.push_back(new StringSTD());
-	
+
 	os << "{";
 
 	for (unsigned m = 0; m < modules.size(); ++m) {
@@ -43,6 +41,11 @@ void Documentation::generate(ostream& os) {
 	}
 
 	os << "}\n";
+
+	for (const auto& m : modules) {
+		delete m->clazz;
+		delete m;
+	}
 }
 
 }
